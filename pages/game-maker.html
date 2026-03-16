@@ -989,6 +989,18 @@ permalink: /game-maker/
           <span>🔊 Sound Effects<span class="td">Collect sounds, hit sound, win jingle</span></span></label>
         <label class="gm-tog"><input type="checkbox" id="gs-celebrate" checked>
           <span>🎉 Celebrations<span class="td">Particle bursts on collection &amp; level complete</span></span></label>
+        <label class="gm-tog"><input type="checkbox" id="gs-music">
+          <span>🎵 Background Music<span class="td">Fun chiptune music while you play</span></span></label>
+        <div id="gs-music-tracks" style="margin-top:10px; display:none;">
+          <div style="color:#aaa; font-size:0.82rem; margin-bottom:6px;">Choose a track:</div>
+          <div id="gs-music-track-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+          <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+            <span style="color:#aaa; font-size:0.82rem;">🔈</span>
+            <input type="range" id="gs-music-vol" min="0" max="100" value="80"
+              style="flex:1; accent-color:#6366f1; cursor:pointer;">
+            <span style="color:#aaa; font-size:0.82rem;">🔊</span>
+          </div>
+        </div>
       </div>
       <div class="gm-set-sec">
         <h3>📷 Face Tracking</h3>
@@ -1329,6 +1341,9 @@ const a11y = {
   guidedMode:   false,
   audioEnabled: true,
   celebrations: true,
+  musicEnabled: false,
+  musicTrack:   0,
+  musicVolume:  0.8,
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1803,6 +1818,89 @@ function sfxCollect() { playTone(660,0.08); setTimeout(()=>playTone(880,0.10),80
 function sfxHit()     { playTone(180,0.35,'sawtooth',0.18); }
 function sfxWin()     { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,0.35),i*160)); }
 function sfxLevelComplete() { [659,784,880,1047,880,1047,1319].forEach((f,i)=>setTimeout(()=>playTone(f,0.22),i*100)); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BACKGROUND MUSIC ENGINE  (Web Audio chiptune sequencer)
+═══════════════════════════════════════════════════════════════════════════ */
+const MUSIC_TRACKS = [
+  { name:'🎮 Adventure', bpm:160, type:'square', vol:0.07,
+    seq:[[784,0.5],[659,0.5],[784,0.5],[880,0.5],[988,1],[880,0.5],[784,0.5],[0,1],
+         [659,0.5],[784,0.5],[880,0.5],[784,0.5],[659,0.5],[587,0.5],[659,1],[0,1]] },
+  { name:'🌌 Space Chill', bpm:78, type:'sine', vol:0.07,
+    seq:[[440,1],[0,0.5],[523,0.5],[659,1],[0,0.5],[523,0.5],[440,1.5],[0,1],
+         [392,1],[0,0.5],[440,0.5],[523,1],[0,0.5],[392,0.5],[330,2],[0,1]] },
+  { name:'⚔️ Boss Battle', bpm:190, type:'sawtooth', vol:0.055,
+    seq:[[330,0.25],[330,0.25],[0,0.25],[494,0.25],[330,0.5],[0,0.25],[294,0.25],
+         [330,0.25],[330,0.25],[0,0.25],[494,0.25],[392,0.25],[330,0.25],[0,0.5],
+         [440,0.25],[0,0.25],[440,0.25],[0,0.25],[392,0.25],[0,0.25],[330,0.25],[0,0.25],
+         [330,0.5],[0,0.5],[220,0.5],[0,0.5]] },
+  { name:'🌸 Peaceful', bpm:88, type:'sine', vol:0.07,
+    seq:[[523,1],[659,1],[784,1],[880,2],[784,1],[659,1],[523,2],[0,1],
+         [440,1],[523,1],[659,1],[784,2],[659,1],[523,1],[440,3],[0,1]] },
+  { name:'🎪 Party Time', bpm:172, type:'square', vol:0.065,
+    seq:[[880,0.5],[784,0.5],[659,0.5],[784,0.5],[880,1],[880,0.5],[880,0.5],
+         [784,0.5],[784,0.5],[784,1],[0,0.5],[784,0.5],
+         [659,0.5],[523,0.5],[587,0.5],[659,0.5],[784,1],[659,0.5],[523,0.5],
+         [523,1.5],[0,1]] },
+];
+
+let musicActive        = false;
+let musicSchedulerTmr  = null;
+let musicNextNoteTime  = 0;
+let musicNoteIdx       = 0;
+let musicMasterGain    = null;
+
+function getMusicGain() {
+  const ac = getAC();
+  if (!musicMasterGain) {
+    musicMasterGain = ac.createGain();
+    musicMasterGain.gain.value = a11y.musicVolume;
+    musicMasterGain.connect(ac.destination);
+  }
+  return musicMasterGain;
+}
+
+function musicSchedule() {
+  if (!musicActive) return;
+  const ac    = getAC();
+  const track = MUSIC_TRACKS[a11y.musicTrack];
+  const beat  = 60 / track.bpm;
+  while (musicNextNoteTime < ac.currentTime + 0.15) {
+    const [freq, beats] = track.seq[musicNoteIdx];
+    const dur = beats * beat;
+    if (freq > 0) {
+      try {
+        const osc = ac.createOscillator(), g = ac.createGain();
+        osc.connect(g); g.connect(getMusicGain());
+        osc.type = track.type;
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(track.vol, musicNextNoteTime);
+        g.gain.exponentialRampToValueAtTime(0.001, musicNextNoteTime + dur * 0.82);
+        osc.start(musicNextNoteTime);
+        osc.stop(musicNextNoteTime + dur);
+      } catch(e) {}
+    }
+    musicNextNoteTime += dur;
+    musicNoteIdx = (musicNoteIdx + 1) % track.seq.length;
+  }
+  musicSchedulerTmr = setTimeout(musicSchedule, 25);
+}
+
+function startMusic() {
+  if (!a11y.musicEnabled) return;
+  stopMusic();
+  musicActive = true;
+  const ac = getAC();
+  if (ac.state === 'suspended') ac.resume();
+  musicNextNoteTime = ac.currentTime + 0.15;
+  musicNoteIdx = 0;
+  musicSchedule();
+}
+
+function stopMusic() {
+  musicActive = false;
+  if (musicSchedulerTmr) { clearTimeout(musicSchedulerTmr); musicSchedulerTmr = null; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PLAY ENGINE — multi-level
@@ -2435,8 +2533,10 @@ document.querySelectorAll('.gm-tab').forEach(btn => {
 
     if (mode === 'play') {
       if (!startPlay()) return;
+      startMusic();
     } else {
       if (playRAF) { cancelAnimationFrame(playRAF); playRAF=null; }
+      stopMusic();
     }
 
     document.querySelectorAll('.gm-tab').forEach(b=>b.classList.remove('active'));
@@ -2451,6 +2551,7 @@ document.querySelectorAll('.gm-tab').forEach(btn => {
 // Back to editor button
 function goBackToDesign() {
   if (playRAF) { cancelAnimationFrame(playRAF); playRAF=null; }
+  stopMusic();
   // Stop mic when leaving play mode
   if (voiceListening && voiceRecognition) {
     voiceListening = false;
@@ -2481,6 +2582,7 @@ document.getElementById('gm-replay-level-btn').addEventListener('click', () => {
 document.getElementById('gm-play-again-btn').addEventListener('click', () => {
   hideAllOverlays();
   startPlay();
+  startMusic();
 });
 document.getElementById('gm-back-design-btn').addEventListener('click', goBackToDesign);
 
@@ -2515,6 +2617,7 @@ document.getElementById('gm-savename-confirm').addEventListener('click', gmConfi
 document.getElementById('gm-library-close').addEventListener('click', () => gmCloseModal('gm-library-modal'));
 document.getElementById('gm-play-btn').addEventListener('click', () => {
   if (!startPlay()) return;
+  startMusic();
   document.querySelectorAll('.gm-tab').forEach(b=>b.classList.remove('active'));
   document.querySelector('.gm-tab[data-mode="play"]').classList.add('active');
   document.querySelectorAll('.gm-mode').forEach(p=>p.classList.remove('active'));
@@ -2533,6 +2636,97 @@ document.getElementById('gm-remove-level-btn').addEventListener('click', removeC
   el.checked=a11y[key];
   el.addEventListener('change',()=>{ a11y[key]=el.checked; if(playState) playState.player.size=a11y.largeSprites?52:40; });
 });
+
+// Music toggle + track selector
+(function() {
+  const musicChk    = document.getElementById('gs-music');
+  const trackPanel  = document.getElementById('gs-music-tracks');
+  const trackBtnBox = document.getElementById('gs-music-track-btns');
+  const volSlider   = document.getElementById('gs-music-vol');
+
+  // Preview state
+  let previewActive = false;
+  let previewTimer  = null;
+
+  function stopPreview() {
+    if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
+    previewActive = false;
+    trackBtnBox.querySelectorAll('.music-preview-btn').forEach(b => {
+      b.textContent = '▶'; b.style.background = '#2a2a3e'; b.style.color = '#aaa';
+    });
+    if (!musicActive) stopMusic();
+  }
+
+  function previewTrack(i, previewBtn) {
+    if (previewActive) stopPreview();
+    const wasPlaying = musicActive;
+    previewActive = true;
+    previewBtn.textContent = '⏹'; previewBtn.style.background = '#6366f1'; previewBtn.style.color = '#fff';
+    const savedTrack = a11y.musicTrack;
+    a11y.musicTrack = i;
+    const savedEnabled = a11y.musicEnabled;
+    a11y.musicEnabled = true;
+    startMusic();
+    previewTimer = setTimeout(() => {
+      stopPreview();
+      a11y.musicTrack = savedTrack;
+      a11y.musicEnabled = savedEnabled;
+      if (!wasPlaying) stopMusic();
+    }, 5000);
+  }
+
+  // Build track buttons
+  MUSIC_TRACKS.forEach((t, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:4px;';
+
+    const btn = document.createElement('button');
+    btn.textContent = t.name;
+    btn.style.cssText = 'padding:5px 10px;border-radius:6px;border:1px solid #555;background:#1e1e2e;color:#e2e8f0;cursor:pointer;font-size:0.82rem;transition:all 0.15s;';
+    btn.addEventListener('click', () => {
+      stopPreview();
+      a11y.musicTrack = i;
+      trackBtnBox.querySelectorAll('button:not(.music-preview-btn)').forEach((b,j) => {
+        b.style.background  = j===i ? '#6366f1' : '#1e1e2e';
+        b.style.borderColor = j===i ? '#6366f1' : '#555';
+        b.style.color       = j===i ? '#fff'    : '#e2e8f0';
+      });
+      if (musicActive) startMusic(); // switch immediately if playing
+    });
+    if (i === 0) { btn.style.background='#6366f1'; btn.style.borderColor='#6366f1'; btn.style.color='#fff'; }
+
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '▶';
+    prevBtn.className = 'music-preview-btn';
+    prevBtn.title = 'Preview (5s)';
+    prevBtn.style.cssText = 'padding:4px 7px;border-radius:6px;border:1px solid #555;background:#2a2a3e;color:#aaa;cursor:pointer;font-size:0.78rem;transition:all 0.15s;';
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (previewActive && prevBtn.textContent === '⏹') { stopPreview(); }
+      else { previewTrack(i, prevBtn); }
+    });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(prevBtn);
+    trackBtnBox.appendChild(wrap);
+  });
+
+  // Volume slider
+  volSlider.value = Math.round(a11y.musicVolume * 100);
+  volSlider.addEventListener('input', () => {
+    a11y.musicVolume = volSlider.value / 100;
+    if (musicMasterGain) musicMasterGain.gain.value = a11y.musicVolume;
+  });
+
+  musicChk.checked = a11y.musicEnabled;
+  trackPanel.style.display = a11y.musicEnabled ? 'block' : 'none';
+  musicChk.addEventListener('change', () => {
+    a11y.musicEnabled = musicChk.checked;
+    trackPanel.style.display = a11y.musicEnabled ? 'block' : 'none';
+    if (a11y.musicEnabled && musicActive === false && playState) startMusic();
+    else if (!a11y.musicEnabled) stopMusic();
+  });
+})();
 
 // Resume audio on first canvas click
 pCanvas.addEventListener('click',()=>{ if(audioCtxP&&audioCtxP.state==='suspended') audioCtxP.resume(); },{once:true});
