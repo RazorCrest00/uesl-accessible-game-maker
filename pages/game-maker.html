@@ -712,12 +712,12 @@ permalink: /game-maker/
 .gm-lib-empty { color: #6677aa; text-align: center; padding: 1.5rem 0; font-size: 0.95rem; }
 
 /* ── Chat Panel ─────────────────────────────────────────────────────────── */
-#gm-mode-chat { padding: 12px 0; }
+#gm-mode-chat { padding: 12px 0; overflow-x: hidden; }
 #gm-chat-layout {
-  display: flex; gap: 14px; height: 560px;
+  display: flex; gap: 14px; height: 560px; overflow: hidden;
 }
 #gm-chat-sidebar {
-  width: 260px; min-width: 200px; display: flex; flex-direction: column; gap: 10px;
+  width: 260px; min-width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overflow-x: hidden;
 }
 #gm-chat-search-box {
   background: #0e0e30; border: 1.5px solid #3344aa; border-radius: 10px;
@@ -748,7 +748,7 @@ permalink: /game-maker/
 .chat-add-btn:hover { background: #047857; }
 .chat-add-btn:disabled { background: #374151; color: #6b7280; cursor: default; }
 #gm-chat-friends-box {
-  flex: 1; background: #0e0e30; border: 1.5px solid #3344aa; border-radius: 10px;
+  max-height: 220px; background: #0e0e30; border: 1.5px solid #3344aa; border-radius: 10px;
   padding: 10px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 0;
 }
 #gm-chat-friends-box h4 { margin: 0 0 8px; font-size: 0.88rem; color: #aabbff; }
@@ -1173,6 +1173,11 @@ permalink: /game-maker/
           <div id="gm-chat-friends-list">
             <div style="color:#445; font-size:0.82rem; text-align:center; padding:12px 0;">Loading…</div>
           </div>
+        </div>
+        <div id="gm-chat-suggest-box" style="background:#0e0e30; border:1.5px solid #3344aa; border-radius:10px; padding:10px 12px;">
+          <h4 style="margin:0 0 8px; font-size:0.88rem; color:#aabbff;">✨ People You May Know</h4>
+          <div id="gm-chat-suggest-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+          <button id="gm-chat-suggest-refresh" style="margin-top:8px; background:none; border:none; color:#6366f1; font-size:0.78rem; cursor:pointer; padding:0;">↻ Show different people</button>
         </div>
       </div>
       <!-- Right: conversation area -->
@@ -2483,6 +2488,9 @@ const SAVE_KEY = 'uesl_gm_v2';
 const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8800'
   : 'https://flask.opencodingsociety.com';
+const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8585'
+  : 'https://spring.opencodingsociety.com';
 
 /* Check if the user is logged in.
    login.js (loaded in the page header) sets window.user asynchronously.
@@ -3415,110 +3423,123 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
       const subEl = document.createElement('div');
       subEl.className = 'chat-friend-sub';
 
-      if (f.status === 'pending_incoming') {
-        // Someone sent us a request — show accept/reject
-        subEl.innerHTML = '<span class="chat-pending-tag">Wants to friend you</span>';
-        info.appendChild(nameEl); info.appendChild(subEl);
+      // Accepted friend — clickable to open chat, with remove button
+      subEl.textContent = 'Tap to chat';
+      info.appendChild(nameEl); info.appendChild(subEl);
 
-        const acceptBtn = document.createElement('button');
-        acceptBtn.className = 'chat-accept-btn'; acceptBtn.textContent = '✓';
-        acceptBtn.title = 'Accept';
-        acceptBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          try {
-            await apiFetch('/api/friends/accept', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ uid: f.uid }),
-            });
-            await loadFriends();
-          } catch(err) {}
-        });
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'chat-reject-btn'; removeBtn.textContent = '✕';
+      removeBtn.title = 'Remove friend';
+      removeBtn.style.opacity = '0.5';
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        localFriendsRemove(f.uid);
+        if (activeFriendUid === f.uid) {
+          activeFriendUid = null;
+          headerName.textContent = 'Select a friend to chat';
+          msgArea.innerHTML = ''; msgArea.appendChild(emptyState);
+          emptyState.innerHTML = '<div style="font-size:2.5rem;">👋</div><div>Pick a friend from the left to start chatting!</div>';
+          inputRow.style.display = 'none';
+          stopPoll();
+        }
+        loadFriends(); loadSuggestions();
+      });
 
-        const rejectBtn = document.createElement('button');
-        rejectBtn.className = 'chat-reject-btn'; rejectBtn.textContent = '✕';
-        rejectBtn.title = 'Decline';
-        rejectBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          try {
-            await apiFetch('/api/friends/reject', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ uid: f.uid }),
-            });
-            await loadFriends();
-          } catch(err) {}
-        });
-
-        row.appendChild(avatar); row.appendChild(info);
-        row.appendChild(acceptBtn); row.appendChild(rejectBtn);
-
-      } else if (f.status === 'pending_outgoing') {
-        subEl.textContent = 'Request sent…';
-        info.appendChild(nameEl); info.appendChild(subEl);
-        row.appendChild(avatar); row.appendChild(info);
-
-      } else {
-        // Accepted friend — clickable to open chat
-        subEl.textContent = 'Tap to chat';
-        info.appendChild(nameEl); info.appendChild(subEl);
-        row.appendChild(avatar); row.appendChild(info);
-        row.addEventListener('click', () => openConversation(f.uid, f.name));
-      }
+      row.appendChild(avatar); row.appendChild(info); row.appendChild(removeBtn);
+      row.addEventListener('click', () => openConversation(f.uid, f.name));
 
       friendsList.appendChild(row);
     });
   }
 
   async function loadFriends() {
-    try {
-      const r = await apiFetch('/api/friends');
-      if (!r.ok) return;
-      const data = await r.json();
-      friendsCache = data.friends || [];
-      renderFriends();
-    } catch(e) {}
+    friendsCache = localFriendsLoad();
+    renderFriends();
   }
 
   /* ── search ─────────────────────────────────────────────────────────── */
+  // Cache the full people list so we only fetch it once per session
+  let peopleCache = null;
+
+  async function getPeople() {
+    if (peopleCache) return peopleCache;
+    // Try without credentials first (as other pages do), fall back with credentials
+    let raw;
+    try {
+      const r = await fetch(JAVA_URI + '/api/peopleget');
+      if (r.ok) { raw = await r.text(); }
+    } catch(e) {}
+    if (!raw) {
+      const r = await fetch(JAVA_URI + '/api/peopleget', { credentials: 'include' });
+      if (!r.ok) throw new Error('peopleget ' + r.status);
+      raw = await r.text();
+    }
+    const clean = raw.slice(0, raw.lastIndexOf(']') + 1);
+    peopleCache = JSON.parse(clean);
+    return peopleCache;
+  }
+
+  /* ── local friends store (localStorage, no backend needed) ───────────── */
+  const FRIENDS_KEY = 'uesl_gm_friends_v1';
+  function localFriendsLoad() {
+    try { return JSON.parse(localStorage.getItem(FRIENDS_KEY)) || []; } catch(e) { return []; }
+  }
+  function localFriendsSave(list) {
+    localStorage.setItem(FRIENDS_KEY, JSON.stringify(list));
+  }
+  function localFriendsAdd(uid, name) {
+    const list = localFriendsLoad();
+    if (!list.find(f => f.uid === uid)) {
+      list.push({ uid, name, status: 'accepted' });
+      localFriendsSave(list);
+    }
+  }
+  function localFriendsRemove(uid) {
+    localFriendsSave(localFriendsLoad().filter(f => f.uid !== uid));
+  }
+
   async function doSearch() {
-    const q = searchInput.value.trim();
+    const q = searchInput.value.trim().toLowerCase();
     if (!q) return;
     searchBtn.disabled = true; searchBtn.textContent = '…';
     searchRes.innerHTML = '';
     try {
-      const r = await apiFetch('/api/users/search?q=' + encodeURIComponent(q));
-      if (!r.ok) throw new Error();
-      const { users } = await r.json();
-      if (!users || !users.length) {
+      const all = await getPeople();
+      // Each person object typically has: { id, name, uid, ... }
+      // Filter to names that contain the query string
+      const matches = all.filter(p => {
+        const name = (p.name || p.uid || '').toLowerCase();
+        return name.includes(q);
+      }).slice(0, 10); // cap at 10 results
+
+      if (!matches.length) {
         searchRes.innerHTML = '<div style="color:#556; font-size:0.78rem; padding:4px 0;">No users found.</div>';
         return;
       }
-      users.forEach(u => {
-        const row = document.createElement('div');
+      matches.forEach(p => {
+        const uid  = p.uid || p.id || String(p.id);
+        const name = p.name || uid;
+        const row  = document.createElement('div');
         row.className = 'chat-result-row';
         const nameEl = document.createElement('span');
-        nameEl.className = 'chat-result-name'; nameEl.textContent = u.name;
+        nameEl.className = 'chat-result-name'; nameEl.textContent = name;
         const btn = document.createElement('button');
         btn.className = 'chat-add-btn';
-        const alreadyFriend = friendsCache.some(f => f.uid === u.uid);
-        if (alreadyFriend) { btn.textContent = '✓ Friends'; btn.disabled = true; }
-        else if (u.uid === myUid) { btn.textContent = 'That\'s you'; btn.disabled = true; }
+        const alreadyFriend = friendsCache.some(f => f.uid === uid);
+        if (alreadyFriend)    { btn.textContent = '✓ Friends'; btn.disabled = true; }
+        else if (uid === myUid) { btn.textContent = "That's you"; btn.disabled = true; }
         else { btn.textContent = '+ Add'; }
-        btn.addEventListener('click', async () => {
-          btn.disabled = true; btn.textContent = '…';
-          try {
-            await apiFetch('/api/friends/request', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ uid: u.uid }),
-            });
-            btn.textContent = 'Sent!';
-            await loadFriends();
-          } catch(err) { btn.textContent = 'Error'; }
+        btn.addEventListener('click', () => {
+          localFriendsAdd(uid, name);
+          btn.textContent = '✓ Added'; btn.disabled = true;
+          loadFriends();
+          loadSuggestions();
         });
         row.appendChild(nameEl); row.appendChild(btn);
         searchRes.appendChild(row);
       });
     } catch(e) {
-      searchRes.innerHTML = '<div style="color:#fca5a5; font-size:0.78rem; padding:4px 0;">Search failed.</div>';
+      searchRes.innerHTML = '<div style="color:#fca5a5; font-size:0.78rem; padding:4px 0;">Search failed — try again.</div>';
     } finally {
       searchBtn.disabled = false; searchBtn.textContent = 'Search';
     }
@@ -3598,6 +3619,68 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
     chatInput.focus();
   }
 
+  /* ── suggestions ────────────────────────────────────────────────────── */
+  const suggestBox     = document.getElementById('gm-chat-suggest-box');
+  const suggestList    = document.getElementById('gm-chat-suggest-list');
+  const suggestRefresh = document.getElementById('gm-chat-suggest-refresh');
+
+  async function loadSuggestions() {
+    suggestBox.style.display = 'block';
+    suggestList.innerHTML = '<div style="color:#445; font-size:0.8rem; padding:4px 0;">Loading…</div>';
+    let all;
+    try {
+      all = await getPeople();
+    } catch(e) {
+      suggestList.innerHTML = '<div style="color:#556; font-size:0.78rem;">Could not load players.</div>';
+      return;
+    }
+
+    const friendUids = new Set(friendsCache.map(f => f.uid));
+    const pool = all.filter(p => {
+      const uid = String(p.uid || p.id || '');
+      return uid && uid !== myUid && !friendUids.has(uid);
+    });
+
+    if (!pool.length) {
+      suggestList.innerHTML = '<div style="color:#445; font-size:0.78rem;">No new players to suggest.</div>';
+      return;
+    }
+
+    const picks = pool.slice().sort(() => Math.random() - 0.5).slice(0, 4);
+    suggestList.innerHTML = '';
+    picks.forEach(p => {
+      const uid  = String(p.uid || p.id || '');
+      const name = p.name || uid;
+      const row  = document.createElement('div');
+      row.className = 'chat-result-row';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'chat-friend-avatar';
+      avatar.style.cssText = 'width:26px;height:26px;font-size:0.85rem;flex-shrink:0;';
+      avatar.textContent = name[0].toUpperCase();
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'chat-result-name';
+      nameEl.textContent = name;
+      nameEl.style.flex = '1';
+
+      const btn = document.createElement('button');
+      btn.className = 'chat-add-btn';
+      btn.textContent = '+ Add';
+      btn.addEventListener('click', () => {
+        localFriendsAdd(uid, name);
+        btn.textContent = '✓ Added'; btn.disabled = true;
+        loadFriends();
+        loadSuggestions();
+      });
+
+      row.appendChild(avatar); row.appendChild(nameEl); row.appendChild(btn);
+      suggestList.appendChild(row);
+    });
+  }
+
+  suggestRefresh.addEventListener('click', loadSuggestions);
+
   /* ── tab visibility — start/stop polling ───────────────────────────── */
   document.querySelectorAll('.gm-tab').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3633,6 +3716,7 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
     loginWall.style.display = 'none';
     layout.style.display = 'flex';
     await loadFriends();
+    await loadSuggestions();
   }
 
   // Lazy-boot: only run when tab is first opened
