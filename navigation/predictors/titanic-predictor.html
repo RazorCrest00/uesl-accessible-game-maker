@@ -1,0 +1,226 @@
+---
+layout: post
+title: Titanic Survival Predictor
+search_exclude: true
+description: Predict your survival on the Titanic using Machine Learning
+show_reading_time: false
+permalink: /titanic-predictor
+---
+
+<style>
+.form-select, .form-control {
+  background-color: #fff !important;
+  color: #212529 !important;
+  border-color: #ced4da;
+}
+.result-bar {
+  height: 28px;
+  border-radius: 6px;
+  transition: width 0.6s ease;
+  min-width: 2%;
+}
+.survival-card {
+  border-left: 5px solid #28a745;
+}
+.death-card {
+  border-left: 5px solid #dc3545;
+}
+.weight-bar {
+  height: 12px;
+  border-radius: 4px;
+  background-color: #0d6efd;
+  transition: width 0.5s ease;
+}
+</style>
+
+<div class="container mt-5 mb-5">
+  <p class="text-center text-muted">Fill in your passenger details and find out if you would have survived the Titanic.</p>
+
+  <div class="card shadow">
+    <div class="card-body">
+      <form id="titanic-form">
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Your Name</label>
+            <input type="text" class="form-control" id="name" value="Darshan" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Passenger Class</label>
+            <select class="form-select" id="pclass">
+              <option value="1">1st Class (Luxury)</option>
+              <option value="2">2nd Class (Middle)</option>
+              <option value="3" selected>3rd Class (Economy)</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Sex</label>
+            <select class="form-select" id="sex">
+              <option value="male" selected>Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Age</label>
+            <input type="number" class="form-control" id="age" value="17" min="1" max="100" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Siblings / Spouse Aboard</label>
+            <input type="number" class="form-control" id="sibsp" value="0" min="0" max="10" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Parents / Children Aboard</label>
+            <input type="number" class="form-control" id="parch" value="0" min="0" max="10" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Fare Paid ($)</label>
+            <input type="number" class="form-control" id="fare" value="7.50" min="0" step="0.01" />
+            <small class="text-muted">3rd: ~$7-10 &nbsp;|&nbsp; 2nd: ~$15-30 &nbsp;|&nbsp; 1st: ~$50-500</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Port of Embarkation</label>
+            <select class="form-select" id="embarked">
+              <option value="S" selected>Southampton (S)</option>
+              <option value="C">Cherbourg (C)</option>
+              <option value="Q">Queenstown (Q)</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Travelling Alone?</label>
+            <select class="form-select" id="alone">
+              <option value="true" selected>Yes — Alone</option>
+              <option value="false">No — With Others</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="text-center mt-4">
+          <button type="button" class="btn btn-primary px-5" id="predict-btn">Predict My Survival</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-card" class="card shadow mt-5" style="display: none;">
+    <div class="card-header">
+      <h5 class="mb-0">Results for <span id="result-name"></span></h5>
+    </div>
+    <div class="card-body">
+
+      <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+          <div class="card survival-card p-3">
+            <h6 class="text-success">Survival Probability</h6>
+            <h2 id="survive-pct" class="text-success fw-bold">0%</h2>
+            <div style="background:#e9ecef; border-radius:6px;">
+              <div id="survive-bar" class="result-bar" style="width:0%; background:#28a745;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="card death-card p-3">
+            <h6 class="text-danger">Death Probability</h6>
+            <h2 id="die-pct" class="text-danger fw-bold">0%</h2>
+            <div style="background:#e9ecef; border-radius:6px;">
+              <div id="die-bar" class="result-bar" style="width:0%; background:#dc3545;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="verdict" class="alert text-center fw-bold fs-5 mb-4"></div>
+
+      <!-- Feature Weights -->
+      <h6 class="fw-bold mb-3">What factors mattered most?</h6>
+      <div id="feature-weights"></div>
+
+      <div class="text-center mt-4">
+        <button type="button" class="btn btn-outline-secondary" id="reset-btn">Try Again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { predictSurvival, getFeatureWeights } from '{{site.baseurl}}/assets/js/api/titanic.js';
+
+  document.getElementById('predict-btn').addEventListener('click', async () => {
+    const passenger = {
+      name: document.getElementById('name').value || 'Passenger',
+      pclass: parseInt(document.getElementById('pclass').value),
+      sex: document.getElementById('sex').value,
+      age: parseFloat(document.getElementById('age').value),
+      sibsp: parseInt(document.getElementById('sibsp').value),
+      parch: parseInt(document.getElementById('parch').value),
+      fare: parseFloat(document.getElementById('fare').value),
+      embarked: document.getElementById('embarked').value,
+      alone: document.getElementById('alone').value === 'true'
+    };
+
+    try {
+      const prediction = await predictSurvival(passenger);
+      let weights = null;
+      try { weights = await getFeatureWeights(); } catch (_) {}
+
+      // Update UI
+      const survivePct = Math.round(prediction.survive * 100);
+      const diePct = Math.round(prediction.die * 100);
+
+      document.getElementById('result-name').textContent = passenger.name;
+      document.getElementById('survive-pct').textContent = survivePct + '%';
+      document.getElementById('die-pct').textContent = diePct + '%';
+      document.getElementById('survive-bar').style.width = survivePct + '%';
+      document.getElementById('die-bar').style.width = diePct + '%';
+
+      const verdict = document.getElementById('verdict');
+      if (survivePct >= 50) {
+        verdict.textContent = `You likely would have SURVIVED! (${survivePct}% chance)`;
+        verdict.className = 'alert alert-success text-center fw-bold fs-5 mb-4';
+      } else {
+        verdict.textContent = `You likely would NOT have survived. (${diePct}% chance of death)`;
+        verdict.className = 'alert alert-danger text-center fw-bold fs-5 mb-4';
+      }
+
+      // Render feature weights
+      const weightsDiv = document.getElementById('feature-weights');
+      weightsDiv.innerHTML = '';
+      if (weights) {
+        const sorted = Object.entries(weights).sort((a, b) => b[1] - a[1]);
+        sorted.forEach(([feature, importance]) => {
+          const pct = Math.round(importance * 100);
+          weightsDiv.innerHTML += `
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small mb-1">
+                <span>${feature}</span><span>${pct}%</span>
+              </div>
+              <div style="background:#e9ecef; border-radius:4px;">
+                <div class="weight-bar" style="width:${pct}%;"></div>
+              </div>
+            </div>`;
+        });
+      }
+
+      document.getElementById('results-card').style.display = 'block';
+      document.getElementById('results-card').scrollIntoView({ behavior: 'smooth' });
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Could not connect to Darshan-Flask backend. Make sure it is running on port 8587.');
+    }
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    document.getElementById('titanic-form').reset();
+    document.getElementById('results-card').style.display = 'none';
+  });
+</script>
