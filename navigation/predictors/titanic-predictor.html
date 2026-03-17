@@ -249,46 +249,6 @@ permalink: /titanic-predictor
   </div>
 </div>
 
-  <!-- Results -->
-  <div id="results-card" class="card shadow mt-5" style="display: none;">
-    <div class="card-header">
-      <h5 class="mb-0">Results for <span id="result-name"></span></h5>
-    </div>
-    <div class="card-body">
-
-      <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-          <div class="card survival-card p-3">
-            <h6 class="text-success">Survival Probability</h6>
-            <h2 id="survive-pct" class="text-success fw-bold">0%</h2>
-            <div style="background:#e9ecef; border-radius:6px;">
-              <div id="survive-bar" class="result-bar" style="width:0%; background:#28a745;"></div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 mb-3">
-          <div class="card death-card p-3">
-            <h6 class="text-danger">Death Probability</h6>
-            <h2 id="die-pct" class="text-danger fw-bold">0%</h2>
-            <div style="background:#e9ecef; border-radius:6px;">
-              <div id="die-bar" class="result-bar" style="width:0%; background:#dc3545;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="verdict" class="alert text-center fw-bold fs-5 mb-4"></div>
-
-      <!-- Feature Weights -->
-      <h6 class="fw-bold mb-3">What factors mattered most?</h6>
-      <div id="feature-weights"></div>
-
-      <div class="text-center mt-4">
-        <button type="button" class="btn btn-outline-secondary" id="reset-btn">Try Again</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script type="module">
   import { predictSurvival, getFeatureWeights } from '{{site.baseurl}}/assets/js/api/titanic.js';
@@ -350,7 +310,7 @@ permalink: /titanic-predictor
 
     } catch (error) {
       console.error('Error:', error);
-      alert('Could not connect to Darshan-Flask backend. Make sure it is running on port 8587.');
+      alert('Could not connect to Darshan-Flask backend. Make sure it is running on port 5001.');
     }
   });
 

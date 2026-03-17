@@ -10,7 +10,7 @@
 
 // Darshan-Flask backend URI — separate from the main Datastream backend
 export const titanicURI = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-    ? "http://localhost:8587"
+    ? "http://localhost:5001"
     : "https://flask.opencodingsociety.com"; // update if Darshan-Flask is deployed to a different domain
 
 const titanicFetchOptions = {
