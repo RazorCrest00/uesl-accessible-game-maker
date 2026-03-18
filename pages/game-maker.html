@@ -883,6 +883,7 @@ permalink: /game-maker/
         <option value="space">🚀 Deep Space</option>
         <option value="sunset">🌅 Sunset</option>
         <option value="ocean">🌊 Ocean Sky</option>
+        <option value="maze">🌀 Maze</option>
       </select>
     </div>
     <div class="gi-section" style="margin-left:auto; font-size:0.78rem; color:#555; line-height:1.7;">
@@ -945,7 +946,8 @@ permalink: /game-maker/
           <b>🎮 Start</b> — click to set<br>
           <b>🗑️ Erase</b> — click to delete<br>
           <b>DEL</b> — delete selected<br>
-          <b>Ctrl+Z/Y</b> — undo / redo
+          <b>Ctrl+Z/Y</b> — undo / redo<br>
+          <b>🌀 Maze mode:</b> the spline corridors ARE the walls — place ⭐ stars inside the glowing paths!
         </div>
       </div>
 
@@ -1288,6 +1290,125 @@ function drawOceanBg(ctx) {
   ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(0, H*0.63, W, 4);
 }
 
+/* ── Spline Maze Background ─────────────────────────────────────────────── */
+const MAZE_CW = 64; // corridor stroke width in pixels
+const MAZE_CX = [65, 195, 325, 455, 585, 715];  // node x positions
+const MAZE_RY = [65, 165, 265, 365, 455];        // node y positions
+function _mn(c,r){return[MAZE_CX[c],MAZE_RY[r]];}
+
+/* Each entry is an ordered list of [x,y] waypoints forming one corridor
+   drawn as a single Catmull-Rom stroke.  All 30 grid nodes are reachable
+   from the start node (0,0) = top-left; exit is node (5,4) = bottom-right. */
+const MAZE_CORRIDORS=[
+  // ── Horizontal ──────────────────────────────────────────────────────────
+  [_mn(0,0),_mn(1,0)],
+  [_mn(3,0),_mn(4,0),_mn(5,0)],
+  [_mn(1,1),_mn(2,1)],
+  [_mn(4,1),_mn(5,1)],
+  [_mn(0,2),_mn(1,2),_mn(2,2)],
+  [_mn(3,2),_mn(4,2)],
+  [_mn(1,3),_mn(2,3)],
+  [_mn(3,3),_mn(4,3),_mn(5,3)],
+  [_mn(0,4),_mn(1,4)],
+  [_mn(2,4),_mn(3,4)],
+  [_mn(4,4),_mn(5,4)],
+  // ── Vertical ────────────────────────────────────────────────────────────
+  [_mn(0,0),_mn(0,1),_mn(0,2)],
+  [_mn(0,3),_mn(0,4)],
+  [_mn(1,0),_mn(1,1)],
+  [_mn(1,2),_mn(1,3),_mn(1,4)],
+  [_mn(2,0),_mn(2,1),_mn(2,2)],
+  [_mn(2,3),_mn(2,4)],
+  [_mn(3,0),_mn(3,1),_mn(3,2)],
+  [_mn(3,3),_mn(3,4)],
+  [_mn(4,0),_mn(4,1)],
+  [_mn(4,2),_mn(4,3)],
+  [_mn(5,0),_mn(5,1),_mn(5,2),_mn(5,3),_mn(5,4)],
+];
+
+/* Draw a Catmull-Rom spline through pts (call beginPath before this) */
+function catmullRomPath(ctx,pts){
+  if(pts.length<2)return;
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  if(pts.length===2){ctx.lineTo(pts[1][0],pts[1][1]);return;}
+  const p=[pts[0],...pts,pts[pts.length-1]];
+  for(let i=1;i<p.length-2;i++){
+    const[x0,y0]=p[i-1],[x1,y1]=p[i],[x2,y2]=p[i+1],[x3,y3]=p[i+2];
+    ctx.bezierCurveTo(x1+(x2-x0)/6,y1+(y2-y0)/6,x2-(x3-x1)/6,y2-(y3-y1)/6,x2,y2);
+  }
+}
+
+/* Lazy offscreen collision mask — white pixels = walkable corridor */
+let _mazePixels=null;
+function getMazePixels(){
+  if(_mazePixels)return _mazePixels;
+  const oc=document.createElement('canvas');
+  oc.width=W;oc.height=H;
+  const c=oc.getContext('2d');
+  c.fillStyle='#000';c.fillRect(0,0,W,H);
+  c.strokeStyle='#FFF';c.lineWidth=MAZE_CW;c.lineCap='round';c.lineJoin='round';
+  for(const cor of MAZE_CORRIDORS){c.beginPath();catmullRomPath(c,cor);c.stroke();}
+  _mazePixels=c.getImageData(0,0,W,H).data;
+  return _mazePixels;
+}
+function isMazeOpen(px,py){
+  const x=Math.round(px),y=Math.round(py);
+  if(x<0||x>=W||y<0||y>=H)return false;
+  return getMazePixels()[(y*W+x)*4]>64;
+}
+function resolveMazeCollision(ps,prevX,prevY){
+  const sz=ps.size,m=5;
+  function blocked(x,y){
+    return !isMazeOpen(x+m,y+m)||!isMazeOpen(x+sz-m,y+m)||
+           !isMazeOpen(x+m,y+sz-m)||!isMazeOpen(x+sz-m,y+sz-m);
+  }
+  if(!blocked(ps.x,ps.y))return;
+  if(!blocked(prevX,ps.y)){ps.x=prevX;ps.vx=0;return;}
+  if(!blocked(ps.x,prevY)){ps.y=prevY;ps.vy=0;return;}
+  ps.x=prevX;ps.y=prevY;ps.vx=0;ps.vy=0;
+}
+
+function drawMazeBg(ctx){
+  const t=Date.now()*0.001;
+  // Stone wall
+  ctx.fillStyle='#12100f';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(55,42,30,0.55)';ctx.lineWidth=0.8;
+  for(let gx=0;gx<W;gx+=32){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for(let gy=0;gy<H;gy+=28){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+  // Outer corridor glow
+  ctx.save();
+  ctx.shadowColor='#00e5cc';ctx.shadowBlur=26;
+  ctx.strokeStyle='rgba(0,200,180,0.15)';
+  ctx.lineWidth=MAZE_CW+20;ctx.lineCap='round';ctx.lineJoin='round';
+  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  ctx.restore();
+  // Corridor floor
+  ctx.strokeStyle='#0b2924';ctx.lineWidth=MAZE_CW;ctx.lineCap='round';ctx.lineJoin='round';
+  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  // Inner glow line (animated)
+  ctx.save();
+  ctx.shadowColor='#00ffcc';ctx.shadowBlur=12;
+  ctx.strokeStyle=`rgba(0,235,185,${0.4+0.2*Math.sin(t*1.8)})`;
+  ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
+  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  ctx.restore();
+  // EXIT marker — pulsing gold at node(5,4)
+  const ex=MAZE_CX[5],ey=MAZE_RY[4],pulse=0.85+0.25*Math.sin(t*2.5);
+  ctx.save();
+  ctx.shadowColor='#FFD700';ctx.shadowBlur=22*pulse;
+  ctx.fillStyle=`rgba(255,215,0,${0.75*pulse})`;
+  ctx.beginPath();ctx.arc(ex,ey,13*pulse,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#000';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('EXIT',ex,ey+1);
+  ctx.restore();
+  // START marker — soft green at node(0,0)
+  ctx.save();
+  ctx.shadowColor='#00FF88';ctx.shadowBlur=10;
+  ctx.fillStyle='rgba(0,255,136,0.45)';
+  ctx.beginPath();ctx.arc(MAZE_CX[0],MAZE_RY[0],9,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
 const BACKGROUNDS = [
   { id: 'dark',   label: '🌌 Dark Space',  type: 'color', color: '#0d0d1a' },
   { id: 'alien',  label: '👽 Alien Planet', type: 'image', src: '/images/gamebuilder/bg/alien_planet.jpg' },
@@ -1295,6 +1416,7 @@ const BACKGROUNDS = [
   { id: 'space',  label: '🚀 Deep Space',   type: 'drawn', draw: drawSpaceBg },
   { id: 'sunset', label: '🌅 Sunset',        type: 'drawn', draw: drawSunsetBg },
   { id: 'ocean',  label: '🌊 Ocean Sky',     type: 'drawn', draw: drawOceanBg },
+  { id: 'maze',   label: '🌀 Maze',   type: 'drawn', draw: drawMazeBg },
 ];
 
 const bgImages = {};
@@ -2122,10 +2244,15 @@ function loadPlayLevel(idx) {
 function buildPlayState(lv) {
   const lvClone    = JSON.parse(JSON.stringify(lv));
   const totalStars = lvClone.stars.length;
+  // For maze background always spawn at the maze start node so the player
+  // begins inside a corridor regardless of where the editor marker was placed.
+  const mazeMode = game.background === 'maze';
+  const spawnX = mazeMode ? MAZE_CX[0] - 20 : lvClone.playerStart.x - 20;
+  const spawnY = mazeMode ? MAZE_RY[0] - 20 : lvClone.playerStart.y - 20;
   return {
     player: {
-      x:    lvClone.playerStart.x - 20,
-      y:    lvClone.playerStart.y - 20,
+      x:    spawnX,
+      y:    spawnY,
       size: a11y.largeSprites ? 52 : 40,
       spd:  3.2, vx:0, vy:0,
     },
@@ -2139,8 +2266,7 @@ function buildPlayState(lv) {
     won:false, wonHandled:false,
     hitFlash:0, particles:[], scorePops:[],
     sbDir:0, sbMoving:false, keys:{},
-    spawnX: lvClone.playerStart.x - 20,
-    spawnY: lvClone.playerStart.y - 20,
+    spawnX, spawnY,
   };
 }
 
@@ -2265,8 +2391,10 @@ function updatePlay(st) {
     }
   }
 
+  const _px=ps.x,_py=ps.y;
   ps.x+=ps.vx; ps.y+=ps.vy;
   resolveBarriers(ps,[...st.barriers,...BORDER_WALLS]);
+  if(game.background==='maze') resolveMazeCollision(ps,_px,_py);
 
   // NPCs
   for (const n of st.npcs) {
