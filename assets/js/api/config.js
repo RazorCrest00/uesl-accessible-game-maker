@@ -6,9 +6,20 @@
 export const baseurl = "{{ site.baseurl }}";
 
 // ── Dev Mode ──────────────────────────────────────────────────────────────
-// Set to true while developing locally so OTP codes are displayed in the UI.
-// Set to false for production — codes will only arrive via email.
-export const DEV_MODE = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+// Always off by default. Only admins can enable via setDevMode(true).
+// State persists for the current browser session only (sessionStorage).
+export const DEV_MODE = false;
+export function getDevMode() { return sessionStorage.getItem('devMode') === 'true'; }
+export async function setDevMode(enabled, pythonURIParam) {
+    const uri = pythonURIParam || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+        ? 'http://localhost:8800' : 'https://flask.opencodingsociety.com');
+    const res = await fetch(`${uri}/api/id`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Not authenticated');
+    const data = await res.json();
+    const isAdmin = data.role === 'Admin' || (Array.isArray(data.roles) && data.roles.some(r => r.name === 'Admin'));
+    if (!isAdmin) throw new Error('Admin access required');
+    sessionStorage.setItem('devMode', enabled ? 'true' : 'false');
+}
 
 export var pythonURI;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {

@@ -263,8 +263,16 @@ function handleGoogleDispatch(response) {
 
 <p id="message" style="display:none;"></p>
 
+<!-- Admin-only dev mode toggle (hidden until admin role confirmed) -->
+<div id="devModeBar" style="display:none; margin-top:1.5rem; text-align:center;">
+    <button id="devModeBtn" onclick="toggleDevMode()"
+        style="background:transparent; border:1px dashed #4b5563; border-radius:6px; color:#6b7280; font-size:0.8rem; padding:0.35rem 0.9rem; cursor:pointer;">
+        Dev Mode: <span id="devModeLabel">OFF</span>
+    </button>
+</div>
+
 <script type="module">
-    import { pythonURI, DEV_MODE } from '{{site.baseurl}}/assets/js/api/config.js';
+    import { pythonURI, getDevMode, setDevMode } from '{{site.baseurl}}/assets/js/api/config.js';
 
     const GOOGLE_CLIENT_ID = "714327350398-q7jtd45cknoa0ijsgsg0d0iedk7epqdo.apps.googleusercontent.com";
 
@@ -310,7 +318,7 @@ function handleGoogleDispatch(response) {
                     document.getElementById('loginStep1').style.display = 'none';
                     document.getElementById('loginStep2').classList.add('show');
                     document.getElementById('otpEmailLabel').textContent = email;
-                    if (DEV_MODE && data.dev_otp) {
+                    if (getDevMode() && data.dev_otp) {
                         document.getElementById('loginDevOtpCode').textContent = data.dev_otp;
                         document.getElementById('loginDevOtpBox').style.display = '';
                     } else {
@@ -463,7 +471,7 @@ function handleGoogleDispatch(response) {
                 document.getElementById('suOtpTarget').textContent = email;
                 suEmail = email;
                 // Show OTP in UI only when running locally (dev mode)
-                if (DEV_MODE && data.dev_otp) {
+                if (getDevMode() && data.dev_otp) {
                     document.getElementById('suDevOtpCode').textContent = data.dev_otp;
                     document.getElementById('suDevOtpBox').style.display = '';
                 } else {
@@ -601,8 +609,35 @@ function handleGoogleDispatch(response) {
         }
     };
 
+    // ── Dev Mode Toggle (admin only) ───────────────────────────────────────────
+
+    async function initDevModeBar() {
+        try {
+            const res = await fetch(`${pythonURI}/api/id`, { credentials: 'include' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const isAdmin = data.role === 'Admin' ||
+                (Array.isArray(data.roles) && data.roles.some(r => r.name === 'Admin'));
+            if (!isAdmin) return;
+            const bar = document.getElementById('devModeBar');
+            bar.style.display = '';
+            document.getElementById('devModeLabel').textContent = getDevMode() ? 'ON' : 'OFF';
+        } catch (_) {}
+    }
+
+    window.toggleDevMode = async function() {
+        try {
+            const next = !getDevMode();
+            await setDevMode(next, pythonURI);
+            document.getElementById('devModeLabel').textContent = next ? 'ON' : 'OFF';
+        } catch (e) {
+            alert(e.message);
+        }
+    };
+
     // ── Init ───────────────────────────────────────────────────────────────────
 
     window.addEventListener('load', function() {
+        initDevModeBar();
     });
 </script>
