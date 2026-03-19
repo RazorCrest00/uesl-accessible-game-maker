@@ -152,6 +152,9 @@ function handleGoogleDispatch(response) {
                 Enter the 6-digit code sent to
                 <strong id="otpEmailLabel" style="color:#e2e8f0;"></strong>
             </p>
+            <div id="loginDevOtpBox" style="display:none; background:#1e3a5f; border:1px solid #3b6cb7; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#93c5fd;">
+                <strong>Dev mode</strong> — no SMTP configured. Your code is: <strong id="loginDevOtpCode" style="letter-spacing:0.15rem;"></strong>
+            </div>
 <div class="form-group">
                 <input type="text" id="otpCode" class="otp-input"
                        placeholder="000000" maxlength="6"
@@ -196,6 +199,9 @@ function handleGoogleDispatch(response) {
                 Enter the 6-digit code sent to
                 <strong id="suOtpTarget" style="color:#e2e8f0;"></strong>
             </p>
+            <div id="suDevOtpBox" style="display:none; background:#1e3a5f; border:1px solid #3b6cb7; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#93c5fd;">
+                <strong>Dev mode</strong> — no SMTP configured. Your code is: <strong id="suDevOtpCode" style="letter-spacing:0.15rem;"></strong>
+            </div>
 <div class="form-group">
                 <input type="text" id="suOtpCode" class="otp-input"
                        placeholder="000000" maxlength="6"
@@ -304,6 +310,12 @@ function handleGoogleDispatch(response) {
                     document.getElementById('loginStep1').style.display = 'none';
                     document.getElementById('loginStep2').classList.add('show');
                     document.getElementById('otpEmailLabel').textContent = email;
+                    if (data.dev_otp) {
+                        document.getElementById('loginDevOtpCode').textContent = data.dev_otp;
+                        document.getElementById('loginDevOtpBox').style.display = '';
+                    } else {
+                        document.getElementById('loginDevOtpBox').style.display = 'none';
+                    }
                     showMsg('otpMsg', data.message, 'info');
                 }
             } else {
