@@ -264,7 +264,7 @@ function handleGoogleDispatch(response) {
 <p id="message" style="display:none;"></p>
 
 <script type="module">
-    import { pythonURI } from '{{site.baseurl}}/assets/js/api/config.js';
+    import { pythonURI, DEV_MODE } from '{{site.baseurl}}/assets/js/api/config.js';
 
     const GOOGLE_CLIENT_ID = "714327350398-q7jtd45cknoa0ijsgsg0d0iedk7epqdo.apps.googleusercontent.com";
 
@@ -310,7 +310,7 @@ function handleGoogleDispatch(response) {
                     document.getElementById('loginStep1').style.display = 'none';
                     document.getElementById('loginStep2').classList.add('show');
                     document.getElementById('otpEmailLabel').textContent = email;
-                    if (data.dev_otp) {
+                    if (DEV_MODE && data.dev_otp) {
                         document.getElementById('loginDevOtpCode').textContent = data.dev_otp;
                         document.getElementById('loginDevOtpBox').style.display = '';
                     } else {
@@ -326,7 +326,7 @@ function handleGoogleDispatch(response) {
         } catch (e) {
             showMsg('loginMsg', 'Network error. Is the backend running?', 'error');
             btn.disabled = false;
-            btn.textContent = 'Send Verification Code';
+            btn.textContent = 'Sign In';
         }
     };
 
@@ -359,8 +359,9 @@ function handleGoogleDispatch(response) {
         document.getElementById('loginStep1').style.display = '';
         const btn = document.getElementById('sendOtpBtn');
         btn.disabled = false;
-        btn.textContent = 'Send Verification Code';
+        btn.textContent = 'Sign In';
         document.getElementById('otpCode').value = '';
+        document.getElementById('loginDevOtpBox').style.display = 'none';
     };
 
     // ── Google Dispatch ────────────────────────────────────────────────────────
@@ -454,14 +455,15 @@ function handleGoogleDispatch(response) {
             const res  = await fetch(`${pythonURI}/api/otp/signup/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email })
             });
             const data = await res.json();
             if (res.ok) {
                 document.getElementById('suOtpTarget').textContent = email;
                 suEmail = email;
-                // Dev mode: backend returns OTP directly when SMTP not configured
-                if (data.dev_otp) {
+                // Show OTP in UI only when running locally (dev mode)
+                if (DEV_MODE && data.dev_otp) {
                     document.getElementById('suDevOtpCode').textContent = data.dev_otp;
                     document.getElementById('suDevOtpBox').style.display = '';
                 } else {
@@ -488,6 +490,7 @@ function handleGoogleDispatch(response) {
             const res  = await fetch(`${pythonURI}/api/otp/signup/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email: suEmail, otp })
             });
             const data = await res.json();
@@ -568,6 +571,7 @@ function handleGoogleDispatch(response) {
             const res = await fetch(`${pythonURI}/api/user`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ name, uid, sid, school, email: suEmail, password, kasm_server_needed: kasm, auth_type: suIsGoogle ? 'google' : 'otp' })
             });
             if (res.ok) {
@@ -576,10 +580,13 @@ function handleGoogleDispatch(response) {
                 if (suIsGoogle && suGoogleResponse) {
                     setTimeout(() => window.handleGoogleLogin(suGoogleResponse), 800);
                 } else {
+                    // Pre-fill login form and redirect after a brief delay
                     setTimeout(() => {
+                        document.getElementById('loginEmail').value = suEmail;
                         document.getElementById('signupCard').classList.remove('show');
                         suShowStep(1);
-                    }, 2000);
+                        showMsg('loginMsg', 'Account created! Enter your password to sign in.', 'success');
+                    }, 1500);
                 }
             } else {
                 const data = await res.json();

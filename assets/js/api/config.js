@@ -5,6 +5,11 @@
 
 export const baseurl = "{{ site.baseurl }}";
 
+// ── Dev Mode ──────────────────────────────────────────────────────────────
+// Set to true while developing locally so OTP codes are displayed in the UI.
+// Set to false for production — codes will only arrive via email.
+export const DEV_MODE = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+
 export var pythonURI;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
     pythonURI = "http://localhost:8800";  // Same URI for localhost or 127.0.0.1
