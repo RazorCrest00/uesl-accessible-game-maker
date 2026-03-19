@@ -306,6 +306,73 @@ permalink: /game-maker/
 }
 #gm-hint-box b { color: #FFD700; }
 
+/* ─── Code Panel ────────────────────────────────────────────────────────── */
+#gm-code-panel {
+  background: #0a0a10;
+  border: 1.5px solid #2a2a40;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+#gm-code-panel-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px; background: #141428;
+  border-bottom: 1px solid #1e1e30; cursor: pointer; user-select: none;
+}
+#gm-code-panel-hdr .cp-title {
+  font-size: 0.78rem; color: #aabbff; font-weight: bold;
+  letter-spacing: 0.06em; font-family: 'Courier New', monospace;
+}
+#gm-code-panel-hdr .cp-dots { display: flex; gap: 5px; }
+#gm-code-panel-hdr .cp-dots span {
+  width: 10px; height: 10px; border-radius: 50%; display: block;
+}
+#gm-code-panel-hdr .cp-chevron { font-size: 0.7rem; color: #445; transition: transform 0.2s; }
+#gm-code-panel-hdr.open .cp-chevron { transform: rotate(180deg); }
+#gm-code-body { display: none; }
+#gm-code-body.open { display: block; }
+.cp-line-wrap {
+  display: flex; font-family: 'Courier New', monospace;
+  font-size: 0.8rem; line-height: 1.65;
+}
+#gm-code-nums {
+  padding: 10px 8px 10px 10px; min-width: 28px;
+  color: #334; text-align: right; user-select: none;
+  background: #0d0d16; border-right: 1px solid #1a1a28;
+}
+#gm-code-editor {
+  flex: 1; padding: 10px 12px; background: #0a0a10;
+  color: #c8d0ff; border: none; outline: none; resize: none;
+  font-family: 'Courier New', monospace; font-size: 0.8rem;
+  line-height: 1.65; min-height: 112px; box-sizing: border-box; tab-size: 2;
+  caret-color: #FFD700;
+}
+#gm-code-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 12px; background: #0d0d16; border-top: 1px solid #1a1a28;
+}
+#gm-code-status { font-size: 0.7rem; color: #445; font-family: 'Courier New', monospace; }
+#gm-code-status.ok  { color: #00CC66; }
+#gm-code-status.err { color: #FF6666; }
+#gm-code-apply {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid #4455bb;
+  background: #1a1a40; color: #aabbff; font-size: 0.72rem; font-weight: bold;
+  cursor: pointer; transition: all 0.15s; font-family: 'Courier New', monospace;
+}
+#gm-code-apply:hover { background: #2a2a60; border-color: #88aaff; color: #fff; }
+
+/* ─── Play Controls (pause / resume / stop) ─────────────────────────────── */
+#gm-play-controls { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.gm-pctrl {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid #445; background: #1a1a3e; color: #ccc;
+  font-size: 1rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: all 0.15s;
+}
+.gm-pctrl:hover { background: #2a2a5a; border-color: #88aaff; color: #fff; }
+.gm-pctrl.lit  { background: #FFD700; color: #000; border-color: #FFD700; }
+.gm-pctrl.stop-lit { background: #ff4444; color: #fff; border-color: #ff4444; }
+
 /* ─── Play Mode ─────────────────────────────────────────────────────────── */
 #gm-play-top {
   display: flex;
@@ -931,6 +998,29 @@ permalink: /game-maker/
         <canvas id="gm-editor-canvas" width="800" height="520"
           aria-label="Game editor canvas — use tools on the left to build your level"></canvas>
         <div id="gm-status-bar">👋 Welcome! Pick a tool and start building. Hit ▶ Play when ready!</div>
+
+        <!-- Code Snippet Panel -->
+        <div id="gm-code-panel">
+          <div id="gm-code-panel-hdr">
+            <div class="cp-dots">
+              <span style="background:#ff5f57"></span>
+              <span style="background:#febc2e"></span>
+              <span style="background:#28c840"></span>
+            </div>
+            <span class="cp-title">&lt;/&gt; &nbsp;game_config.js</span>
+            <span class="cp-chevron">▼</span>
+          </div>
+          <div id="gm-code-body">
+            <div class="cp-line-wrap">
+              <div id="gm-code-nums"></div>
+              <textarea id="gm-code-editor" spellcheck="false"></textarea>
+            </div>
+            <div id="gm-code-footer">
+              <span id="gm-code-status">ready</span>
+              <button id="gm-code-apply">▶ Apply</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Right: Properties + Hints -->
@@ -964,6 +1054,11 @@ permalink: /game-maker/
       <div id="gm-play-game-info">
         <h2 id="gm-play-title">My Awesome Game</h2>
         <span id="gm-play-level-info">Level 1 of 1</span>
+      </div>
+      <div id="gm-play-controls">
+        <button class="gm-pctrl lit" id="gm-ctrl-play"  title="Play">▶</button>
+        <button class="gm-pctrl"     id="gm-ctrl-pause" title="Pause">⏸</button>
+        <button class="gm-pctrl"     id="gm-ctrl-stop"  title="Reset level">⏹</button>
       </div>
     </div>
 
@@ -1421,6 +1516,113 @@ const BACKGROUNDS = [
   { id: 'ocean',  label: '🌊 Ocean Sky',     type: 'drawn', draw: drawOceanBg },
   { id: 'maze',   label: '🌀 Maze',   type: 'drawn', draw: drawMazeBg },
 ];
+
+/* ── Game Config (editable via code panel) ──────────────────────────────── */
+const gameConfig = {
+  playerSpeed: 3.2,
+  npcSpeed:    1.2,
+  playerSize:  40,
+  starRadius:  14,
+};
+
+/* ── Code Panel ─────────────────────────────────────────────────────────── */
+function codePanelSnippet() {
+  return [
+    '// ✏️  Edit values then press  ▶ Apply',
+    '',
+    `playerSpeed = ${gameConfig.playerSpeed};    // how fast the player moves`,
+    `npcSpeed    = ${gameConfig.npcSpeed};    // how fast NPCs move`,
+    `playerSize  = ${gameConfig.playerSize};      // player hitbox size (px)`,
+    `starRadius  = ${gameConfig.starRadius};      // star collect distance (px)`,
+  ].join('\n');
+}
+
+function initCodePanel() {
+  const ta = document.getElementById('gm-code-editor');
+  if (!ta) return;
+  ta.value = codePanelSnippet();
+  syncCodeNums();
+}
+
+function toggleCodePanel() {
+  const hdr  = document.getElementById('gm-code-panel-hdr');
+  const body = document.getElementById('gm-code-body');
+  const open = body.classList.toggle('open');
+  hdr.classList.toggle('open', open);
+  if (open) syncCodeNums();
+}
+
+function syncCodeNums() {
+  const ta   = document.getElementById('gm-code-editor');
+  const nums = document.getElementById('gm-code-nums');
+  if (!ta || !nums) return;
+  const lines = ta.value.split('\n').length;
+  nums.innerHTML = Array.from({length: lines}, (_,i) => i+1).join('<br>');
+}
+
+function codeEditorKey(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target, s = ta.selectionStart;
+    ta.value = ta.value.slice(0,s) + '  ' + ta.value.slice(ta.selectionEnd);
+    ta.selectionStart = ta.selectionEnd = s + 2;
+    syncCodeNums();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') applyCodePanel();
+}
+
+function applyCodePanel() {
+  const ta  = document.getElementById('gm-code-editor');
+  const st  = document.getElementById('gm-code-status');
+  if (!ta) return;
+  try {
+    const changed = {};
+    for (const line of ta.value.split('\n')) {
+      const clean = line.replace(/\/\/.*$/, '').trim();
+      if (!clean) continue;
+      const m = clean.match(/^(\w+)\s*=\s*([\d.]+)/);
+      if (m) changed[m[1]] = parseFloat(m[2]);
+    }
+    const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+    if (changed.playerSpeed !== undefined) gameConfig.playerSpeed = clamp(changed.playerSpeed, 0.5, 15);
+    if (changed.npcSpeed    !== undefined) gameConfig.npcSpeed    = clamp(changed.npcSpeed,    0.1, 10);
+    if (changed.playerSize  !== undefined) gameConfig.playerSize  = clamp(changed.playerSize,  16,  80);
+    if (changed.starRadius  !== undefined) gameConfig.starRadius  = clamp(changed.starRadius,   6,  50);
+    // Apply live if game is running
+    if (playState) {
+      playState.player.spd  = gameConfig.playerSpeed;
+      playState.player.size = gameConfig.playerSize;
+      for (const n of playState.npcs) n.speed = gameConfig.npcSpeed;
+    }
+    ta.value = codePanelSnippet();
+    syncCodeNums();
+    st.textContent = '✓ applied'; st.className = 'ok';
+    setTimeout(() => { st.textContent = 'ready'; st.className = ''; }, 1800);
+  } catch(e) {
+    st.textContent = '✗ ' + e.message; st.className = 'err';
+  }
+}
+
+/* ── Pause / Resume / Stop ──────────────────────────────────────────────── */
+function pauseGame() {
+  if (!playState) return;
+  playState.paused = true;
+  _syncPlayCtrl();
+}
+function resumeGame() {
+  if (!playState) return;
+  playState.paused = false;
+  _syncPlayCtrl();
+}
+function stopGame() {
+  loadPlayLevel(playLevelIdx); // reset level to beginning
+  _syncPlayCtrl();
+}
+function _syncPlayCtrl() {
+  const paused = !!(playState && playState.paused);
+  document.getElementById('gm-ctrl-play') ?.classList.toggle('lit',  !paused);
+  document.getElementById('gm-ctrl-pause')?.classList.toggle('lit',   paused);
+}
 
 const bgImages = {};
 function preloadBgImages() {
@@ -2256,8 +2458,8 @@ function buildPlayState(lv) {
     player: {
       x:    spawnX,
       y:    spawnY,
-      size: a11y.largeSprites ? 52 : 40,
-      spd:  3.2, vx:0, vy:0,
+      size: a11y.largeSprites ? 52 : gameConfig.playerSize,
+      spd:  gameConfig.playerSpeed, vx:0, vy:0,
     },
     barriers:   lvClone.barriers,
     stars:      lvClone.stars.map(s=>({...s, collected:false})),
@@ -2580,6 +2782,18 @@ function drawPlay(st) {
     ctx.fillText('(A popup will appear in a moment…)', W/2, H/2 + 36);
     ctx.globalAlpha=1;
   }
+
+  // Paused overlay
+  if (st.paused) {
+    ctx.fillStyle='rgba(0,0,0,0.58)'; ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='#aabbff'; ctx.shadowBlur=30;
+    ctx.font=`bold ${LG?52:42}px Arial`; ctx.fillStyle='#fff';
+    ctx.fillText('⏸  PAUSED', W/2, H/2 - 18);
+    ctx.shadowBlur=0;
+    ctx.font=`${LG?20:16}px Arial`; ctx.fillStyle='rgba(180,190,255,0.75)';
+    ctx.fillText('press  ▶  to resume', W/2, H/2 + 30);
+  }
 }
 
 function drawGuide(ctx,ps,star) {
@@ -2607,7 +2821,7 @@ function drawPBadge(ctx,text,x,y,bg,font) {
 
 function playLoop() {
   if (!playState) return;
-  updatePlay(playState);
+  if (!playState.paused) updatePlay(playState);
   drawPlay(playState);
   playRAF=requestAnimationFrame(playLoop);
 }
@@ -2830,6 +3044,7 @@ document.querySelectorAll('.gm-tab').forEach(btn => {
     if (mode === 'play') {
       if (!startPlay()) return;
       startMusic();
+      _syncPlayCtrl();
     } else {
       if (playRAF) { cancelAnimationFrame(playRAF); playRAF=null; }
       stopMusic();
@@ -2865,6 +3080,17 @@ function goBackToDesign() {
   renderEditor();
 }
 document.getElementById('gm-back-btn').addEventListener('click', goBackToDesign);
+
+// Pause / Resume / Stop controls
+document.getElementById('gm-ctrl-play') .addEventListener('click', resumeGame);
+document.getElementById('gm-ctrl-pause').addEventListener('click', pauseGame);
+document.getElementById('gm-ctrl-stop') .addEventListener('click', stopGame);
+
+// Code panel
+document.getElementById('gm-code-panel-hdr').addEventListener('click', toggleCodePanel);
+document.getElementById('gm-code-apply').addEventListener('click', applyCodePanel);
+document.getElementById('gm-code-editor').addEventListener('input', syncCodeNums);
+document.getElementById('gm-code-editor').addEventListener('keydown', codeEditorKey);
 
 // Level complete overlay buttons
 document.getElementById('gm-next-level-btn').addEventListener('click', () => {
@@ -3334,6 +3560,7 @@ preloadBgImages();
 loadStarterLevel();
 initGameInfoUI();
 initBgPicker();
+initCodePanel();
 initDpad();
 initVoice();
 saveHistory();
