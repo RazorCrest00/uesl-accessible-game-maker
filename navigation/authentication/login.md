@@ -120,7 +120,7 @@ function handleGoogleDispatch(response) {
         <!-- Step 1: credentials -->
         <div id="loginStep1">
             <div class="form-group">
-                <input type="email" id="loginEmail" placeholder="Email address" autocomplete="email">
+                <input type="text" id="loginUid" placeholder="User ID" autocomplete="username">
             </div>
             <div class="form-group">
                 <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
@@ -291,10 +291,10 @@ function handleGoogleDispatch(response) {
     // ── OTP Login ──────────────────────────────────────────────────────────────
 
     window.sendOtp = async function() {
-        const email    = document.getElementById('loginEmail').value.trim();
+        const uid      = document.getElementById('loginUid').value.trim();
         const password = document.getElementById('loginPassword').value;
-        if (!email || !password) {
-            showMsg('loginMsg', 'Please enter your email and password.', 'error');
+        if (!uid || !password) {
+            showMsg('loginMsg', 'Please enter your User ID and password.', 'error');
             return;
         }
         const btn = document.getElementById('sendOtpBtn');
@@ -305,7 +305,7 @@ function handleGoogleDispatch(response) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ uid, password })
             });
             const data = await res.json();
             if (res.ok) {
@@ -317,8 +317,13 @@ function handleGoogleDispatch(response) {
                     // 2FA enabled — show OTP step
                     document.getElementById('loginStep1').style.display = 'none';
                     document.getElementById('loginStep2').classList.add('show');
+<<<<<<< HEAD
                     document.getElementById('otpEmailLabel').textContent = email;
                     if (getDevMode() && data.dev_otp) {
+=======
+                    document.getElementById('otpEmailLabel').textContent = 'your registered email';
+                    if (DEV_MODE && data.dev_otp) {
+>>>>>>> 3cee90a (Changefield)
                         document.getElementById('loginDevOtpCode').textContent = data.dev_otp;
                         document.getElementById('loginDevOtpBox').style.display = '';
                     } else {
@@ -339,8 +344,8 @@ function handleGoogleDispatch(response) {
     };
 
     window.verifyOtp = async function() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const otp   = document.getElementById('otpCode').value.trim();
+        const uid = document.getElementById('loginUid').value.trim();
+        const otp = document.getElementById('otpCode').value.trim();
         if (!otp) { showMsg('otpMsg', 'Enter the verification code.', 'error'); return; }
         showMsg('otpMsg', 'Verifying...', 'info');
         try {
@@ -348,7 +353,7 @@ function handleGoogleDispatch(response) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email, otp })
+                body: JSON.stringify({ uid, otp })
             });
             const data = await res.json();
             if (res.ok) {
@@ -590,10 +595,9 @@ function handleGoogleDispatch(response) {
                 } else {
                     // Pre-fill login form and redirect after a brief delay
                     setTimeout(() => {
-                        document.getElementById('loginEmail').value = suEmail;
                         document.getElementById('signupCard').classList.remove('show');
                         suShowStep(1);
-                        showMsg('loginMsg', 'Account created! Enter your password to sign in.', 'success');
+                        showMsg('loginMsg', 'Account created! Enter your User ID and password to sign in.', 'success');
                     }, 1500);
                 }
             } else {
