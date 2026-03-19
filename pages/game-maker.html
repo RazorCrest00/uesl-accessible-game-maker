@@ -289,6 +289,18 @@ permalink: /game-maker/
 .gm-ej { font-size:1.2rem; padding:4px; border:2px solid #333; border-radius:6px; background:#111; cursor:pointer; }
 .gm-ej:hover { border-color:#888; }
 .gm-ej.active { border-color:#FFD700; }
+/* Wall color swatches */
+.gm-color-swatches { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:6px; }
+.gm-color-swatch {
+  width:22px; height:22px; border-radius:5px; cursor:pointer;
+  border:2px solid transparent; transition:transform 0.1s, border-color 0.1s;
+  flex-shrink:0;
+}
+.gm-color-swatch:hover { transform:scale(1.18); border-color:rgba(255,255,255,0.5); }
+.gm-color-swatch.active { border-color:#FFD700; box-shadow:0 0 0 2px rgba(255,215,0,0.4); transform:scale(1.18); }
+.gm-color-custom-row { display:flex; align-items:center; gap:6px; margin-top:4px; }
+.gm-color-custom-row label { font-size:0.72rem; color:#888; white-space:nowrap; }
+.gm-color-custom-row input[type="color"] { width:36px; height:26px; border:1px solid #444; border-radius:5px; cursor:pointer; background:#111; padding:1px 2px; }
 .gm-del-btn {
   width:100%; padding:7px; border:1px solid #662222; border-radius:6px;
   background:#3a1010; color:#ff9999; font-size:0.82rem; cursor:pointer;
@@ -1725,7 +1737,12 @@ function syncBgActive() {
   );
 }
 
-const WALL_COLORS = ['#3355BB','#CC4400','#005533','#882299','#886600','#226677','#444444','#FF6699'];
+const WALL_COLORS = [
+  '#3355BB','#1a6bcc','#0e9dd9','#00b8a9',
+  '#005533','#2d8b4e','#88b800','#e6c200',
+  '#CC4400','#e63946','#c9184a','#882299',
+  '#6a0572','#226677','#444444','#FF6699',
+];
 
 /* ═══════════════════════════════════════════════════════════════════════════
    GAME DATA MODEL
@@ -2243,9 +2260,22 @@ function bindHeartTool() {
 }
 
 function wallHTML(b) {
-  const c=b?b.col:editorState.wallColor, l=b?b.label||'':editorState.wallLabel||'';
+  const currentCol = b ? (b.col||WALL_COLORS[0]) : editorState.wallColor;
+  const l = b ? b.label||'' : editorState.wallLabel||'';
+  const swatches = WALL_COLORS.map(c =>
+    `<div class="gm-color-swatch${c===currentCol?' active':''}"
+          data-col="${c}" style="background:${c};" title="${c}"></div>`
+  ).join('');
   return `
-    <div class="gm-pr"><label>Color</label><input type="color" id="pp-wc" value="${c}"></div>
+    <div class="gm-pr">
+      <label>Wall Color</label>
+      <div class="gm-color-swatches" id="pp-swatches">${swatches}</div>
+      <div class="gm-color-custom-row">
+        <label>Custom:</label>
+        <input type="color" id="pp-wc" value="${currentCol}">
+        <span id="pp-col-preview" style="flex:1;height:22px;border-radius:5px;background:${currentCol};border:1px solid #444;"></span>
+      </div>
+    </div>
     <div class="gm-pr"><label>Label / Arrow</label>
       <select id="pp-wl">
         <option value="">— none —</option>
@@ -2257,13 +2287,49 @@ function wallHTML(b) {
       </select></div>
     ${b?`<button class="gm-del-btn" id="pp-del">🗑 Delete Wall</button>`:''}`;
 }
+
 function bindWall(b) {
-  const wc=document.getElementById('pp-wc'), wl=document.getElementById('pp-wl');
+  const wc       = document.getElementById('pp-wc');
+  const wl       = document.getElementById('pp-wl');
+  const preview  = document.getElementById('pp-col-preview');
+  const swatches = document.getElementById('pp-swatches');
   if (!wc) return;
-  wc.addEventListener('input',()=>{ editorState.wallColor=wc.value; if(b){b.col=wc.value; renderEditor();} });
-  wl.addEventListener('change',()=>{ editorState.wallLabel=wl.value; if(b){b.label=wl.value; saveHistory(); renderEditor();} });
-  const del=document.getElementById('pp-del');
-  if (del) del.onclick=()=>{ const lv=currentLevel(); lv.barriers=lv.barriers.filter(x=>x.id!==b.id); editorState.selectedId=null; saveHistory(); renderEditor(); updatePropsPanel(); };
+
+  function applyColor(col) {
+    editorState.wallColor = col;
+    wc.value = col;
+    if (preview) preview.style.background = col;
+    // update swatch active state
+    document.querySelectorAll('#pp-swatches .gm-color-swatch').forEach(el =>
+      el.classList.toggle('active', el.dataset.col === col)
+    );
+    if (b) { b.col = col; renderEditor(); }
+  }
+
+  // Preset swatch clicks
+  if (swatches) {
+    swatches.addEventListener('click', e => {
+      const sw = e.target.closest('.gm-color-swatch');
+      if (sw) { saveHistory(); applyColor(sw.dataset.col); }
+    });
+  }
+
+  // Custom color picker
+  wc.addEventListener('input', () => { applyColor(wc.value); });
+  wc.addEventListener('change', () => { saveHistory(); applyColor(wc.value); });
+
+  wl.addEventListener('change', () => {
+    editorState.wallLabel = wl.value;
+    if (b) { b.label = wl.value; saveHistory(); renderEditor(); }
+  });
+
+  const del = document.getElementById('pp-del');
+  if (del) del.onclick = () => {
+    const lv = currentLevel();
+    lv.barriers = lv.barriers.filter(x => x.id !== b.id);
+    editorState.selectedId = null;
+    saveHistory(); renderEditor(); updatePropsPanel();
+  };
 }
 
 function npcHTML(n) {
