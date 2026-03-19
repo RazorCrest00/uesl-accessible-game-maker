@@ -300,6 +300,33 @@ function handleGoogleDispatch(response) {
         const btn = document.getElementById('sendOtpBtn');
         btn.disabled = true;
         btn.textContent = 'Signing in...';
+
+        // Dev mode: skip OTP, authenticate directly
+        if (getDevMode()) {
+            try {
+                const res  = await fetch(`${pythonURI}/api/authenticate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ uid, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showMsg('loginMsg', '[Dev] Signed in — 2FA bypassed. Redirecting...', 'success');
+                    redirect();
+                } else {
+                    showMsg('loginMsg', data.message || 'Login failed.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                }
+            } catch (e) {
+                showMsg('loginMsg', 'Network error.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+            return;
+        }
+
         try {
             const res  = await fetch(`${pythonURI}/api/otp/send`, {
                 method: 'POST',
@@ -317,13 +344,8 @@ function handleGoogleDispatch(response) {
                     // 2FA enabled — show OTP step
                     document.getElementById('loginStep1').style.display = 'none';
                     document.getElementById('loginStep2').classList.add('show');
-<<<<<<< HEAD
-                    document.getElementById('otpEmailLabel').textContent = email;
-                    if (getDevMode() && data.dev_otp) {
-=======
                     document.getElementById('otpEmailLabel').textContent = 'your registered email';
-                    if (DEV_MODE && data.dev_otp) {
->>>>>>> 3cee90a (Changefield)
+                    if (getDevMode() && data.dev_otp) {
                         document.getElementById('loginDevOtpCode').textContent = data.dev_otp;
                         document.getElementById('loginDevOtpBox').style.display = '';
                     } else {
@@ -462,6 +484,15 @@ function handleGoogleDispatch(response) {
     window.suSendOtp = async function() {
         const email = document.getElementById('suEmail').value.trim();
         if (!email) { showMsg('suEmailMsg', 'Enter your email address.', 'error'); return; }
+
+        // Dev mode: skip OTP, go straight to account details
+        if (getDevMode()) {
+            suEmail = email;
+            showMsg('suEmailMsg', '[Dev] OTP skipped. Fill in your account details.', 'info');
+            setTimeout(() => suGoToDetails(email, ''), 600);
+            return;
+        }
+
         const btn = document.getElementById('suSendBtn');
         btn.disabled = true; btn.textContent = 'Sending...';
         try {

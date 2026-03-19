@@ -442,6 +442,25 @@ active_tab: dashboard
                     </div>
                 </div>
 
+                <!-- Admin Dev Mode -->
+                <div class="mt-6 p-4 rounded-lg bg-neutral-800 border border-amber-700 hidden" id="dev-mode-panel">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-medium text-amber-400">Developer Mode <span class="text-xs font-normal text-neutral-500">(Admin Only)</span></h3>
+                            <p class="text-sm text-neutral-400 mt-1">Bypasses OTP during signup and skips 2FA on all logins. Disable when done testing.</p>
+                        </div>
+                        <label class="flex items-center gap-3 cursor-pointer select-none">
+                            <span id="dev-mode-status-label" class="text-sm font-medium text-neutral-400">OFF</span>
+                            <div class="relative">
+                                <input type="checkbox" id="dev-mode-toggle" class="sr-only">
+                                <div class="block w-14 h-8 rounded-full bg-neutral-600"></div>
+                                <div id="dev-mode-dot" class="absolute left-1 top-1 w-6 h-6 bg-white rounded-full transition-transform"></div>
+                            </div>
+                        </label>
+                    </div>
+                    <p id="dev-mode-feedback" class="text-xs mt-3 text-amber-300 hidden"></p>
+                </div>
+
                 <div class="mt-6 p-4 rounded-lg bg-neutral-800 border border-neutral-700" id="ask-ai-panel">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-medium">Ask AI: Generate a Theme</h3>
@@ -1218,7 +1237,7 @@ active_tab: dashboard
 </div>
 
 <!-- FontAwesome for icons -->
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous">
 
 <!-- Required plugins -->
 <script src="https://cdn.jsdelivr.net/npm/preline/dist/index.js"></script>
@@ -1228,7 +1247,7 @@ active_tab: dashboard
 
 <!-- Your GitHub analytics JS integrated -->
 <script type="module">
-    import { javaURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js';
+    import { javaURI, pythonURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js';
 
     // Tab switcher code with underline animation
     const tabs = document.querySelectorAll(".tab-btn");
@@ -1285,6 +1304,59 @@ active_tab: dashboard
         } catch (e) {
             console.error('Error loading preferences on DOMContentLoaded', e);
         }
+    });
+</script>
+
+<script type="module">
+    import { pythonURI, fetchOptions, getDevMode, setDevMode } from '{{ site.baseurl }}/assets/js/api/config.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Admin check via Python backend
+        try {
+            const res = await fetch(`${pythonURI}/api/id`, fetchOptions);
+            if (!res.ok) return;
+            const data = await res.json();
+            const isAdmin = data.role === 'Admin' ||
+                (Array.isArray(data.roles) && data.roles.some(r => r.name === 'Admin'));
+            if (!isAdmin) return;
+        } catch (e) {
+            console.warn('Dev mode panel: admin check failed', e);
+            return;
+        }
+
+        const panel    = document.getElementById('dev-mode-panel');
+        const toggle   = document.getElementById('dev-mode-toggle');
+        const dot      = document.getElementById('dev-mode-dot');
+        const label    = document.getElementById('dev-mode-status-label');
+        const feedback = document.getElementById('dev-mode-feedback');
+        panel.classList.remove('hidden');
+
+        function applyState(on) {
+            toggle.checked = on;
+            dot.classList.toggle('translate-x-6', on);
+            label.textContent = on ? 'ON' : 'OFF';
+            label.classList.toggle('text-amber-400', on);
+            label.classList.toggle('text-neutral-400', !on);
+        }
+
+        applyState(getDevMode());
+
+        toggle.addEventListener('change', async function () {
+            const next = this.checked;
+            try {
+                await setDevMode(next, pythonURI);
+                applyState(next);
+                feedback.textContent = next
+                    ? 'Dev mode ON — OTP skipped for signup, 2FA bypassed for all logins.'
+                    : 'Dev mode OFF — normal authentication restored.';
+                feedback.classList.remove('hidden');
+                setTimeout(() => feedback.classList.add('hidden'), 4000);
+            } catch (e) {
+                applyState(!next);
+                feedback.textContent = 'Error: ' + e.message;
+                feedback.classList.remove('hidden');
+            }
+        });
     });
 </script>
 
