@@ -972,6 +972,7 @@ permalink: /game-maker/
         <button class="gm-tool-btn" data-tool="player"><span class="ti">🎮</span>Start</button>
         <button class="gm-tool-btn" data-tool="wall"><span class="ti">🧱</span>Wall</button>
         <button class="gm-tool-btn" data-tool="star"><span class="ti">⭐</span>Star</button>
+        <button class="gm-tool-btn" data-tool="heart"><span class="ti">❤️</span>Heart</button>
         <button class="gm-tool-btn" data-tool="npc"><span class="ti">👾</span>NPC</button>
         <button class="gm-tool-btn" data-tool="erase"><span class="ti">🗑️</span>Erase</button>
 
@@ -1035,6 +1036,7 @@ permalink: /game-maker/
           <b>🖱️ Select</b> — click &amp; drag<br>
           <b>🧱 Wall</b> — drag to draw<br>
           <b>⭐ Star</b> — click to place<br>
+          <b>❤️ Heart</b> — click to place (+1 HP pickup)<br>
           <b>👾 NPC</b> — click ×2 for path<br>
           <b>🎮 Start</b> — click to set<br>
           <b>🗑️ Erase</b> — click to delete<br>
@@ -1746,6 +1748,8 @@ function emptyLevel() {
     barriers:    [],
     stars:       [],
     npcs:        [],
+    hearts:      [],    // heart pickup positions
+    startHearts: 3,     // HP the player begins with (1-5)
   };
 }
 
@@ -1862,6 +1866,7 @@ function hitTest(cx, cy) {
   const lv = currentLevel();
   const R  = 16;
   for (const s of lv.stars)    if (Math.hypot(s.x-cx, s.y-cy) < R)  return { type:'star',   obj:s };
+  for (const h of (lv.hearts||[])) if (Math.hypot(h.x-cx, h.y-cy) < R)  return { type:'heart',  obj:h };
   for (const n of lv.npcs)     if (Math.hypot(n.x-cx, n.y-cy) < R+4) return { type:'npc',    obj:n };
   for (let i=lv.barriers.length-1; i>=0; i--) {
     const b=lv.barriers[i], bx=Math.min(b.x,b.x+b.w), by=Math.min(b.y,b.y+b.h), bw=Math.abs(b.w), bh=Math.abs(b.h);
@@ -1904,6 +1909,11 @@ function onEDown(e) {
 
   } else if (t === 'star') {
     lv.stars.push({ id:uid(), x:snap(x), y:snap(y) });
+    saveHistory();
+
+  } else if (t === 'heart') {
+    if (!lv.hearts) lv.hearts = [];
+    lv.hearts.push({ id:uid(), x:snap(x), y:snap(y) });
     saveHistory();
 
   } else if (t === 'npc') {
@@ -1977,6 +1987,7 @@ function eraseHit(hit) {
   const lv = currentLevel();
   if (hit.type==='barrier')     lv.barriers    = lv.barriers.filter(b=>b.id!==hit.obj.id);
   if (hit.type==='star')        lv.stars       = lv.stars.filter(s=>s.id!==hit.obj.id);
+  if (hit.type==='heart')       lv.hearts      = (lv.hearts||[]).filter(h=>h.id!==hit.obj.id);
   if (hit.type==='npc')         lv.npcs        = lv.npcs.filter(n=>n.id!==hit.obj.id);
   if (hit.type==='playerStart') lv.playerStart = { x:60, y:60 };
 }
@@ -2015,6 +2026,9 @@ function renderEditor() {
 
   // Stars
   for (const s of lv.stars) drawStarE(ctx, s.x, s.y, editorState.selectedId===s.id);
+
+  // Heart pickups
+  for (const h of (lv.hearts||[])) drawHeartE(ctx, h.x, h.y, editorState.selectedId===h.id);
 
   // NPCs
   for (const n of lv.npcs) drawNpcE(ctx, n, editorState.selectedId===n.id);
@@ -2088,6 +2102,13 @@ function drawStarE(ctx,x,y,sel) {
   if (sel) { ctx.strokeStyle='#FFD700'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2); ctx.stroke(); }
 }
 
+function drawHeartE(ctx,x,y,sel) {
+  ctx.shadowColor=sel?'#ff4466':'#cc2244'; ctx.shadowBlur=sel?18:10;
+  ctx.font='22px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('❤️',x,y); ctx.shadowBlur=0;
+  if (sel) { ctx.strokeStyle='#ff4466'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2); ctx.stroke(); }
+}
+
 function drawNpcE(ctx,n,sel) {
   ctx.strokeStyle=sel?'rgba(255,215,0,0.6)':'rgba(255,255,255,0.2)';
   ctx.lineWidth=2; ctx.setLineDash([6,4]);
@@ -2144,7 +2165,7 @@ function switchToLevel(idx) {
   renderEditor();
   updatePropsPanel();
   const lv = currentLevel();
-  setStatus(`Editing Level ${idx+1} — ${lv.stars.length} star${lv.stars.length!==1?'s':''}, ${lv.npcs.length} NPC${lv.npcs.length!==1?'s':''}, ${lv.barriers.length} wall${lv.barriers.length!==1?'s':''}.`);
+  const hc=(lv.hearts||[]).length; setStatus(`Editing Level ${idx+1} — ${lv.stars.length} star${lv.stars.length!==1?'s':''}, ${lv.npcs.length} NPC${lv.npcs.length!==1?'s':''}, ${lv.barriers.length} wall${lv.barriers.length!==1?'s':''}, ${hc} heart${hc!==1?'s':''} (${lv.startHearts??3} HP).`);
 }
 
 function addLevel() {
@@ -2178,19 +2199,47 @@ function updatePropsPanel() {
   if (selId!==null) {
     for (const b of lv.barriers) if (b.id===selId) { selObj=b; selType='barrier'; }
     for (const s of lv.stars)    if (s.id===selId) { selObj=s; selType='star'; }
+    for (const h of (lv.hearts||[])) if (h.id===selId) { selObj=h; selType='heart'; }
     for (const n of lv.npcs)     if (n.id===selId) { selObj=n; selType='npc'; }
   }
 
   if (t==='wall') { panel.innerHTML=wallHTML(null); bindWall(null); }
   else if (t==='npc') { panel.innerHTML=(editorState.npcPhase===1?`<p style="color:#FFD700;font-size:0.8rem;margin:0 0 8px;">Now click the canvas to set the patrol end point.</p>`:'') + npcHTML(null); bindNpc(null); }
+  else if (t==='heart') { panel.innerHTML=heartToolHTML(); bindHeartTool(); }
   else if (selObj && selType==='barrier') { panel.innerHTML=wallHTML(selObj); bindWall(selObj); }
   else if (selObj && selType==='npc')     { panel.innerHTML=npcHTML(selObj);  bindNpc(selObj); }
   else if (selObj && selType==='star') {
     panel.innerHTML=`<p style="color:#FFD700;margin:0 0 8px;">⭐ Star selected</p><button class="gm-del-btn" id="pp-del">🗑 Delete Star</button>`;
     document.getElementById('pp-del').onclick=()=>{ lv.stars=lv.stars.filter(s=>s.id!==selObj.id); editorState.selectedId=null; saveHistory(); renderEditor(); updatePropsPanel(); };
+  } else if (selObj && selType==='heart') {
+    panel.innerHTML=`<p style="color:#ff4466;margin:0 0 8px;">❤️ Heart pickup selected</p><button class="gm-del-btn" id="pp-del">🗑 Delete Heart</button>`;
+    document.getElementById('pp-del').onclick=()=>{ lv.hearts=(lv.hearts||[]).filter(h=>h.id!==selObj.id); editorState.selectedId=null; saveHistory(); renderEditor(); updatePropsPanel(); };
   } else {
     panel.innerHTML=`<p style="color:#555;font-size:0.8rem;margin:0;">Select an object or a tool to see options here.</p>`;
   }
+}
+
+function heartToolHTML() {
+  const lv = currentLevel();
+  const sh = lv.startHearts ?? 3;
+  return `
+    <p style="color:#ff4466;font-weight:bold;margin:0 0 10px;">❤️ Hearts</p>
+    <div class="gm-pr">
+      <label>Starting Hearts (1–5)</label>
+      <input type="range" id="pp-sh" min="1" max="5" value="${sh}" style="accent-color:#ff4466;">
+      <div class="rv" id="pp-sh-val" style="color:#ff4466;font-weight:bold;font-size:1rem;text-align:center;">${'❤️'.repeat(sh)}</div>
+    </div>
+    <p style="color:#777;font-size:0.72rem;margin:6px 0 0;">Click the canvas to place ❤️ heart pickups. Players collect them to gain +1 HP (max 5).</p>`;
+}
+function bindHeartTool() {
+  const sl = document.getElementById('pp-sh');
+  const vl = document.getElementById('pp-sh-val');
+  if (!sl) return;
+  sl.addEventListener('input', () => {
+    const v = parseInt(sl.value);
+    currentLevel().startHearts = v;
+    vl.textContent = '❤️'.repeat(v);
+  });
 }
 
 function wallHTML(b) {
@@ -2461,8 +2510,12 @@ function buildPlayState(lv) {
       size: a11y.largeSprites ? 52 : gameConfig.playerSize,
       spd:  gameConfig.playerSpeed, vx:0, vy:0,
     },
-    barriers:   lvClone.barriers,
-    stars:      lvClone.stars.map(s=>({...s, collected:false})),
+    barriers:      lvClone.barriers,
+    stars:         lvClone.stars.map(s=>({...s, collected:false})),
+    heartPickups:  (lvClone.hearts||[]).map(h=>({...h, collected:false})),
+    startHearts:   Math.min(5, Math.max(1, lvClone.startHearts ?? 3)),
+    currentHearts: Math.min(5, Math.max(1, lvClone.startHearts ?? 3)),
+    invincible:    0,
     npcs:       lvClone.npcs.map(n=>({
       ...n, cx:n.x, cy:n.y, size:36,
       path:[{x:n.x,y:n.y},{x:n.ex,y:n.ey}], pathIdx:0,
@@ -2608,12 +2661,20 @@ function updatePlay(st) {
     if (dist<3) { n.pathIdx=(n.pathIdx+1)%n.path.length; }
     else { n.cx+=(dx/dist)*ns; n.cy+=(dy/dist)*ns; }
 
-    if (!a11y.guidedMode) {
+    if (!a11y.guidedMode && st.invincible <= 0) {
       const pcx=ps.x+ps.size/2,pcy=ps.y+ps.size/2,ncx=n.cx+n.size/2,ncy=n.cy+n.size/2;
       if (Math.abs(pcx-ncx)<(ps.size+n.size)/2 && Math.abs(pcy-ncy)<(ps.size+n.size)/2) {
         sfxHit();
-        st.hitFlash=a11y.reduceMotion?1:28;
-        ps.x=st.spawnX; ps.y=st.spawnY;
+        st.currentHearts = Math.max(0, st.currentHearts - 1);
+        st.hitFlash = a11y.reduceMotion ? 1 : 36;
+        st.invincible = 90; // ~1.5s of invincibility frames
+        ps.x = st.spawnX; ps.y = st.spawnY;
+        if (st.currentHearts <= 0) {
+          st.currentHearts = st.startHearts;
+          st.scorePops.push({x:W/2,y:H/2-30,alpha:1,dy:-0.8,text:'💔 No hearts left! Respawning…'});
+        } else {
+          st.scorePops.push({x:ps.x+ps.size/2,y:ps.y-10,alpha:1,dy:-1.2,text:`-1 ❤️`});
+        }
       }
     }
   }
@@ -2643,10 +2704,28 @@ function updatePlay(st) {
     }
   }
 
+  // Heart pickup collection
+  const hpcx=ps.x+ps.size/2, hpcy=ps.y+ps.size/2;
+  for (const h of (st.heartPickups||[])) {
+    if (h.collected) continue;
+    if (Math.hypot(h.x-hpcx,h.y-hpcy) < ps.size*0.75) {
+      h.collected = true;
+      if (st.currentHearts < 5) {
+        st.currentHearts = Math.min(5, st.currentHearts + 1);
+        sfxCollect();
+        spawnParticles(st, h.x, h.y);
+        st.scorePops.push({x:h.x,y:h.y-10,alpha:1,dy:-1.2,text:'+1 ❤️'});
+      } else {
+        st.scorePops.push({x:h.x,y:h.y-10,alpha:1,dy:-1.2,text:'❤️ Full!'});
+      }
+    }
+  }
+
   // Particles
   for (let i=st.particles.length-1;i>=0;i--){const p=st.particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.life-=p.decay;if(p.life<=0)st.particles.splice(i,1);}
   for (let i=st.scorePops.length-1;i>=0;i--){const sp=st.scorePops[i];sp.y+=sp.dy;sp.alpha-=0.025;if(sp.alpha<=0)st.scorePops.splice(i,1);}
   if (st.hitFlash>0) st.hitFlash--;
+  if (st.invincible>0) st.invincible--;
 }
 
 /* ── Draw Play ─────────────────────────────────────────────────────────── */
@@ -2732,6 +2811,26 @@ function drawPlay(st) {
   }
 
   ctx.shadowBlur=0;
+
+  // Heart pickups on canvas
+  const hpSz = LG ? 28 : 22;
+  for (const h of (st.heartPickups||[])) {
+    if (h.collected) continue;
+    ctx.save();
+    ctx.shadowColor='#ff2244'; ctx.shadowBlur=a11y.reduceMotion?0:12;
+    ctx.font=`${hpSz}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('❤️', h.x, h.y);
+    ctx.restore();
+  }
+
+  // HUD — hearts row (top-right)
+  const hMax = st.startHearts ?? 3;
+  const hCur = st.currentHearts ?? hMax;
+  const heartSz = LG ? 24 : 20;
+  const heartStr = '❤️'.repeat(hCur) + (HC?'🖤':'🖤').repeat(Math.max(0, hMax - hCur));
+  ctx.font = `${heartSz}px Arial`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  // blink when invincible
+  if (st.invincible <= 0 || Math.floor(Date.now()/120)%2===0) ctx.fillText(heartStr, W - 32, 28);
 
   // HUD — score + badges
   ctx.fillStyle=HC?'#FFF':'#DDD'; ctx.font=`bold ${LG?22:18}px Arial`; ctx.textAlign='left'; ctx.textBaseline='top';
