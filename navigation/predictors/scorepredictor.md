@@ -102,7 +102,7 @@ sticky_rank: 1
     <footer class="footer-section text-center">
         <div class="row">
             <div class="col-lg-12">
-                <h5>Open Coding Society</h5>
+                <h5>SimpleGame</h5>
                 <p class="text-muted">
                     Helping students succeed in AP Computer Science Principles<br>
                     <small>This tool is designed to provide guidance and should be used alongside teacher feedback and official course materials.</small>

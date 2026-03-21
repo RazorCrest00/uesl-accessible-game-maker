@@ -1,6 +1,6 @@
 /**
  * OCS Analytics Tracker
- * Tracks user engagement on the Open Coding Society learning platform
+ * Tracks user engagement on the SimpleGame learning platform
  * 
  * Metrics:
  * - Time spent on page/lesson

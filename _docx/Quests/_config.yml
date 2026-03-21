@@ -4,7 +4,7 @@
 defaults:
   categories: ["Quests"]
   tags: ["quest", "curriculum"]
-  author: "Open Coding Society"
+  author: "SimpleGame"
 
 # File-specific overrides
 files:

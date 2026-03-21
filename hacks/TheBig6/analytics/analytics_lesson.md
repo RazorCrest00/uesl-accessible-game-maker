@@ -90,7 +90,7 @@ date: 2025-12-02
       <div class="cert-container">
         <h2 class="section-title">Overall Certificate</h2>
         <div class="certificates-grid">
-            <div class="cert-card cert-green"><span class="cert-badge">Verified</span><h3 class="cert-title">CS Portfolio Certificate</h3><div class="cert-org">Open Coding Society</div><div class="cert-date">December 2025</div><div class="cert-actions"><button class="btn btn-download" onclick="window.downloadCert('Computer Science Portfolio', 'Open Coding Society', 'December 2025')">⬇ Download</button><button class="btn btn-share" onclick="window.addToLinkedIn('CS Portfolio Certificate')">Add to LinkedIn</button></div></div>
+            <div class="cert-card cert-green"><span class="cert-badge">Verified</span><h3 class="cert-title">CS Portfolio Certificate</h3><div class="cert-org">SimpleGame</div><div class="cert-date">December 2025</div><div class="cert-actions"><button class="btn btn-download" onclick="window.downloadCert('Computer Science Portfolio', 'SimpleGame', 'December 2025')">⬇ Download</button><button class="btn btn-share" onclick="window.addToLinkedIn('CS Portfolio Certificate')">Add to LinkedIn</button></div></div>
         </div>
       </div>
       <canvas id="certCanvas" style="display: none;"></canvas>
@@ -180,7 +180,7 @@ window.addToLinkedIn = function(courseName) {
     const certId = 'CSPORTFOLIO-' + Date.now();
     const url = new URL('https://www.linkedin.com/profile/add');
     url.searchParams.append('name', courseName);
-    url.searchParams.append('organizationName', 'Open Coding Society');
+    url.searchParams.append('organizationName', 'SimpleGame');
     url.searchParams.append('issueYear', new Date().getFullYear());
     url.searchParams.append('issueMonth', new Date().getMonth() + 1);
     url.searchParams.append('certId', certId);

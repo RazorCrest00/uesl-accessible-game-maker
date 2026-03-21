@@ -278,9 +278,9 @@ layout: post
     <div>
       <div class="certificate-heading">
         <div class="certificate-emblem">
-          <img id="certificate-logo" src="{{ '/assets/images/ocs-logo.png' | relative_url }}" alt="Open Coding Society Logo">
+          <img id="certificate-logo" src="{{ '/assets/images/ocs-logo.png' | relative_url }}" alt="SimpleGame Logo">
         </div>
-        <div class="header-text">Open Coding Society</div>
+        <div class="header-text">SimpleGame</div>
         <div id="certificate-type-text" class="certify-text">Certificate of Completion</div>
         <div id="certificate-score-display" style="margin-top: 5px; font-size: 1.1rem; color: #4b5563;"></div>
         <div class="certificate-subtitle">Presented to</div>
@@ -318,7 +318,7 @@ layout: post
           <div class="signature-line"></div>
           <div class="signature-name">John Mortensen</div>
           <div class="signature-title">Course Instructor</div>
-          <div class="signature-subtitle">Open Coding Society</div>
+          <div class="signature-subtitle">SimpleGame</div>
         </div>
       </div>
 
@@ -1282,7 +1282,7 @@ layout: post
   function shareOnLinkedIn() {
     const profile = activeCertificateProfile;
     const certificateName = profile?.displayName || profile?.theme || document.getElementById('certificate-week-theme')?.textContent.trim() || 'Course Module Completion';
-    const courseName = profile?.courseName || document.getElementById('certificate-course-name')?.textContent.trim() || 'Open Coding Society';
+    const courseName = profile?.courseName || document.getElementById('certificate-course-name')?.textContent.trim() || 'SimpleGame';
     const studentName = document.getElementById('certificate-student-name')?.textContent.trim() || 'Learner';
     const issueDateText = document.getElementById('certificate-date')?.textContent.trim() || '';
     const goalFocus = profile?.goal || document.getElementById('certificate-skill-focus')?.textContent.trim() || certificateName;
@@ -1301,7 +1301,7 @@ layout: post
     const params = new URLSearchParams({
       startTask: 'CERTIFICATION_NAME',
       name: `${certificateName}`,
-      organizationName: 'Open Coding Society',
+      organizationName: 'SimpleGame',
       issueYear,
       issueMonth,
       description: `Awarded to ${studentName} for demonstrating ${goalFocus} during ${courseName}`,

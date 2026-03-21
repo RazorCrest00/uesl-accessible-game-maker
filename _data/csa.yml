@@ -193,7 +193,7 @@ Sprint4:
   end: 16
 Sprint5:
   title: AP Java FRQ Topics & OCS Platform Enhancement
-  description: In this Sprint, students will master AP CSA Java requirements by teaching a selected topic to their peers and building or improving features on the Open Coding Society (OCS) platform. Required topics include Methods & Control Structures, Arrays, ArrayLists, Classes, 2D Arrays, Searching, and Sorting. Each student will deliver a lesson on their chosen topic, complete coding hacks from other groups' topics, and contribute to OCS features for student tracking and feedback. Teaching and platform work are integrated, with all students demonstrating mastery through both instruction and hands-on development.
+  description: In this Sprint, students will master AP CSA Java requirements by teaching a selected topic to their peers and building or improving features on the SimpleGame (OCS) platform. Required topics include Methods & Control Structures, Arrays, ArrayLists, Classes, 2D Arrays, Searching, and Sorting. Each student will deliver a lesson on their chosen topic, complete coding hacks from other groups' topics, and contribute to OCS features for student tracking and feedback. Teaching and platform work are integrated, with all students demonstrating mastery through both instruction and hands-on development.
   start: 17
   end: 19
   17:
@@ -268,6 +268,6 @@ Sprint8:
   end: 33
 Sprint9:
   title: Passion Project v2.0 and N@tM
-  description: Wrap up your preferred project and data structures. There will be an opportunity to contribute and be published to the Open Coding Society. If your project is selected, then you will receive a high 'A' on the final project.
+  description: Wrap up your preferred project and data structures. There will be an opportunity to contribute and be published to the SimpleGame. If your project is selected, then you will receive a high 'A' on the final project.
   start: 34
   end: 37

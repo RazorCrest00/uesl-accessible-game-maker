@@ -1,6 +1,6 @@
 /**
  * OCS Analytics Dashboard Module
- * Displays analytics and engagement metrics for the Open Coding Society
+ * Displays analytics and engagement metrics for the SimpleGame
  */
 
 export async function initOCSAnalyticsDashboard(pythonURI, javaURI, fetchOptions) {
@@ -96,7 +96,7 @@ export async function initOCSAnalyticsDashboard(pythonURI, javaURI, fetchOptions
             <div class="space-y-6">
                 <!-- Header -->
                 <div>
-                    <h2 class="text-2xl font-bold text-white mb-2">Open Coding Society Analytics</h2>
+                    <h2 class="text-2xl font-bold text-white mb-2">SimpleGame Analytics</h2>
                     <p class="text-neutral-400">Your engagement metrics across all quests and modules</p>
                 </div>
 

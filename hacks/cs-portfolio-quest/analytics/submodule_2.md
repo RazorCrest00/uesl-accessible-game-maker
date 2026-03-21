@@ -300,50 +300,50 @@ microblog: true
     <div class="cert-card cert-orange">
       <span class="cert-badge">Verified</span>
       <h3 class="cert-title">Frontend Development</h3>
-      <div class="cert-org">Open Coding Society</div>
+      <div class="cert-org">SimpleGame</div>
       <div class="cert-date">November 2025</div>
       <div class="cert-actions">
-        <button class="btn btn-download" onclick="downloadCert('Frontend Development', 'Open Coding Society', 'November 2025')">⬇ Download</button>
+        <button class="btn btn-download" onclick="downloadCert('Frontend Development', 'SimpleGame', 'November 2025')">⬇ Download</button>
       </div>
     </div>
 
     <div class="cert-card cert-red">
       <span class="cert-badge">Verified</span>
       <h3 class="cert-title">Backend Development</h3>
-      <div class="cert-org">Open Coding Society</div>
+      <div class="cert-org">SimpleGame</div>
       <div class="cert-date">November 2025</div>
       <div class="cert-actions">
-        <button class="btn btn-download" onclick="downloadCert('Backend Development', 'Open Coding Society', 'November 2025')">⬇ Download</button>
+        <button class="btn btn-download" onclick="downloadCert('Backend Development', 'SimpleGame', 'November 2025')">⬇ Download</button>
       </div>
     </div>
 
     <div class="cert-card cert-purple">
       <span class="cert-badge">Verified</span>
       <h3 class="cert-title">Data Visualization</h3>
-      <div class="cert-org">Open Coding Society</div>
+      <div class="cert-org">SimpleGame</div>
       <div class="cert-date">November 2025</div>
       <div class="cert-actions">
-        <button class="btn btn-download" onclick="downloadCert('Data Visualization', 'Open Coding Society', 'November 2025')">⬇ Download</button>
+        <button class="btn btn-download" onclick="downloadCert('Data Visualization', 'SimpleGame', 'November 2025')">⬇ Download</button>
       </div>
     </div>
 
     <div class="cert-card cert-teal">
       <span class="cert-badge">Verified</span>
       <h3 class="cert-title">Resume Building</h3>
-      <div class="cert-org">Open Coding Society</div>
+      <div class="cert-org">SimpleGame</div>
       <div class="cert-date">November 2025</div>
       <div class="cert-actions">
-        <button class="btn btn-download" onclick="downloadCert('Resume Building', 'Open Coding Society', 'November 2025')">⬇ Download</button>
+        <button class="btn btn-download" onclick="downloadCert('Resume Building', 'SimpleGame', 'November 2025')">⬇ Download</button>
       </div>
     </div>
 
     <div class="cert-card cert-yellow">
       <span class="cert-badge">Verified</span>
       <h3 class="cert-title">AI Usage</h3>
-      <div class="cert-org">Open Coding Society</div>
+      <div class="cert-org">SimpleGame</div>
       <div class="cert-date">November 2025</div>
       <div class="cert-actions">
-        <button class="btn btn-download" onclick="downloadCert('AI Usage', 'Open Coding Society', 'November 2025')">⬇ Download</button>
+        <button class="btn btn-download" onclick="downloadCert('AI Usage', 'SimpleGame', 'November 2025')">⬇ Download</button>
       </div>
     </div>
   </div>
@@ -352,10 +352,10 @@ microblog: true
     <div class="cert-card cert-green" >
       <span class="cert-badge">Verified</span>
       <h3 class="cert-title">Overall CS Portfolio Certificate</h3>
-      <div class="cert-org">Open Coding Society</div>
+      <div class="cert-org">SimpleGame</div>
       <div class="cert-date">November 2025</div>
       <div class="cert-actions">
-        <button class="btn btn-download" onclick="downloadCert('Computer Science Portfolio - Full Stack Development', 'Open Coding Society', 'November 2025')">⬇ Download</button>
+        <button class="btn btn-download" onclick="downloadCert('Computer Science Portfolio - Full Stack Development', 'SimpleGame', 'November 2025')">⬇ Download</button>
         <button class="btn btn-share" onclick="addToLinkedIn('Computer Science Portfolio - Full Stack Development Java Usage')">Add to LinkedIn</button>
       </div>
     </div>
@@ -553,7 +553,7 @@ window.downloadCert = async function () {
       const url = new URL('https://www.linkedin.com/profile/add');
       url.searchParams.append('startTask', 'CERTIFICATION_NAME');
       url.searchParams.append('name', courseName);
-      url.searchParams.append('organizationName', 'Open Coding Society');
+      url.searchParams.append('organizationName', 'SimpleGame');
       url.searchParams.append('issueYear', new Date().getFullYear());
       url.searchParams.append('issueMonth', new Date().getMonth() + 1);
       url.searchParams.append('certId', certId);
