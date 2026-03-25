@@ -708,46 +708,6 @@ permalink: /uesl-hub/
 
       </div>
 
-      <!-- FAQ -->
-      <div class="faq-wrap fade-in">
-        <h3>Frequently Asked Questions</h3>
-        <div class="faq-item">
-          <button class="faq-q" aria-expanded="false">
-            Who is UESL for?
-            <span class="faq-arrow" aria-hidden="true">▼</span>
-          </button>
-          <div class="faq-a">UESL serves individuals with intellectual and developmental disabilities (IDDs), ages 8 and up. Programs are available at no cost to San Diego Regional Center clients.</div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-q" aria-expanded="false">
-            What games do you play?
-            <span class="faq-arrow" aria-hidden="true">▼</span>
-          </button>
-          <div class="faq-a">We focus on team-based, non-violent games that promote collaboration and social skills. Our custom UESL Game Maker lets participants build and play their own accessible games.</div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-q" aria-expanded="false">
-            Is there a cost to join?
-            <span class="faq-arrow" aria-hidden="true">▼</span>
-          </button>
-          <div class="faq-a">UESL services are provided at no cost to San Diego Regional Center (SDRC) clients who commit to a minimum of 2 hours per location. Contact us to learn about eligibility.</div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-q" aria-expanded="false">
-            What are the program hours?
-            <span class="faq-arrow" aria-hidden="true">▼</span>
-          </button>
-          <div class="faq-a">UESL operates year-round, independent of school calendars. We are closed on Thanksgiving (Nov 25–27), Christmas (Dec 24–25), and New Year's Day (Jan 1).</div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-q" aria-expanded="false">
-            Do you have Spanish-speaking staff?
-            <span class="faq-arrow" aria-hidden="true">▼</span>
-          </button>
-          <div class="faq-a">Yes! Contact Wendy Muñoz at (619) 354-0733 or wendy@unifiedesl.com for Spanish-language support.</div>
-        </div>
-      </div>
-
       <!-- Partners -->
       <div class="partners fade-in">
         <div class="partners-label">Trusted Partners &amp; Affiliations</div>
@@ -1259,6 +1219,26 @@ permalink: /uesl-hub/
     }
     #uesl-chat-btn:hover { transform: scale(1.1); box-shadow: 0 6px 32px rgba(0,212,255,.6); }
 
+    #uesl-chat-bubble {
+      position: fixed; bottom: 100px; right: 96px; z-index: 9999;
+      background: #1e2535;
+      border: 1.5px solid var(--cyan);
+      color: #fff;
+      font-size: .85rem; font-weight: 700;
+      padding: 10px 16px;
+      border-radius: 18px 18px 4px 18px;
+      box-shadow: 0 4px 24px rgba(0,212,255,.35);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(6px) scale(.95);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    #uesl-chat-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
     #uesl-chat-window {
       position: fixed; bottom: 100px; right: 28px; z-index: 9000;
       width: 360px; max-height: 520px;
@@ -1349,6 +1329,9 @@ permalink: /uesl-hub/
     }
   </style>
 
+  <!-- Speech bubble -->
+  <div id="uesl-chat-bubble">Ask me anything! 👋</div>
+
   <!-- Floating button -->
   <button id="uesl-chat-btn" aria-label="Open UESL Coach chat">💬</button>
 
@@ -1376,6 +1359,10 @@ permalink: /uesl-hub/
   <script>
   (function () {
     const BACKEND = 'http://localhost:8800';
+    const bubble  = document.getElementById('uesl-chat-bubble');
+    // Fade in immediately, stay for 6s, then fade out
+    setTimeout(() => bubble.classList.add('show'), 200);
+    setTimeout(() => bubble.classList.remove('show'), 6200);
     const btn     = document.getElementById('uesl-chat-btn');
     const win     = document.getElementById('uesl-chat-window');
     const close   = document.getElementById('uesl-chat-close');
@@ -1385,6 +1372,7 @@ permalink: /uesl-hub/
     const history = []; // { role, content }
 
     btn.addEventListener('click', () => {
+      bubble.classList.remove('show');
       win.classList.toggle('open');
       if (win.classList.contains('open')) input.focus();
     });
