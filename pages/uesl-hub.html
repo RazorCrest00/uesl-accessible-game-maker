@@ -1903,6 +1903,16 @@ permalink: /uesl-hub/
     <div id="social-body">
       <!-- Sidebar: friends list -->
       <aside id="social-sidebar">
+        <!-- Pending friend requests (hidden until there are some) -->
+        <div id="requests-section" style="display:none;">
+          <div class="ss-section-header" style="color:var(--cyan);">
+            Requests
+            <span id="req-badge" style="background:var(--cyan);color:#000;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:700;margin-left:4px;"></span>
+          </div>
+          <div id="request-list"></div>
+          <div class="ss-divider"></div>
+        </div>
+
         <div class="ss-section-header">
           Direct Messages
           <button class="ss-add-btn" id="open-add-friend" title="Add friend" aria-label="Add friend">＋</button>
@@ -2165,8 +2175,89 @@ permalink: /uesl-hub/
     const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8800'
       : 'https://flask.opencodingsociety.com';
+    const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8585'
+      : 'https://spring.opencodingsociety.com';
     const FETCH_OPTS = { mode: 'cors', cache: 'default', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' } };
     function getDevMode() { return sessionStorage.getItem('devMode') === 'true'; }
+
+    // ── Per-user friends in localStorage ─────────────────────────────────────
+    // Each account has its own list so two accounts on the same browser don't collide.
+    const friendsKey  = uid => `uesl_friends_v1_${uid}`;
+    const REQUESTS_KEY = 'uesl_social_requests_v1';
+
+    // My friends (uses myUid — only call after login)
+    function lsLoad()           { try { return JSON.parse(localStorage.getItem(friendsKey(myUid))) || []; } catch(e) { return []; } }
+    function lsSave(list)       { localStorage.setItem(friendsKey(myUid), JSON.stringify(list)); }
+    function lsAdd(uid, name)   { const l=lsLoad(); if (!l.find(f=>f.uid===uid)) { l.push({uid,name,status:'offline'}); lsSave(l); } }
+    function lsRemove(uid)      { lsSave(lsLoad().filter(f=>f.uid!==uid)); }
+
+    // Add someone to ANOTHER user's friends list (used when accepting — both sides become friends)
+    function lsAddForUser(targetUid, uid, name) {
+      const key = friendsKey(targetUid);
+      let l = []; try { l = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
+      if (!l.find(f => f.uid === uid)) { l.push({ uid, name, status: 'offline' }); }
+      localStorage.setItem(key, JSON.stringify(l));
+    }
+
+    // ── Friend requests ───────────────────────────────────────────────────────
+    // Stored globally (shared across all users on same browser)
+    function reqLoad()     { try { return JSON.parse(localStorage.getItem(REQUESTS_KEY)) || []; } catch(e) { return []; } }
+    function reqSave(list) { localStorage.setItem(REQUESTS_KEY, JSON.stringify(list)); }
+
+    function reqSend(toUid, toName) {
+      const reqs = reqLoad();
+      if (reqs.find(r => r.from_uid===myUid && r.to_uid===toUid && r.status==='pending')) return; // no duplicates
+      reqs.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2), from_uid: myUid, from_name: myName, to_uid: toUid, to_name: toName, status: 'pending' });
+      reqSave(reqs);
+    }
+
+    function reqGetIncoming() { return reqLoad().filter(r => r.to_uid === String(myUid) && r.status === 'pending'); }
+
+    function reqIsPending(toUid) { return reqLoad().some(r => r.from_uid===String(myUid) && r.to_uid===String(toUid) && r.status==='pending'); }
+
+    function reqAccept(reqId) {
+      const reqs = reqLoad();
+      const req  = reqs.find(r => r.id === reqId);
+      if (!req) return;
+      req.status = 'accepted';
+      reqSave(reqs);
+      lsAdd(req.from_uid, req.from_name);          // add sender to MY friends
+      lsAddForUser(req.from_uid, myUid, myName);   // add ME to sender's friends (mutual)
+    }
+
+    function reqDecline(reqId) {
+      const reqs = reqLoad();
+      const req  = reqs.find(r => r.id === reqId);
+      if (req) { req.status = 'declined'; reqSave(reqs); }
+    }
+
+    // ── People cache (fetched once per session from Java backend) ─────────────
+    let _peopleCache = null;
+    async function getPeople() {
+      if (_peopleCache) return _peopleCache;
+      // Try without credentials first (works when backend allows * origin)
+      // Try with credentials as fallback (works when backend uses specific origin)
+      const attempts = [
+        () => fetch(JAVA_URI + '/api/peopleget'),
+        () => fetch(JAVA_URI + '/api/peopleget', { credentials: 'include' }),
+      ];
+      let lastErr = null;
+      for (const attempt of attempts) {
+        try {
+          const r = await attempt();
+          if (!r.ok) { lastErr = new Error(`HTTP ${r.status}`); continue; }
+          const raw = await r.text();
+          if (!raw || !raw.includes('[')) { lastErr = new Error('Empty response'); continue; }
+          const clean = raw.slice(0, raw.lastIndexOf(']') + 1);
+          const parsed = JSON.parse(clean);
+          if (!Array.isArray(parsed)) { lastErr = new Error('Not an array'); continue; }
+          _peopleCache = parsed;
+          return _peopleCache;
+        } catch(e) { lastErr = e; }
+      }
+      throw new Error(lastErr?.message || 'Could not reach Java backend');
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     const $ = id => document.getElementById(id);
@@ -2202,6 +2293,7 @@ permalink: /uesl-hub/
     let activeFriend = null;   // { uid, name }
     let friendsCache = [];     // [{ uid, name, status }]
     let pollTimer    = null;
+    let reqPollTimer = null;   // polls for incoming friend requests every 5s
     let lastMsgTs    = '';     // ISO timestamp of newest fetched message
 
     // ── DOM refs ─────────────────────────────────────────────────────────────
@@ -2222,15 +2314,43 @@ permalink: /uesl-hub/
       $('suc-name').textContent = myName;
     }
 
-    // ── Friends list ─────────────────────────────────────────────────────────
-    async function loadFriends() {
-      try {
-        const r = await api('/api/friends');
-        if (!r.ok) { friendsCache = []; renderFriendList(); return; }
-        const d = await r.json();
-        friendsCache = d.friends || d || [];
-      } catch(e) { friendsCache = []; }
+    // ── Friend requests UI ────────────────────────────────────────────────────
+    function renderRequests() {
+      const incoming = reqGetIncoming();
+      const section  = $('requests-section');
+      const badge    = $('req-badge');
+      const list     = $('request-list');
+      if (!section) return;
+      if (!incoming.length) { section.style.display = 'none'; badge.textContent = ''; return; }
+      section.style.display = '';
+      badge.textContent = incoming.length;
+      list.innerHTML = '';
+      incoming.forEach(req => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);';
+        item.innerHTML = `
+          <div style="width:34px;height:34px;border-radius:50%;background:${colorFor(req.from_name)};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#000;flex-shrink:0;">${initials(req.from_name)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.86rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(req.from_name)}</div>
+            <div style="font-size:.74rem;color:var(--muted);">wants to be friends</div>
+          </div>
+          <button data-act="accept" style="background:var(--green);color:#000;border:none;border-radius:7px;padding:4px 10px;font-size:.78rem;font-weight:700;cursor:pointer;">✓</button>
+          <button data-act="decline" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:.78rem;cursor:pointer;">✕</button>`;
+        item.querySelector('[data-act="accept"]').addEventListener('click', () => {
+          reqAccept(req.id); loadFriends(); renderRequests();
+        });
+        item.querySelector('[data-act="decline"]').addEventListener('click', () => {
+          reqDecline(req.id); renderRequests();
+        });
+        list.appendChild(item);
+      });
+    }
+
+    // ── Friends list (localStorage — no backend friends API needed) ──────────
+    function loadFriends() {
+      friendsCache = lsLoad();
       renderFriendList();
+      renderRequests();
     }
 
     function renderFriendList() {
@@ -2253,7 +2373,19 @@ permalink: /uesl-hub/
           <div class="fi-info">
             <div class="fi-name">${esc(friend.name)}</div>
             <div class="fi-preview">${statusCls === 'online' ? 'Online' : statusCls === 'away' ? 'Away' : 'Offline'}</div>
-          </div>`;
+          </div>
+          <button class="fi-remove-btn" title="Remove friend" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:6px;opacity:.5;flex-shrink:0;" onmouseenter="this.style.opacity='1';this.style.color='#ff6b6b'" onmouseleave="this.style.opacity='.5';this.style.color='var(--muted)'">✕</button>`;
+        item.querySelector('.fi-remove-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          lsRemove(friend.uid);
+          if (activeFriend?.uid === friend.uid) {
+            activeFriend = null;
+            stopPoll();
+            chatEmpty.style.display = '';
+            chatHeader.style.display = chatMsgs.style.display = chatInputRow.style.display = 'none';
+          }
+          loadFriends();
+        });
         item.addEventListener('click', () => openChat(friend));
         item.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') openChat(friend); });
         friendList.appendChild(item);
@@ -2282,29 +2414,48 @@ permalink: /uesl-hub/
       chatInput.focus();
     }
 
+    // ── localStorage chat store ───────────────────────────────────────────────
+    // Key is sorted so both users (A→B and B→A) share the exact same slot.
+    function chatKey(uid1, uid2) {
+      return 'uesl_chat_v1__' + [String(uid1), String(uid2)].sort().join('__');
+    }
+    function chatLoadAll(uid1, uid2) {
+      try { return JSON.parse(localStorage.getItem(chatKey(uid1, uid2))) || []; } catch(e) { return []; }
+    }
+    function chatAppendStore(uid1, uid2, msg) {
+      const msgs = chatLoadAll(uid1, uid2);
+      msgs.push(msg);
+      // Keep last 500 messages to avoid ballooning localStorage
+      if (msgs.length > 500) msgs.splice(0, msgs.length - 500);
+      localStorage.setItem(chatKey(uid1, uid2), JSON.stringify(msgs));
+    }
+
     // ── Messages ─────────────────────────────────────────────────────────────
-    async function fetchMessages(initial) {
+    function fetchMessages(initial) {
       if (!activeFriend) return;
-      try {
-        const since = lastMsgTs ? `&since=${encodeURIComponent(lastMsgTs)}` : '';
-        const r = await api(`/api/chat/messages?friend_uid=${encodeURIComponent(activeFriend.uid)}${since}`);
-        if (!r.ok) return;
-        const d = await r.json();
-        const msgs = d.messages || d || [];
-        if (!msgs.length && initial) {
+      const all = chatLoadAll(myUid, activeFriend.uid);
+      if (initial) {
+        chatMsgs.innerHTML = '';
+        if (!all.length) {
           chatMsgs.innerHTML = '<div class="msg-day-label">Today</div><p style="text-align:center;color:var(--muted);font-size:.85rem;margin-top:12px;">Say hello! 👋</p>';
           return;
         }
-        msgs.forEach(msg => appendMessage(msg));
-        if (msgs.length) lastMsgTs = msgs[msgs.length-1].created_at || msgs[msgs.length-1].ts || lastMsgTs;
-      } catch(e) {}
+        all.forEach(msg => appendMessage(msg));
+        if (all.length) lastMsgTs = all[all.length - 1].created_at;
+        return;
+      }
+      // Poll: only append messages newer than lastMsgTs
+      const newMsgs = lastMsgTs ? all.filter(m => m.created_at > lastMsgTs) : all;
+      newMsgs.forEach(msg => appendMessage(msg));
+      if (newMsgs.length) lastMsgTs = newMsgs[newMsgs.length - 1].created_at;
     }
 
     function appendMessage(msg) {
-      const isMine = (msg.sender_uid || msg.from) === myUid;
-      const sender = isMine ? myName : (activeFriend?.name || '?');
-      const text = msg.text || msg.content || '';
-      const ts = msg.created_at || msg.ts || '';
+      // Compare as strings — myUid can be number or string depending on auth path
+      const isMine = String(msg.sender_uid) === String(myUid);
+      const sender  = isMine ? myName : (activeFriend?.name || '?');
+      const text    = msg.text || '';
+      const ts      = msg.created_at || '';
       const row = document.createElement('div');
       row.className = 'msg-row' + (isMine ? ' me' : '');
       row.innerHTML = `
@@ -2317,23 +2468,27 @@ permalink: /uesl-hub/
       chatMsgs.scrollTop = chatMsgs.scrollHeight;
     }
 
-    function startPoll() { pollTimer = setInterval(() => fetchMessages(false), 3000); }
+    function startPoll() { pollTimer = setInterval(() => fetchMessages(false), 2000); }
     function stopPoll()  { clearInterval(pollTimer); pollTimer = null; }
 
     // ── Send message ─────────────────────────────────────────────────────────
-    async function sendMsg() {
+    function sendMsg() {
       const text = chatInput.value.trim();
       if (!text || !activeFriend) return;
       chatInput.value = '';
       chatInput.style.height = '';
-      // Optimistic render
-      appendMessage({ sender_uid: myUid, text, created_at: new Date().toISOString() });
-      try {
-        await api('/api/chat/send', {
-          method: 'POST',
-          body: JSON.stringify({ friend_uid: activeFriend.uid, text })
-        });
-      } catch(e) {}
+      const msg = {
+        id:         Date.now() + '_' + Math.random().toString(36).slice(2),
+        sender_uid: String(myUid),
+        sender_name: myName,
+        text,
+        created_at: new Date().toISOString()
+      };
+      // Write to the shared localStorage slot — both users read from here
+      chatAppendStore(myUid, activeFriend.uid, msg);
+      // Immediately render on sender's side
+      appendMessage(msg);
+      lastMsgTs = msg.created_at;
     }
 
     $('chat-send-btn').addEventListener('click', sendMsg);
@@ -2346,41 +2501,85 @@ permalink: /uesl-hub/
     $('afm-search-btn').addEventListener('click', doSearch);
     $('afm-input').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
 
+    function renderPersonRow(container, uid, name, alreadyFriend, isMe) {
+      const isPending = !alreadyFriend && !isMe && reqIsPending(uid);
+      const item = document.createElement('div');
+      item.className = 'afm-result-item';
+      item.innerHTML = `
+        <div class="afm-r-avatar" style="background:${colorFor(name)}">${initials(name)}</div>
+        <div><div class="afm-r-name">${esc(name)}</div><div class="afm-r-tag">@${esc(uid)}</div></div>
+        <button class="afm-add-btn" ${(alreadyFriend||isMe||isPending)?'disabled':''}>
+          ${isMe ? 'You' : alreadyFriend ? 'Friends ✓' : isPending ? 'Sent ✓' : '+ Add'}
+        </button>`;
+      if (!alreadyFriend && !isMe && !isPending) {
+        item.querySelector('.afm-add-btn').addEventListener('click', e => {
+          e.currentTarget.disabled = true;
+          e.currentTarget.textContent = 'Sent ✓';
+          reqSend(uid, name);
+        });
+      }
+      container.appendChild(item);
+    }
+
     async function doSearch() {
       const q = $('afm-input').value.trim();
       const container = $('afm-results');
-      if (!q) { container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Enter a name to search.</p>'; return; }
+      if (!q) { container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Enter a name or UID to search.</p>'; return; }
+      const searchBtn = $('afm-search-btn');
+      searchBtn.disabled = true; searchBtn.textContent = '…';
       container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Searching…</p>';
       try {
-        const r = await api(`/api/users/search?q=${encodeURIComponent(q)}`);
-        if (!r.ok) { container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Search unavailable.</p>'; return; }
-        const d = await r.json();
-        const results = d.users || d || [];
+        const all = await getPeople();
+        const ql = q.toLowerCase();
+        const matches = all.filter(p => {
+          const name = (p.name || '').toLowerCase();
+          // Java returns integer id; Flask uid is a string
+          const uid  = String(p.uid || p.id || '').toLowerCase();
+          return name.includes(ql) || uid.includes(ql);
+        }).slice(0, 12);
+
         container.innerHTML = '';
-        if (!results.length) { container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No users found.</p>'; return; }
-        results.forEach(user => {
-          const alreadyFriend = friendsCache.some(f => f.uid === user.uid || f.uid === user.id);
-          const uid = user.uid || user.id;
-          const name = user.name || user.username || uid;
-          const item = document.createElement('div');
-          item.className = 'afm-result-item';
-          item.innerHTML = `
-            <div class="afm-r-avatar" style="background:${colorFor(name)}">${initials(name)}</div>
-            <div><div class="afm-r-name">${esc(name)}</div><div class="afm-r-tag">@${esc(user.username||uid)}</div></div>
-            <button class="afm-add-btn" ${alreadyFriend?'disabled':''}>${alreadyFriend?'Friends':'Add'}</button>`;
-          if (!alreadyFriend) {
-            item.querySelector('.afm-add-btn').addEventListener('click', async (btn) => {
-              btn.target.disabled = true; btn.target.textContent = 'Sending…';
-              try {
-                const res = await api('/api/friends/request', { method:'POST', body:JSON.stringify({ uid }) });
-                btn.target.textContent = res.ok ? 'Sent ✓' : 'Error';
-                if (res.ok) await loadFriends();
-              } catch(e) { btn.target.textContent = 'Error'; }
-            });
-          }
-          container.appendChild(item);
+        if (!matches.length) {
+          container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No users found matching "' + esc(q) + '".</p>';
+          return;
+        }
+        matches.forEach(p => {
+          // Support both Flask uid (string) and Java id (integer)
+          const uid  = String(p.uid || p.id || '');
+          const name = p.name || uid;
+          // isMe: compare against both string uid and numeric id from myUser
+          const isMe = (myUser && (
+            uid === String(myUser.uid || '') ||
+            uid === String(myUser.id  || '') ||
+            name === myName
+          ));
+          renderPersonRow(container, uid, name, friendsCache.some(f => f.uid === uid), isMe);
         });
-      } catch(e) { container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Search failed.</p>'; }
+      } catch(e) {
+        // Java backend unreachable — show error + manual-add fallback
+        _peopleCache = null; // reset so next search retries
+        container.innerHTML = `
+          <p style="color:#ff6b6b;font-size:.82rem;margin-bottom:12px;">
+            ⚠ Could not reach the user directory (${esc(e.message)}).<br>
+            Make sure the Java backend is running on port 8585.
+          </p>
+          <p style="color:var(--muted);font-size:.82rem;margin-bottom:6px;">You can still add someone by entering their exact UID:</p>
+          <div style="display:flex;gap:8px;">
+            <input id="afm-manual-uid" type="text" placeholder="exact_uid"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:.88rem;outline:none;"
+              value="${esc(q)}"/>
+            <button id="afm-manual-add" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:.88rem;">Add</button>
+          </div>`;
+        $('afm-manual-add').addEventListener('click', () => {
+          const uid = $('afm-manual-uid').value.trim();
+          if (!uid) return;
+          reqSend(uid, uid);
+          container.innerHTML = `<p style="color:var(--green);font-size:.85rem;">Friend request sent to @${esc(uid)}. They'll see it when they open the social hub.</p>`;
+        });
+        $('afm-manual-uid').addEventListener('keydown', e => { if (e.key === 'Enter') $('afm-manual-add').click(); });
+      } finally {
+        searchBtn.disabled = false; searchBtn.textContent = 'Search';
+      }
     }
 
     // ── Message search (sidebar filter) ─────────────────────────────────────
@@ -2392,13 +2591,20 @@ permalink: /uesl-hub/
       });
     });
 
+    function startReqPoll() {
+      if (reqPollTimer) return;
+      reqPollTimer = setInterval(renderRequests, 5000);
+    }
+    function stopReqPoll() { clearInterval(reqPollTimer); reqPollTimer = null; }
+
     // ── Wire auth callback into the hub ──────────────────────────────────────
     _AUTH.onSuccess = async function () {
       _loggedIn = null;
       await checkLogin();
       loginModal.classList.add('hidden');
       renderTopbar();
-      await loadFriends();
+      loadFriends();
+      startReqPoll();
     };
 
     // ── Open / close overlay ─────────────────────────────────────────────────
@@ -2409,7 +2615,8 @@ permalink: /uesl-hub/
       if (loggedIn) {
         loginModal.classList.add('hidden');
         renderTopbar();
-        await loadFriends();
+        loadFriends();
+        startReqPoll();
       } else {
         loginModal.classList.remove('hidden');
       }
@@ -2418,7 +2625,7 @@ permalink: /uesl-hub/
     $('social-close-btn').addEventListener('click', closeOverlay);
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
     function closeOverlay() {
-      stopPoll();
+      stopPoll(); stopReqPoll();
       overlay.classList.remove('open');
       document.body.style.overflow = '';
     }
@@ -2426,7 +2633,7 @@ permalink: /uesl-hub/
     // ── Sign out ─────────────────────────────────────────────────────────────
     $('social-logout-btn').addEventListener('click', async () => {
       _loggedIn = null; myUid = null; myName = ''; myUser = null; activeFriend = null;
-      stopPoll();
+      stopPoll(); stopReqPoll();
       chatEmpty.style.display = '';
       chatHeader.style.display = chatMsgs.style.display = chatInputRow.style.display = 'none';
       try { await api('/api/logout', { method: 'POST' }); } catch(e) {}
