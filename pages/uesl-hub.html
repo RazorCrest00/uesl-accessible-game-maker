@@ -1846,16 +1846,19 @@ permalink: /uesl-hub/
             <div class="slm-field"><label class="slm-label">High School</label>
               <select class="slm-input" id="slm-r-school">
                 <option value="" disabled selected>Select Your High School</option>
-                <option>Abraxas High School</option><option>Del Norte High School</option>
-                <option>Mt Carmel High School</option><option>Poway High School</option>
-                <option>Poway to Palomar</option><option>Rancho Bernardo High School</option>
-                <option>Westview High School</option>
+                <option value="Abraxas High School">Abraxas High School</option>
+                <option value="Del Norte High School">Del Norte High School</option>
+                <option value="Mt Carmel High School">Mt Carmel High School</option>
+                <option value="Poway High School">Poway High School</option>
+                <option value="Poway to Palomar">Poway to Palomar</option>
+                <option value="Rancho Bernardo High School">Rancho Bernardo High School</option>
+                <option value="Westview High School">Westview High School</option>
               </select>
             </div>
             <div class="slm-field"><label class="slm-label">Password (min 8 chars)</label><input class="slm-input" id="slm-r-pass" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
             <div class="slm-field"><label class="slm-label">Confirm Password</label><input class="slm-input" id="slm-r-pass2" type="password" placeholder="••••••••"/></div>
-            <div class="slm-err" id="slm-r3-msg" style="display:none;"></div>
             <button class="slm-btn" id="slm-r-create-btn" onclick="slmSuCreate()">Create Account</button>
+            <div id="slm-r3-msg" style="display:none;"></div>
           </div>
         </div>
 
