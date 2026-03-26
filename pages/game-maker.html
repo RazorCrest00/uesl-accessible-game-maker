@@ -385,6 +385,57 @@ permalink: /game-maker/
 .gm-pctrl.lit  { background: #FFD700; color: #000; border-color: #FFD700; }
 .gm-pctrl.stop-lit { background: #ff4444; color: #fff; border-color: #ff4444; }
 
+/* ─── Multiplayer ────────────────────────────────────────────────────────── */
+#mp-invite-btn {
+  padding: 7px 16px; border: 2px solid #00FF88; border-radius: 20px;
+  background: transparent; color: #00FF88; font-size: 0.82rem; font-weight: bold;
+  cursor: pointer; transition: all 0.15s; margin-left: auto;
+}
+#mp-invite-btn:hover { background: #0a2a1a; }
+#mp-invite-btn.connected { border-color: #FFD700; color: #FFD700; }
+
+#mp-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.75); display: none;
+  align-items: center; justify-content: center;
+}
+#mp-modal-overlay.open { display: flex; }
+#mp-modal {
+  background: #0e0e30; border: 2px solid #3344aa; border-radius: 14px;
+  padding: 24px; width: 360px; max-width: 95vw;
+  box-shadow: 0 0 40px rgba(50,80,255,0.4);
+  display: flex; flex-direction: column; gap: 14px;
+}
+#mp-modal h3 { margin: 0; font-size: 1rem; color: #00FF88; }
+#mp-modal p  { margin: 0; font-size: 0.82rem; color: #888; }
+.mp-friend-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.mp-friend-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border: 1px solid #333; border-radius: 8px; cursor: pointer;
+  transition: all 0.15s; background: #1a1a3e;
+}
+.mp-friend-item:hover { border-color: #00FF88; background: #0a2a1a; }
+.mp-friend-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: bold; color: #fff; flex-shrink: 0;
+}
+.mp-friend-name { font-size: 0.88rem; color: #ddd; }
+#mp-modal-close {
+  padding: 8px; border: 1px solid #445; border-radius: 8px;
+  background: #1a1a3e; color: #888; font-size: 0.82rem; cursor: pointer;
+}
+#mp-modal-close:hover { color: #fff; border-color: #88aaff; }
+#mp-status-bar {
+  display: none; align-items: center; gap: 8px;
+  padding: 6px 12px; background: #0a2a1a; border: 1px solid #00FF88;
+  border-radius: 8px; font-size: 0.8rem; color: #00FF88; margin-bottom: 4px;
+}
+#mp-status-bar.show { display: flex; }
+.mp-dot { width: 8px; height: 8px; border-radius: 50%; background: #00FF88; animation: mpPulse 1.2s infinite; }
+@keyframes mpPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
 /* ─── Play Mode ─────────────────────────────────────────────────────────── */
 #gm-play-top {
   display: flex;
@@ -903,6 +954,7 @@ permalink: /game-maker/
   height: 200px; gap: 10px; color: #7788bb; font-size: 0.95rem; text-align: center;
 }
 </style>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <!-- ══ SAVE-NAME MODAL ══════════════════════════════════════════════════════ -->
 <div id="gm-savename-modal" class="gm-modal-backdrop">
@@ -1067,6 +1119,18 @@ permalink: /game-maker/
     </div>
   </div>
 
+  <!-- Multiplayer modal -->
+  <div id="mp-modal-overlay">
+    <div id="mp-modal">
+      <h3>🎮 Invite a Friend to Play</h3>
+      <p>Select a friend from your UESL Social contacts. They'll receive a chat invite with a "Join Game" button.</p>
+      <div class="mp-friend-list" id="mp-friend-list">
+        <p style="color:#666;font-size:.82rem;padding:8px;">Loading friends… (you must be logged into UESL Social)</p>
+      </div>
+      <button id="mp-modal-close">Cancel</button>
+    </div>
+  </div>
+
   <!-- ══════════ PLAY MODE ══════════════════════════════════════════════ -->
   <div id="gm-mode-play" class="gm-mode">
     <div id="gm-play-top">
@@ -1080,8 +1144,13 @@ permalink: /game-maker/
         <button class="gm-pctrl"     id="gm-ctrl-pause" title="Pause">⏸</button>
         <button class="gm-pctrl"     id="gm-ctrl-stop"  title="Reset level">⏹</button>
       </div>
+      <button id="mp-invite-btn" title="Invite a friend to play together">🎮 Invite Friend</button>
     </div>
 
+    <div id="mp-status-bar">
+      <span class="mp-dot"></span>
+      <span id="mp-status-text">Partner connected!</span>
+    </div>
     <div id="gm-play-area">
       <canvas id="gm-play-canvas" width="800" height="520"
         aria-label="Game play canvas"></canvas>
@@ -1867,6 +1936,7 @@ const game = {
   background:  'dark',
   levels:      [],
 };
+window._gmGame = game; // expose for multiplayer code outside this IIFE
 
 let currentLevelIdx = 0;
 function currentLevel() { return game.levels[currentLevelIdx]; }
@@ -2627,11 +2697,37 @@ const playKeys   = {};
 let   playState    = null;
 let   playLevelIdx = 0;
 let   playRAF      = null;
+// Expose for co-op handler outside IIFE
+window._gmShowFinalWin = () => showFinalWin();
+window._mpCheckLevelWin = (st) => { const pcx = st.x != null ? st.x + (st.size||40)/2 : 400; mpCheckLevelWin(st, pcx, 260); };
 
 /* ── Voice command state ────────────────────────────────────────────────── */
 let voiceRecognition = null;   // SpeechRecognition instance
 let voiceListening   = false;  // is the mic currently open?
 let voiceBubbleTimer = null;   // timeout to hide the bubble
+
+/* ── Co-op helpers (called from updatePlay; wired to window so MP block can use them) ── */
+function mpEmitCoopEvent(data) { window._mpEmitCoopEvent && window._mpEmitCoopEvent(data); }
+function mpHandleCoopEvent(data) { window._mpHandleCoopEvent && window._mpHandleCoopEvent(data); }
+function mpCheckLevelWin(st, pcx, pcy) {
+  const W = st.W || 800, H = st.H || 520;
+  if (st.totalStars > 0 && st.score >= st.totalStars) {
+    st.won = true;
+    spawnParticles(st, pcx, pcy); spawnParticles(st, W/2, H/2);
+    if (!st.wonHandled) {
+      st.wonHandled = true;
+      const hasNext = playLevelIdx + 1 < game.levels.length;
+      // Tell partner to advance too
+      mpEmitCoopEvent({ type: 'level_done', level: playLevelIdx, next: hasNext ? playLevelIdx+1 : -1 });
+      if (hasNext) {
+        setTimeout(() => { sfxLevelComplete(); showLevelCompleteUI(playLevelIdx, false); }, 1200);
+      } else {
+        setTimeout(() => { sfxWin(); showFinalWin(); }, 1400);
+      }
+    }
+  }
+}
+window._gmLoadPlayLevel = function(idx) { loadPlayLevel(idx); };
 
 /* ── Multi-level orchestration ─────────────────────────────────────────── */
 function startPlay() {
@@ -2644,6 +2740,7 @@ function startPlay() {
   playLevelIdx = 0;
   return loadPlayLevel(0);
 }
+window._gmStartPlay = startPlay; // expose for multiplayer code outside IIFE
 
 function loadPlayLevel(idx) {
   if (idx >= game.levels.length) { showFinalWin(); return true; }
@@ -2887,28 +2984,18 @@ function updatePlay(st) {
 
   // Star collection
   const pcx=ps.x+ps.size/2, pcy=ps.y+ps.size/2;
-  for (const s of st.stars) {
-    if (s.collected) continue;
+  st.stars.forEach((s, starIdx) => {
+    if (s.collected) return;
     if (Math.hypot(s.x-pcx,s.y-pcy)<ps.size*0.7) {
       s.collected=true; st.score++;
       sfxCollect();
       spawnParticles(st,s.x,s.y);
       st.scorePops.push({x:s.x,y:s.y-10,alpha:1,dy:-1.2,text:'+1 ⭐'});
-      if (st.totalStars > 0 && st.score >= st.totalStars) {
-        st.won=true;
-        spawnParticles(st,pcx,pcy); spawnParticles(st,W/2,H/2);
-        if (!st.wonHandled) {
-          st.wonHandled = true;
-          const hasNext = playLevelIdx + 1 < game.levels.length;
-          if (hasNext) {
-            setTimeout(() => { sfxLevelComplete(); showLevelCompleteUI(playLevelIdx, false); }, 1200);
-          } else {
-            setTimeout(() => { sfxWin(); showFinalWin(); }, 1400);
-          }
-        }
-      }
+      // Broadcast star collected to co-op partner
+      mpEmitCoopEvent({ type:'star', idx: starIdx, level: playLevelIdx });
+      mpCheckLevelWin(st, pcx, pcy);
     }
-  }
+  });
 
   // Heart pickup collection
   const hpcx=ps.x+ps.size/2, hpcy=ps.y+ps.size/2;
@@ -3026,6 +3113,44 @@ function drawPlay(st) {
 
   ctx.shadowBlur=0;
 
+  // ── Multiplayer: render partner ───────────────────────────────────────
+  if (window._mp && window._mp.partnerPos) {
+    const p2   = window._mp.partnerPos;
+    const p2sz = ps.size;           // same sprite size as local player
+    const p2cx = p2.x, p2cy = p2.y;
+    ctx.save();
+
+    // Outer glow ring so partner is always visible
+    ctx.shadowColor = '#00d4ff'; ctx.shadowBlur = 20;
+    ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p2cx, p2cy, p2sz/2 + 4, 0, Math.PI*2); ctx.stroke();
+
+    // Filled circle body
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(0,180,255,0.25)';
+    ctx.beginPath(); ctx.arc(p2cx, p2cy, p2sz/2, 0, Math.PI*2); ctx.fill();
+
+    // Partner emoji (same size as local player emoji)
+    ctx.font = `${Math.floor(p2sz * 0.72)}px Arial`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(p2.emoji || '🟦', p2cx, p2cy + 1);
+
+    // Name tag above
+    const label = p2.name || 'P2';
+    ctx.font = 'bold 12px Arial';
+    const tw = ctx.measureText(label).width;
+    const tagX = p2cx - tw/2 - 6, tagY = p2cy - p2sz/2 - 20;
+    ctx.fillStyle = 'rgba(0,30,60,0.82)';
+    ctx.beginPath(); ctx.roundRect(tagX, tagY, tw + 12, 18, 6); ctx.fill();
+    ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(tagX, tagY, tw + 12, 18, 6); ctx.stroke();
+    ctx.fillStyle = '#00d4ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, p2cx, tagY + 9);
+
+    ctx.restore();
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
   // Heart pickups on canvas
   const hpSz = LG ? 28 : 22;
   for (const h of (st.heartPickups||[])) {
@@ -3135,8 +3260,33 @@ function drawPBadge(ctx,text,x,y,bg,font) {
 
 function playLoop() {
   if (!playState) return;
+  // Expose current state for co-op handler outside IIFE
+  window._activePlayState    = playState;
+  window._activePlayLevelIdx = playLevelIdx;
   if (!playState.paused) updatePlay(playState);
   drawPlay(playState);
+  // Emit own position to partner (BroadcastChannel for same-device, Socket.IO for cross-device)
+  if (window._mp && window._mp.roomId) {
+    const now = Date.now();
+    if (!window._mp._lastEmit || now - window._mp._lastEmit > 50) {
+      window._mp._lastEmit = now;
+      const pl = playState.player; // player object lives at playState.player
+      const posData = {
+        type: '_pos',
+        room_id: window._mp.roomId,
+        x: pl.x + pl.size / 2,
+        y: pl.y + pl.size / 2,
+        emoji: game.playerEmoji || '🙂',
+        name:  game.playerName  || 'P1',
+      };
+      // Same-device: BroadcastChannel (never echoes back to sender automatically)
+      if (window._mp.bc) window._mp.bc.postMessage(posData);
+      // Cross-device: Socket.IO
+      if (window._mp.socket && window._mp.socket.connected) {
+        window._mp.socket.emit('player_update', posData);
+      }
+    }
+  }
   playRAF=requestAnimationFrame(playLoop);
 }
 
@@ -4405,4 +4555,277 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
 })();
 
 })();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MULTIPLAYER
+═══════════════════════════════════════════════════════════════════════════ */
+// `game` lives inside the main IIFE; access it via the window alias set above
+const game = window._gmGame;
+window._mp = { socket: null, roomId: null, partnerPos: null, _lastEmit: 0, bc: null };
+
+const SOCKET_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8242' : 'https://flask.opencodingsociety.com';
+
+// ── Co-op game event system ───────────────────────────────────────────────
+// Handles a co-op event received from the partner (star collected, level done)
+window._mpHandleCoopEvent = function(data) {
+  const ps = window._gmGame;  // game config ref
+  const st  = window._activePlayState; // set each frame (see playLoop patch below)
+  const lpi = window._activePlayLevelIdx;
+
+  if (data.type === 'star' && st && data.level === lpi) {
+    const s = st.stars[data.idx];
+    if (s && !s.collected) {
+      s.collected = true;
+      st.score++;
+      // Visual feedback that partner collected a star
+      st.scorePops && st.scorePops.push({ x: s.x, y: s.y - 10, alpha: 1, dy: -1.2, text: '⭐ +1 (partner)' });
+      window._mpCheckLevelWin && window._mpCheckLevelWin(st);
+    }
+  } else if (data.type === 'level_done' && st && data.level === lpi) {
+    if (!st.wonHandled) {
+      st.won = true; st.wonHandled = true;
+      if (data.next >= 0) {
+        setTimeout(() => window._gmLoadPlayLevel && window._gmLoadPlayLevel(data.next), 400);
+      } else {
+        setTimeout(() => window._gmShowFinalWin && window._gmShowFinalWin(), 400);
+      }
+    }
+  }
+};
+
+window._mpEmitCoopEvent = function(data) {
+  if (!window._mp.roomId) return;
+  // BroadcastChannel (same-device, no backend needed)
+  if (window._mp.bc) {
+    window._mp.bc.postMessage(data); // BroadcastChannel never echoes back to sender
+  }
+  // Socket.IO (cross-device)
+  if (window._mp.socket && window._mp.socket.connected) {
+    window._mp.socket.emit('game_event', { room_id: window._mp.roomId, ...data });
+  }
+};
+
+function mpStartCoopChannel(roomId) {
+  try {
+    if (window._mp.bc) window._mp.bc.close();
+    window._mp.bc = new BroadcastChannel('uesl_mp_' + roomId);
+    window._mp.bc.onmessage = (e) => {
+      const data = e.data;
+      if (data.type === '_pos') {
+        // Position update from partner tab
+        window._mp.partnerPos = { x: data.x, y: data.y, emoji: data.emoji, name: data.name };
+      } else {
+        window._mpHandleCoopEvent(data);
+      }
+    };
+  } catch(e) { /* BroadcastChannel not supported */ }
+}
+
+function mpConnect() {
+  if (window._mp.socket && window._mp.socket.connected) return window._mp.socket;
+  const s = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+  window._mp.socket = s;
+
+  s.on('room_created', ({ room_id }) => {
+    window._mp.roomId = room_id; // backend confirmation (room_id already set locally)
+  });
+
+  // Relay co-op game events from Socket.IO (cross-device)
+  s.on('partner_game_event', (data) => window._mpHandleCoopEvent(data));
+
+  s.on('partner_joined', ({ name }) => {
+    document.getElementById('mp-status-text').textContent = `🎮 ${name} joined! Playing together`;
+    document.getElementById('mp-status-bar').classList.add('show');
+    document.getElementById('mp-invite-btn').textContent = '🎮 Playing with friend';
+    document.getElementById('mp-invite-btn').classList.add('connected');
+  });
+
+  s.on('partner_update', (data) => {
+    window._mp.partnerPos = data;
+  });
+
+  s.on('partner_left', () => {
+    window._mp.partnerPos = null;
+    document.getElementById('mp-status-text').textContent = 'Partner disconnected';
+    setTimeout(() => document.getElementById('mp-status-bar').classList.remove('show'), 3000);
+    document.getElementById('mp-invite-btn').textContent = '🎮 Invite Friend';
+    document.getElementById('mp-invite-btn').classList.remove('connected');
+  });
+
+  // Guest: receive game data when joining via invite link
+  s.on('game_data', ({ game_data, game_name, room_id }) => {
+    window._mp.roomId = room_id;
+    try {
+      const loaded = JSON.parse(game_data);
+      Object.assign(game, loaded);
+      if (game_name) game.title = game_name;
+    } catch(e) {}
+    document.getElementById('mp-status-text').textContent = `🎮 Playing "${game_name}" with host`;
+    document.getElementById('mp-status-bar').classList.add('show');
+    // Auto-start play mode
+    setTimeout(() => {
+      document.querySelectorAll('.gm-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.gm-mode').forEach(m => m.classList.remove('active'));
+      document.querySelector('.gm-tab[data-mode="play"]') && document.querySelector('.gm-tab[data-mode="play"]').classList.add('active');
+      document.getElementById('gm-mode-play') && document.getElementById('gm-mode-play').classList.add('active');
+      if (typeof window._gmStartPlay === 'function') window._gmStartPlay();
+    }, 300);
+  });
+
+  s.on('join_error', ({ msg }) => { alert('Could not join game: ' + msg); });
+
+  return s;
+}
+
+function mpOpenFriendPicker(room_id) {
+  // Load friends from localStorage (same system as social hub)
+  const myUid = sessionStorage.getItem('uesl_my_uid') || '';
+  const friendsRaw = localStorage.getItem(`uesl_friends_v1_${myUid}`);
+  let friends = [];
+  try { friends = JSON.parse(friendsRaw) || []; } catch(e) {}
+
+  const list = document.getElementById('mp-friend-list');
+  if (!friends.length) {
+    list.innerHTML = '<p style="color:#888;font-size:.82rem;padding:8px;">No friends yet — add friends in UESL Social first.</p>';
+  } else {
+    list.innerHTML = '';
+    friends.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'mp-friend-item';
+      item.innerHTML = `<div class="mp-friend-avatar">${(f.name||'?').slice(0,2).toUpperCase()}</div><span class="mp-friend-name">${f.name}</span>`;
+      item.addEventListener('click', () => {
+        mpSendInviteViaChat(f, room_id);
+        document.getElementById('mp-modal-overlay').classList.remove('open');
+      });
+      list.appendChild(item);
+    });
+  }
+  document.getElementById('mp-modal-overlay').classList.add('open');
+}
+
+function mpSendInviteViaChat(friend, room_id) {
+  const myUid  = sessionStorage.getItem('uesl_my_uid')  || 'unknown';
+  const myName = sessionStorage.getItem('uesl_my_name') || 'Player';
+
+  // Store game snapshot in localStorage so guest can load it instantly (no backend needed)
+  try {
+    localStorage.setItem('uesl_mp_data_' + room_id, JSON.stringify({
+      game_data: JSON.stringify(game),
+      game_name: game.title || 'My Game',
+      host_name: myName,
+      host_uid:  myUid,
+      created_at: Date.now(),
+    }));
+  } catch(e) { console.warn('Could not store game snapshot:', e); }
+
+  // Write invite card to shared chat
+  const chatKey = 'uesl_chat_v1__' + [String(myUid), String(friend.uid)].sort().join('__');
+  let msgs = [];
+  try { msgs = JSON.parse(localStorage.getItem(chatKey)) || []; } catch(e) {}
+  msgs.push({
+    id: Date.now() + '_mp_' + Math.random().toString(36).slice(2),
+    sender_uid:  String(myUid),
+    sender_name: myName,
+    type:        'game_invite',
+    room_id:     room_id,
+    game_name:   game.title || 'My Game',
+    text:        `🎮 ${myName} invited you to play "${game.title || 'My Game'}"!`,
+    created_at:  new Date().toISOString(),
+  });
+  if (msgs.length > 500) msgs = msgs.slice(-500);
+  localStorage.setItem(chatKey, JSON.stringify(msgs));
+  alert(`✅ Invite sent to ${friend.name}! They'll get a notification in UESL Social.`);
+}
+
+// Handle join via URL param ?room=ROOMID
+(function() {
+  const params = new URLSearchParams(location.search);
+  const roomId = params.get('room');
+  if (!roomId) return;
+
+  window._mp.roomId = roomId;
+  mpStartCoopChannel(roomId); // start BroadcastChannel for same-device co-op
+  const myUid  = sessionStorage.getItem('uesl_my_uid')  || 'guest_' + Math.random().toString(36).slice(2);
+  const myName = sessionStorage.getItem('uesl_my_name') || 'Player 2';
+
+  // ── Step 1: load game data from localStorage snapshot (works without backend) ──
+  function loadAndStart(gameDataStr, gameName, hostName) {
+    try {
+      const loaded = JSON.parse(gameDataStr);
+      Object.assign(game, loaded);
+      if (gameName) game.title = gameName;
+    } catch(e) { console.warn('Failed to parse game data:', e); return; }
+
+    // Show join banner
+    const bar = document.getElementById('mp-status-bar');
+    const txt = document.getElementById('mp-status-text');
+    if (bar && txt) { txt.textContent = `🎮 Playing "${game.title}" with ${hostName || 'host'}`; bar.classList.add('show'); }
+
+    // Switch to play mode and start
+    document.querySelectorAll('.gm-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.gm-mode').forEach(m => m.classList.remove('active'));
+    const playTab = document.querySelector('.gm-tab[data-mode="play"]');
+    const playMode = document.getElementById('gm-mode-play');
+    if (playTab)  playTab.classList.add('active');
+    if (playMode) playMode.classList.add('active');
+    if (typeof window._gmStartPlay === 'function') window._gmStartPlay();
+  }
+
+  // Try localStorage snapshot first (instant, no backend needed)
+  let loaded = false;
+  try {
+    const snap = JSON.parse(localStorage.getItem('uesl_mp_data_' + roomId));
+    if (snap && snap.game_data) {
+      setTimeout(() => loadAndStart(snap.game_data, snap.game_name, snap.host_name), 200);
+      loaded = true;
+    }
+  } catch(e) {}
+
+  // ── Step 2: also connect Socket.IO for live position sync ──
+  const s = mpConnect();
+  s.once('connect', () => {
+    s.emit('join_room_event', { room_id: roomId, uid: myUid, name: myName });
+  });
+  // If backend responds with fresher game data, use it (overrides localStorage)
+  s.once('game_data', ({ game_data, game_name, host_name }) => {
+    loadAndStart(game_data, game_name, host_name);
+  });
+
+  if (!loaded) {
+    // No snapshot found — show waiting message
+    const bar = document.getElementById('mp-status-bar');
+    const txt = document.getElementById('mp-status-text');
+    if (bar && txt) { txt.textContent = '⏳ Connecting to game…'; bar.classList.add('show'); }
+  }
+})();
+
+document.getElementById('mp-invite-btn').addEventListener('click', () => {
+  if (window._mp.roomId) {
+    mpOpenFriendPicker(window._mp.roomId);
+    return;
+  }
+  // Generate room ID locally so picker opens instantly (no network wait)
+  const roomId = Math.random().toString(36).slice(2, 10).toUpperCase();
+  window._mp.roomId = roomId;
+  mpStartCoopChannel(roomId); // start BroadcastChannel for same-device co-op
+  mpOpenFriendPicker(roomId);
+
+  // Register room on backend for real-time sync (non-blocking)
+  const myUid  = sessionStorage.getItem('uesl_my_uid')  || '';
+  const myName = sessionStorage.getItem('uesl_my_name') || 'Host';
+  const s = mpConnect();
+  const doCreate = () => s.emit('create_room', {
+    room_id:   roomId,
+    uid:       myUid,
+    name:      myName,
+    game_data: JSON.stringify(game),
+    game_name: game.title || 'My Game',
+  });
+  if (s.connected) doCreate(); else s.once('connect', doCreate);
+});
+
+document.getElementById('mp-modal-close').addEventListener('click', () => {
+  document.getElementById('mp-modal-overlay').classList.remove('open');
+});
 </script>

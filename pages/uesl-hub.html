@@ -108,6 +108,67 @@ permalink: /uesl-hub/
     }
     .nav-social-btn:hover { background: rgba(0,212,255,.18); border-color: var(--cyan); transform: scale(1.04); }
     .nav-social-btn svg { flex-shrink: 0; }
+    .nav-social-btn .invite-dot {
+      display: none; width: 9px; height: 9px; border-radius: 50%;
+      background: #ff4444; margin-left: 2px; flex-shrink: 0;
+      box-shadow: 0 0 6px #ff4444; animation: inviteDotPulse 1s infinite;
+    }
+    .nav-social-btn.has-invite .invite-dot { display: inline-block; }
+    @keyframes inviteDotPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+    /* ── Game Invite Toast ──────────────────────────────────────── */
+    #invite-toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 99999;
+      background: #0b0b1e;
+      border: 2px solid #00FF88;
+      border-radius: 20px;
+      padding: 0; width: 320px;
+      box-shadow: 0 0 0 1px rgba(0,255,136,.15), 0 12px 50px rgba(0,255,136,.4), 0 4px 20px rgba(0,0,0,.7);
+      transform: translateX(360px); opacity: 0;
+      transition: transform .4s cubic-bezier(.22,1,.36,1), opacity .3s;
+      pointer-events: none; overflow: hidden;
+    }
+    #invite-toast.show { transform: translateX(0); opacity: 1; pointer-events: auto; }
+    #invite-toast .it-header {
+      background: linear-gradient(90deg, #003320, #001830);
+      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(0,255,136,.2);
+    }
+    #invite-toast .it-header-icon { font-size: 1.5rem; line-height: 1; }
+    #invite-toast .it-header-label {
+      font-size: .7rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: #00FF88;
+    }
+    #invite-toast .it-header-ping {
+      margin-left: auto; width: 10px; height: 10px; border-radius: 50%;
+      background: #00FF88; animation: inviteDotPulse .9s infinite;
+      box-shadow: 0 0 8px #00FF88;
+    }
+    #invite-toast .it-body { padding: 14px 16px 16px; }
+    #invite-toast .it-title {
+      font-weight: 800; color: #fff; font-size: 1rem; margin-bottom: 3px;
+      line-height: 1.3;
+    }
+    #invite-toast .it-sub {
+      color: #9ba3af; font-size: .82rem; margin-bottom: 14px; line-height: 1.4;
+    }
+    #invite-toast .it-sub strong { color: #00FF88; }
+    #invite-toast .it-btns { display: flex; gap: 8px; }
+    #invite-toast .it-join {
+      flex: 1; padding: 10px 14px; background: #00FF88; color: #000;
+      border: none; border-radius: 12px; font-weight: 800; font-size: .88rem;
+      cursor: pointer; text-decoration: none; text-align: center; display: block;
+      letter-spacing: .02em; transition: transform .1s, box-shadow .1s;
+      box-shadow: 0 4px 16px rgba(0,255,136,.4);
+    }
+    #invite-toast .it-join:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,255,136,.55); }
+    #invite-toast .it-join:active { transform: translateY(0); }
+    #invite-toast .it-dismiss {
+      padding: 10px 14px; background: transparent; color: #666;
+      border: 1px solid #333; border-radius: 12px; font-size: .82rem;
+      cursor: pointer; transition: color .15s, border-color .15s;
+    }
+    #invite-toast .it-dismiss:hover { color: #aaa; border-color: #555; }
 
     /* ── Social Hub Overlay ─────────────────────────────────────── */
     #social-overlay {
@@ -1015,6 +1076,7 @@ permalink: /uesl-hub/
         <button id="nav-social-btn" class="nav-social-btn" aria-label="Open Social Hub">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Social
+          <span class="invite-dot"></span>
         </button>
       </li>
       <li><a href="#about">About</a></li>
@@ -2116,6 +2178,23 @@ permalink: /uesl-hub/
     <img id="img-lightbox-img" src="" alt="Full size image">
   </div>
 
+  <!-- Game Invite Toast Notification -->
+  <div id="invite-toast" role="alertdialog" aria-live="assertive">
+    <div class="it-header">
+      <span class="it-header-icon">🎮</span>
+      <span class="it-header-label">Game Invite</span>
+      <span class="it-header-ping"></span>
+    </div>
+    <div class="it-body">
+      <div class="it-title" id="it-title">Someone wants to play!</div>
+      <div class="it-sub" id="it-sub">Tap below to jump in</div>
+      <div class="it-btns">
+        <a class="it-join" id="it-join-btn" href="#" target="_blank">▶&nbsp; Join Game</a>
+        <button class="it-dismiss" id="it-dismiss-btn">Not now</button>
+      </div>
+    </div>
+  </div>
+
   <script>
   /* ═══════════════════════════════════════════════════════════════════════════
      AUTH — all functions are global so onclick attributes and the social IIFE
@@ -2331,10 +2410,14 @@ permalink: /uesl-hub/
     _AUTH.onSuccess = async function () {
       _loggedIn = null;
       await checkLogin();
+      // Persist uid+name to sessionStorage so game-maker can use them for multiplayer
+      if (myUid)  sessionStorage.setItem('uesl_my_uid',  String(myUid));
+      if (myName) sessionStorage.setItem('uesl_my_name', myName);
       loginModal.classList.add('hidden');
       renderTopbar();
       loadFriends();
       startReqPoll();
+      startInvitePoll();
     };
 
     // ── Config ───────────────────────────────────────────────────────────────
@@ -2445,11 +2528,11 @@ permalink: /uesl-hub/
         let ticks = 0;
         const id = setInterval(() => { if (window.user !== undefined || ++ticks >= 20) { clearInterval(id); res(); } }, 100);
       });
-      if (window.user !== undefined) { _loggedIn = !!window.user; if (window.user) { myUser = window.user; myUid = window.user.uid || window.user.id || null; myName = window.user.name || window.user.username || 'You'; } return _loggedIn; }
+      if (window.user !== undefined) { _loggedIn = !!window.user; if (window.user) { myUser = window.user; myUid = window.user.uid || window.user.id || null; myName = window.user.name || window.user.username || 'You'; if (myUid)  sessionStorage.setItem('uesl_my_uid',  String(myUid)); if (myName) sessionStorage.setItem('uesl_my_name', myName); } return _loggedIn; }
       // Fallback: ping /api/id directly
       try {
         const r = await api('/api/id');
-        if (r.ok) { myUser = await r.json(); myUid = myUser.uid || myUser.id || null; myName = myUser.name || myUser.username || 'You'; _loggedIn = true; }
+        if (r.ok) { myUser = await r.json(); myUid = myUser.uid || myUser.id || null; myName = myUser.name || myUser.username || 'You'; _loggedIn = true; if (myUid)  sessionStorage.setItem('uesl_my_uid',  String(myUid)); if (myName) sessionStorage.setItem('uesl_my_name', myName); }
         else _loggedIn = false;
       } catch(e) { _loggedIn = false; }
       return _loggedIn;
@@ -2629,6 +2712,21 @@ permalink: /uesl-hub/
       let contentHtml;
       if (msg.type === 'image' && msg.image) {
         contentHtml = `<img class="msg-img" src="${msg.image}" alt="photo">`;
+      } else if (msg.type === 'game_invite' && msg.room_id) {
+        const gmUrl = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+          ? `http://localhost:4700/game-maker/?room=${msg.room_id}`
+          : `/game-maker/?room=${msg.room_id}`;
+        const isMineInvite = String(msg.sender_uid) === String(myUid);
+        contentHtml = `
+          <div style="background:linear-gradient(135deg,#0a2a1a,#0e0e30);border:1.5px solid #00FF88;border-radius:12px;padding:12px 14px;min-width:200px;">
+            <div style="font-size:1.4rem;margin-bottom:4px;">🎮</div>
+            <div style="font-weight:700;color:#00FF88;font-size:.9rem;margin-bottom:2px;">Game Invite</div>
+            <div style="color:#ddd;font-size:.82rem;margin-bottom:10px;">${esc(msg.game_name || 'A Game')}</div>
+            ${isMineInvite
+              ? `<div style="color:#666;font-size:.75rem;">Waiting for friend to join…</div>`
+              : `<a href="${gmUrl}" target="_blank" style="display:inline-block;padding:7px 16px;background:#00FF88;color:#000;border-radius:20px;font-size:.82rem;font-weight:700;text-decoration:none;">▶ Join Game</a>`
+            }
+          </div>`;
       } else {
         contentHtml = `<div class="msg-bubble">${esc(text)}</div>`;
       }
@@ -2869,6 +2967,84 @@ permalink: /uesl-hub/
     }
     function stopReqPoll() { clearInterval(reqPollTimer); reqPollTimer = null; }
 
+    // ── Game Invite Notifications ─────────────────────────────────────────────
+    let invitePollTimer = null;
+    const _seenInvites = new Set(JSON.parse(localStorage.getItem('uesl_seen_invites') || '[]'));
+    const inviteToast    = document.getElementById('invite-toast');
+    const inviteNavBtn   = document.getElementById('nav-social-btn');
+    let _pendingInvites  = []; // queue of unseen invites
+
+    function _saveSeenInvites() {
+      // keep only last 200 IDs to avoid bloat
+      const arr = [..._seenInvites].slice(-200);
+      localStorage.setItem('uesl_seen_invites', JSON.stringify(arr));
+    }
+
+    function _showNextInvite() {
+      if (!_pendingInvites.length) {
+        inviteToast.classList.remove('show');
+        return;
+      }
+      const inv = _pendingInvites[0];
+      const gmUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? `http://localhost:4700/game-maker/?room=${inv.room_id}`
+        : `/game-maker/?room=${inv.room_id}`;
+      document.getElementById('it-title').textContent = `${inv.sender_name || 'A friend'} wants to play with you!`;
+      document.getElementById('it-sub').innerHTML    = `<strong>${esc(inv.game_name || 'A Game')}</strong> — join now before the invite expires`;
+      document.getElementById('it-join-btn').href    = gmUrl;
+      inviteToast.classList.add('show');
+      // Vibrate on mobile if supported
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    }
+
+    document.getElementById('it-dismiss-btn').addEventListener('click', () => {
+      if (_pendingInvites.length) {
+        const inv = _pendingInvites.shift();
+        _seenInvites.add(inv.id);
+        _saveSeenInvites();
+      }
+      inviteToast.classList.remove('show');
+      setTimeout(() => {
+        if (_pendingInvites.length) _showNextInvite();
+        else inviteNavBtn.classList.remove('has-invite');
+      }, 400);
+    });
+
+    document.getElementById('it-join-btn').addEventListener('click', () => {
+      if (_pendingInvites.length) {
+        const inv = _pendingInvites.shift();
+        _seenInvites.add(inv.id);
+        _saveSeenInvites();
+      }
+      inviteToast.classList.remove('show');
+      if (!_pendingInvites.length) inviteNavBtn.classList.remove('has-invite');
+    });
+
+    function scanInvites() {
+      if (!myUid) return;
+      const friends = (() => { try { return JSON.parse(localStorage.getItem(`uesl_friends_v1_${myUid}`)) || []; } catch(e) { return []; } })();
+      friends.forEach(f => {
+        const msgs = (() => { try { return JSON.parse(localStorage.getItem(chatKey(myUid, f.uid))) || []; } catch(e) { return []; } })();
+        msgs.forEach(m => {
+          if (m.type !== 'game_invite') return;
+          if (String(m.sender_uid) === String(myUid)) return; // sent by me
+          if (_seenInvites.has(m.id)) return; // already seen
+          if (_pendingInvites.find(p => p.id === m.id)) return; // already queued
+          _pendingInvites.push(m);
+        });
+      });
+      if (_pendingInvites.length) {
+        inviteNavBtn.classList.add('has-invite');
+        if (!inviteToast.classList.contains('show')) _showNextInvite();
+      }
+    }
+
+    function startInvitePoll() {
+      if (invitePollTimer) return;
+      scanInvites(); // immediate first scan
+      invitePollTimer = setInterval(scanInvites, 4000);
+    }
+
     // ── Open / close overlay ─────────────────────────────────────────────────
     $('nav-social-btn').addEventListener('click', async () => {
       overlay.classList.add('open');
@@ -2881,6 +3057,7 @@ permalink: /uesl-hub/
         renderTopbar();
         loadFriends();
         startReqPoll();
+        startInvitePoll();
       } else {
         loginModal.classList.remove('hidden');
       }
