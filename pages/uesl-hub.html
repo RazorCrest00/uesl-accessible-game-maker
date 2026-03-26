@@ -1706,7 +1706,6 @@ permalink: /uesl-hub/
       display: flex; align-items: center; justify-content: center;
     }
     #uesl-chat-btn:hover { transform: scale(1.1); box-shadow: 0 6px 32px rgba(0,212,255,.6); }
-    #uesl-chat-btn.dragging { transform: scale(1.05); cursor: grabbing; transition: none; }
 
     #uesl-chat-bubble {
       position: fixed; bottom: 100px; right: 96px; z-index: 9999;
@@ -1860,62 +1859,8 @@ permalink: /uesl-hub/
     const msgs    = document.getElementById('uesl-chat-messages');
     const history = []; // { role, content }
 
-    // ── Draggable button ──────────────────────────────────────────────────
-    (function makeDraggable() {
-      const POS_KEY = 'uesl_chat_btn_pos';
-      // Restore saved position
-      try {
-        const saved = JSON.parse(localStorage.getItem(POS_KEY));
-        if (saved) {
-          btn.style.right  = 'auto';
-          btn.style.bottom = 'auto';
-          btn.style.left   = saved.left + 'px';
-          btn.style.top    = saved.top  + 'px';
-        }
-      } catch (_) {}
-
-      let dragging = false, startX, startY, startLeft, startTop;
-
-      btn.addEventListener('pointerdown', (e) => {
-        // Only drag on primary button (left click / touch)
-        if (e.button !== undefined && e.button !== 0) return;
-        dragging  = false; // will become true on first move
-        const rect = btn.getBoundingClientRect();
-        startX    = e.clientX;
-        startY    = e.clientY;
-        startLeft = rect.left;
-        startTop  = rect.top;
-        btn.setPointerCapture(e.pointerId);
-        e.preventDefault();
-      });
-
-      btn.addEventListener('pointermove', (e) => {
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (!dragging && Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
-        dragging = true;
-        btn.classList.add('dragging');
-        // Clamp within viewport
-        const newLeft = Math.max(0, Math.min(window.innerWidth  - btn.offsetWidth,  startLeft + dx));
-        const newTop  = Math.max(0, Math.min(window.innerHeight - btn.offsetHeight, startTop  + dy));
-        btn.style.right  = 'auto';
-        btn.style.bottom = 'auto';
-        btn.style.left   = newLeft + 'px';
-        btn.style.top    = newTop  + 'px';
-      });
-
-      btn.addEventListener('pointerup', (e) => {
-        btn.classList.remove('dragging');
-        if (dragging) {
-          // Persist position
-          try { localStorage.setItem(POS_KEY, JSON.stringify({ left: parseFloat(btn.style.left), top: parseFloat(btn.style.top) })); } catch (_) {}
-          // Prevent the click handler from toggling the window after a drag
-          e.stopImmediatePropagation();
-        }
-        dragging = false;
-      });
-    })();
-    // ─────────────────────────────────────────────────────────────────────
+    // Clear any stale saved position from old draggable feature
+    try { localStorage.removeItem('uesl_chat_btn_pos'); } catch (_) {}
 
     btn.addEventListener('click', () => {
       bubble.classList.remove('show');
