@@ -16,6 +16,17 @@
 </head>
 
 
+<script>
+    if (new URLSearchParams(location.search).get('embed')) {
+      document.documentElement.classList.add('embed-mode');
+    }
+</script>
+<style>
+    .embed-mode header,
+    .embed-mode .lesson-sidebar { display: none !important; }
+    .embed-mode .min-h-screen.antialiased { margin-top: 0 !important; }
+    .embed-mode .ml-64 { margin-left: 0 !important; padding: 1.5rem !important; }
+</style>
 <body class="min-h-screen flex flex-col flex-auto flex-shrink-0 transition-colors user-theme-root">
     <!-- navbar -->
     {%- include aesthetihawk/header.html -%}

@@ -1,13 +1,112 @@
 ---
 title: Dashboard
-layout: aesthetihawk
 active_tab: dashboard
 ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — UESL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts/dist/apexcharts.css"/>
+  <link rel="stylesheet" href="https://preline.co/assets/css/main.min.css"/>
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}"/>
+  <script src="{{ site.baseurl }}/assets/js/user-preferences.js"></script>
+  <script>window.baseurl = "{{ site.baseurl }}";</script>
+  <style>
+    /* ── UESL Tokens ── */
+    :root {
+      --bg:     #0d1117;
+      --cyan:   #00d4ff;
+      --purple: #7c3aed;
+      --text:   #e6edf3;
+      --muted:  #8b949e;
+      --border: rgba(255,255,255,.07);
+      --font-h: 'Oswald', sans-serif;
+      --font-b: 'Inter', sans-serif;
+      --nav-h:  68px;
+    }
+    /* ── UESL Navbar ── */
+    #uesl-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(16px,4vw,48px);
+      background: rgba(13,17,23,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-b);
+    }
+    body.embed #uesl-nav { display: none; }
+    body.embed {
+      padding-top: 0 !important;
+      min-height: 0 !important;
+      height: auto !important;
+      overflow: hidden !important;
+    }
+    /* In embed mode: hide everything that isn't the main content div */
+    body.embed > *:not(#dash-embed-content) { display: none !important; }
+    body.embed #dash-embed-content { display: block !important; }
+    #uesl-nav-logo { height: 42px; object-fit: contain; display: block; }
+    #uesl-nav-links {
+      display: flex; align-items: center; gap: clamp(4px,1.5vw,24px);
+      list-style: none; margin: 0; padding: 0;
+    }
+    #uesl-nav-links a {
+      font-size: .92rem; font-weight: 600; color: var(--muted);
+      padding: 6px 4px; border-bottom: 2px solid transparent;
+      text-decoration: none; white-space: nowrap;
+      transition: color .2s, border-color .2s;
+    }
+    #uesl-nav-links a:hover, #uesl-nav-links a.active { color: var(--text); border-color: var(--cyan); }
+    .uesl-nav-donate {
+      margin-left: 8px; padding: 8px 20px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      border: none; border-radius: 30px;
+      color: #fff; font-size: .88rem; font-weight: 700;
+      text-decoration: none; white-space: nowrap;
+      transition: opacity .2s;
+    }
+    .uesl-nav-donate:hover { opacity: .85; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col transition-colors user-theme-root" style="padding-top: var(--nav-h);">
 
-<!-- Fonts loaded globally via head-custom.html -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts/dist/apexcharts.css" />
-<link rel="stylesheet" href="https://preline.co/assets/css/main.min.css" />
-<div class="w-full">
+  <!-- UESL Navbar -->
+  <nav id="uesl-nav" role="navigation" aria-label="Main navigation">
+    <a href="/uesl-hub/" aria-label="UESL Home">
+      <img id="uesl-nav-logo"
+        src="https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/efa49c03-11c6-4c97-b21e-05266875502d/UnifiedESL-horizontal.png"
+        alt="Unified Esports League"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+      />
+      <span style="display:none; font-family:var(--font-h); font-size:1.1rem; color:var(--cyan); font-weight:700;">UESL</span>
+    </a>
+    <ul id="uesl-nav-links" role="list">
+      <li><a href="/uesl-hub/">Home</a></li>
+      <li><a href="/uesl-hub/#about">About</a></li>
+      <li><a href="/uesl-hub/#locations">Locations</a></li>
+      <li><a href="/uesl-hub/#game">Play</a></li>
+      <li><a href="/uesl-hub/#contact">Contact</a></li>
+      <li><a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32" class="uesl-nav-donate" target="_blank" rel="noopener">Donate</a></li>
+    </ul>
+  </nav>
+
+  <script>
+    if (new URLSearchParams(location.search).get('embed')) {
+      document.body.classList.add('embed');
+    }
+  </script>
+
+  <!-- Dashboard content -->
+  <div id="dash-embed-content" class="w-full p-6">
     <div class="space-y-4 sm:space-y-6">
         <div class="text-sm font-medium text-center border-b text-neutral-400 border-neutral-700 relative">
             <ul class="flex flex-wrap -mb-px relative" id="tab-bar">
@@ -1617,3 +1716,12 @@ active_tab: dashboard
 
   })();
 </script>
+
+  </div><!-- /w-full -->
+
+  <script type="module">
+    import { handleLogout } from '{{site.baseurl}}/assets/js/api/logout.js';
+    window.handleLogout = handleLogout;
+  </script>
+</body>
+</html>

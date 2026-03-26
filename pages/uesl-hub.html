@@ -167,6 +167,35 @@ permalink: /uesl-hub/
     }
     #social-close-btn:hover { color: var(--text); }
 
+    /* Social / Dashboard view switcher */
+    #social-view-tabs {
+      display: flex; gap: 4px;
+      background: var(--surface2);
+      border-radius: 20px;
+      padding: 3px;
+      margin: 0 8px;
+    }
+    .svt-btn {
+      padding: 5px 16px; border-radius: 16px; border: none;
+      background: transparent; color: var(--muted);
+      font-size: .82rem; font-weight: 700; cursor: pointer;
+      transition: background .2s, color .2s;
+      white-space: nowrap;
+    }
+    .svt-btn.active { background: rgba(0,212,255,.15); color: var(--cyan); }
+    .svt-btn:hover:not(.active) { color: var(--text); }
+
+    /* Settings panel */
+    #social-dashboard-panel {
+      display: none; flex: 1; overflow: hidden; flex-direction: column;
+    }
+    #social-dashboard-panel.active { display: flex; }
+
+    /* Settings pane */
+    .sstab-pane { flex: 1; overflow: hidden; display: none; }
+    .sstab-pane.active { display: flex; }
+    .sstab-pane iframe { width: 100%; height: 100%; border: none; flex: 1; }
+
     /* Social body */
     #social-body {
       display: flex; flex: 1; overflow: hidden;
@@ -830,6 +859,7 @@ permalink: /uesl-hub/
       display: block; width: 100%; height: 860px; border: none;
     }
 
+
     /* ── Contact Section ────────────────────────────────────────── */
     #contact { background: var(--bg); }
 
@@ -1253,7 +1283,7 @@ permalink: /uesl-hub/
         </div>
       </div>
 
-      <!-- Embedded game maker iframe -->
+      <!-- Embedded game maker / dashboard tabs -->
       <div class="game-frame-wrap fade-in" aria-label="Game maker application">
         <div class="game-frame-header" aria-hidden="true">
           <div class="gfh-dot red"></div>
@@ -1878,7 +1908,7 @@ permalink: /uesl-hub/
   </script>
 
   <!-- ── Social Hub Overlay ───────────────────────────────────────────────── -->
-  <div id="social-overlay" role="dialog" aria-modal="true" aria-label="UESL Social Hub">
+  <div id="social-overlay" role="dialog" aria-modal="true" aria-label="UESL App">
 
     <!-- Auth wall (shown when not logged in) -->
     <div id="social-login-modal">
@@ -1985,7 +2015,12 @@ permalink: /uesl-hub/
     <div id="social-topbar">
       <div class="st-logo">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        UESL Social
+        UESL
+      </div>
+      <!-- View switcher -->
+      <div id="social-view-tabs" role="tablist">
+        <button class="svt-btn active" id="svt-social" role="tab" aria-selected="true" data-view="social">💬 Social</button>
+        <button class="svt-btn" id="svt-dashboard" role="tab" aria-selected="false" data-view="dashboard">⚙️ Settings</button>
       </div>
       <div id="social-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1997,6 +2032,11 @@ permalink: /uesl-hub/
         <button id="social-logout-btn" title="Sign out" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.82rem;padding:4px 8px;border-radius:8px;transition:color .2s;" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted)'">Sign out</button>
       </div>
       <button id="social-close-btn" aria-label="Close Social Hub" onclick="document.getElementById('social-overlay').classList.remove('open');document.body.style.overflow='';">✕</button>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="social-dashboard-panel" role="tabpanel">
+      <div id="sstab-pane-profile" class="sstab-pane active" role="tabpanel"></div>
     </div>
 
     <!-- Main body -->
@@ -2846,6 +2886,41 @@ permalink: /uesl-hub/
       }
     });
 
+    // ── Social / Settings view switcher ──────────────────────────────────────
+    const dashPanel   = document.getElementById('social-dashboard-panel');
+    const socialBody  = document.getElementById('social-body');
+    let profileLoaded = false;
+
+    function loadProfileIframe() {
+      if (profileLoaded) return;
+      const pane = document.getElementById('sstab-pane-profile');
+      const fr = document.createElement('iframe');
+      fr.src   = '/profile?embed=1';
+      fr.title = 'UESL Profile';
+      pane.appendChild(fr);
+      profileLoaded = true;
+    }
+
+    document.getElementById('social-view-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.svt-btn');
+      if (!btn) return;
+      const view = btn.dataset.view;
+      document.querySelectorAll('.svt-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-selected', b === btn);
+      });
+      if (view === 'dashboard') {
+        socialBody.style.display  = 'none';
+        dashPanel.classList.add('active');
+        loadProfileIframe();
+        document.getElementById('social-search').style.visibility = 'hidden';
+      } else {
+        dashPanel.classList.remove('active');
+        socialBody.style.display  = '';
+        document.getElementById('social-search').style.visibility = '';
+      }
+    });
+
     $('social-close-btn').addEventListener('click', closeOverlay);
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
     function closeOverlay() {
@@ -2869,5 +2944,6 @@ permalink: /uesl-hub/
 
   })();
   </script>
+
 </body>
 </html>
