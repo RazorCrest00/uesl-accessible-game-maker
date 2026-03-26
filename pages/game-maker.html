@@ -966,6 +966,7 @@ permalink: /game-maker/
         <option value="sunset">🌅 Sunset</option>
         <option value="ocean">🌊 Ocean Sky</option>
         <option value="maze">🌀 Maze</option>
+        <option value="road">🛣️ Road Drive</option>
       </select>
     </div>
     <div class="gi-section" style="margin-left:auto; font-size:0.78rem; color:#555; line-height:1.7;">
@@ -1521,6 +1522,111 @@ function drawMazeBg(ctx){
   ctx.restore();
 }
 
+/* ── Spline Road Background ──────────────────────────────────────────────── */
+const ROAD_W = 115; // road width in pixels
+
+/* Winding road waypoints: start at top-centre, wind down to bottom */
+const ROAD_WAYPOINTS = [
+  [400,  40],   // START (top-centre)
+  [240, 135],   // curve left
+  [570, 235],   // curve right
+  [185, 340],   // curve left
+  [615, 430],   // curve right
+  [400, 490],   // FINISH (bottom-centre)
+];
+
+/* Obstacles placed along the road — hit them and lose a heart */
+const ROAD_OBSTACLES = [
+  { x: 275, y: 100, emoji: '🌳', r: 16 },
+  { x: 490, y: 195, emoji: '🗑️', r: 15 },
+  { x: 330, y: 295, emoji: '🚧', r: 15 },
+  { x: 530, y: 385, emoji: '🌳', r: 16 },
+  { x: 410, y: 455, emoji: '🗑️', r: 15 },
+];
+
+let _roadPixels = null;
+function getRoadPixels() {
+  if (_roadPixels) return _roadPixels;
+  const oc = document.createElement('canvas');
+  oc.width = W; oc.height = H;
+  const c = oc.getContext('2d');
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+  c.strokeStyle = '#FFF'; c.lineWidth = ROAD_W; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.beginPath(); catmullRomPath(c, ROAD_WAYPOINTS); c.stroke();
+  _roadPixels = c.getImageData(0, 0, W, H).data;
+  return _roadPixels;
+}
+function isRoadOpen(px, py) {
+  const x = Math.round(px), y = Math.round(py);
+  if (x < 0 || x >= W || y < 0 || y >= H) return false;
+  return getRoadPixels()[(y * W + x) * 4] > 64;
+}
+function resolveRoadCollision(ps, prevX, prevY) {
+  const sz = ps.size, m = 5;
+  function blocked(x, y) {
+    return !isRoadOpen(x+m, y+m) || !isRoadOpen(x+sz-m, y+m) ||
+           !isRoadOpen(x+m, y+sz-m) || !isRoadOpen(x+sz-m, y+sz-m);
+  }
+  if (!blocked(ps.x, ps.y)) return;
+  if (!blocked(prevX, ps.y)) { ps.x = prevX; ps.vx = 0; return; }
+  if (!blocked(ps.x, prevY)) { ps.y = prevY; ps.vy = 0; return; }
+  ps.x = prevX; ps.y = prevY; ps.vx = 0; ps.vy = 0;
+}
+
+function drawRoadBg(ctx) {
+  const t = Date.now() * 0.001;
+  // Grass field
+  ctx.fillStyle = '#2d5a1b'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(38,78,20,0.5)'; ctx.lineWidth = 0.7;
+  for (let gx = 0; gx < W; gx += 22) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+  for (let gy = 0; gy < H; gy += 22) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+  // Road shoulder
+  ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = ROAD_W + 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); catmullRomPath(ctx, ROAD_WAYPOINTS); ctx.stroke();
+  // Road surface
+  ctx.strokeStyle = '#6e6e6e'; ctx.lineWidth = ROAD_W;
+  ctx.beginPath(); catmullRomPath(ctx, ROAD_WAYPOINTS); ctx.stroke();
+  // Edge white dashes
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.setLineDash([14, 8]);
+  ctx.beginPath(); catmullRomPath(ctx, ROAD_WAYPOINTS); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  // Centre yellow dashes (animated — gives sense of speed)
+  ctx.save();
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3; ctx.lineCap = 'butt';
+  ctx.setLineDash([20, 22]); ctx.lineDashOffset = -(t * 55) % 42;
+  ctx.beginPath(); catmullRomPath(ctx, ROAD_WAYPOINTS); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  // Obstacles (drawn as part of background so they appear under the car)
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const ob of ROAD_OBSTACLES) {
+    ctx.save();
+    if (!a11y.reduceMotion) { ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 7; }
+    ctx.font = '26px Arial'; ctx.fillText(ob.emoji, ob.x, ob.y);
+    ctx.restore();
+  }
+  // FINISH marker — pulsing gold circle at last waypoint
+  const [fx, fy] = ROAD_WAYPOINTS[ROAD_WAYPOINTS.length - 1];
+  const pulse = 0.85 + 0.25 * Math.sin(t * 2.5);
+  ctx.save();
+  ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 22 * pulse;
+  ctx.fillStyle = `rgba(255,215,0,${0.75 * pulse})`;
+  ctx.beginPath(); ctx.arc(fx, fy, 14 * pulse, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('FINISH', fx, fy + 1);
+  ctx.restore();
+  // START marker — soft green at first waypoint
+  const [sx2, sy2] = ROAD_WAYPOINTS[0];
+  ctx.save();
+  ctx.shadowColor = '#00FF88'; ctx.shadowBlur = 10;
+  ctx.fillStyle = 'rgba(0,255,136,0.45)';
+  ctx.beginPath(); ctx.arc(sx2, sy2, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 const BACKGROUNDS = [
   { id: 'dark',   label: '🌌 Dark Space',  type: 'color', color: '#0d0d1a' },
   { id: 'alien',  label: '👽 Alien Planet', type: 'image', src: '/images/gamebuilder/bg/alien_planet.jpg' },
@@ -1529,6 +1635,7 @@ const BACKGROUNDS = [
   { id: 'sunset', label: '🌅 Sunset',        type: 'drawn', draw: drawSunsetBg },
   { id: 'ocean',  label: '🌊 Ocean Sky',     type: 'drawn', draw: drawOceanBg },
   { id: 'maze',   label: '🌀 Maze',   type: 'drawn', draw: drawMazeBg },
+  { id: 'road',   label: '🛣️ Road Drive', type: 'drawn', draw: drawRoadBg },
 ];
 
 /* ── Game Config (editable via code panel) ──────────────────────────────── */
@@ -2567,8 +2674,9 @@ function buildPlayState(lv) {
   // For maze background always spawn at the maze start node so the player
   // begins inside a corridor regardless of where the editor marker was placed.
   const mazeMode = game.background === 'maze';
-  const spawnX = mazeMode ? MAZE_CX[0] - 20 : lvClone.playerStart.x - 20;
-  const spawnY = mazeMode ? MAZE_RY[0] - 20 : lvClone.playerStart.y - 20;
+  const roadMode = game.background === 'road';
+  const spawnX = mazeMode ? MAZE_CX[0] - 20 : roadMode ? ROAD_WAYPOINTS[0][0] - 20 : lvClone.playerStart.x - 20;
+  const spawnY = mazeMode ? MAZE_RY[0] - 20 : roadMode ? ROAD_WAYPOINTS[0][1] - 20 : lvClone.playerStart.y - 20;
   return {
     player: {
       x:    spawnX,
@@ -2588,7 +2696,7 @@ function buildPlayState(lv) {
     })),
     totalStars, score:0,
     won:false, wonHandled:false,
-    hitFlash:0, particles:[], scorePops:[],
+    hitFlash:0, particles:[], scorePops: roadMode ? [{x:W/2,y:H/2-40,alpha:1,dy:-0.5,text:'🚗 You\'re now driving!'}] : [],
     sbDir:0, sbMoving:false, keys:{},
     spawnX, spawnY,
   };
@@ -2719,6 +2827,33 @@ function updatePlay(st) {
   ps.x+=ps.vx; ps.y+=ps.vy;
   resolveBarriers(ps,[...st.barriers,...BORDER_WALLS]);
   if(game.background==='maze') resolveMazeCollision(ps,_px,_py);
+  if(game.background==='road') resolveRoadCollision(ps,_px,_py);
+
+  // Road obstacle collisions — damage on contact
+  if (game.background==='road' && st.invincible <= 0 && !a11y.guidedMode) {
+    const rpcx=ps.x+ps.size/2, rpcy=ps.y+ps.size/2;
+    for (const ob of ROAD_OBSTACLES) {
+      if (Math.hypot(ob.x-rpcx, ob.y-rpcy) < ps.size/2+ob.r) {
+        sfxHit();
+        st.currentHearts = Math.max(0, st.currentHearts-1);
+        st.hitFlash = a11y.reduceMotion ? 1 : 36;
+        st.invincible = 90;
+        ps.x = st.spawnX; ps.y = st.spawnY;
+        if (st.currentHearts <= 0) {
+          st.currentHearts = st.startHearts;
+          st.scorePops.push({x:W/2,y:H/2-30,alpha:1,dy:-0.8,text:'💥 Crashed! Respawning…'});
+        } else {
+          st.scorePops.push({x:W/2,y:H/2-30,alpha:1,dy:-1.2,text:'-1 ❤️ Crash!'});
+        }
+        break;
+      }
+    }
+  }
+
+  // Update car heading angle for road mode
+  if (game.background==='road' && (ps.vx !== 0 || ps.vy !== 0)) {
+    ps.carAngle = Math.atan2(ps.vy, ps.vx) + Math.PI/2;
+  }
 
   // NPCs
   for (const n of st.npcs) {
@@ -2841,12 +2976,20 @@ function drawPlay(st) {
     ctx.fillText(a11y.guidedMode?'😊':n.emoji,cx,cy+1);
   }
 
-  // Player — uses custom emoji + name
+  // Player — uses custom emoji + name; road mode shows 🚗 rotated by movement direction
   const pcx=ps.x+ps.size/2,pcy=ps.y+ps.size/2;
+  const isRoad=game.background==='road';
   if(HC){ctx.fillStyle='#FFFF00';ctx.beginPath();ctx.arc(pcx,pcy,ps.size/2,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#FFF';ctx.lineWidth=3;ctx.stroke();}
-  else{ctx.shadowColor='#00FF88';ctx.shadowBlur=a11y.reduceMotion?0:18;ctx.fillStyle='#00FF88';ctx.beginPath();ctx.arc(pcx,pcy,ps.size/2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+  else{ctx.shadowColor=isRoad?'#FF8800':'#00FF88';ctx.shadowBlur=a11y.reduceMotion?0:18;ctx.fillStyle=isRoad?'#FF8800':'#00FF88';ctx.beginPath();ctx.arc(pcx,pcy,ps.size/2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+  ctx.save();
+  if (isRoad && ps.carAngle !== undefined) {
+    ctx.translate(pcx, pcy);
+    ctx.rotate(ps.carAngle);
+    ctx.translate(-pcx, -pcy);
+  }
   ctx.font=`${Math.floor(ps.size*0.55)}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(game.playerEmoji,pcx,pcy+1);
+  ctx.fillText(isRoad?'🚗':game.playerEmoji,pcx,pcy+1);
+  ctx.restore();
   // Player name above character
   const nameY = ps.y - 4;
   if (game.playerName) {
@@ -2906,6 +3049,7 @@ function drawPlay(st) {
   if(a11y.slowMode)    {drawPBadge(ctx,'🐌 SLOW',32,by2,'#006666',bf);by2+=22;}
   if(a11y.guidedMode)  {drawPBadge(ctx,'🧭 GUIDED',32,by2,'#005500',bf);by2+=22;}
   if(a11y.singleButton){const d=['→','↓','←','↑'][st.sbDir];drawPBadge(ctx,`🕹️ ${d}`,32,by2,'#330066',bf);by2+=22;}
+  if(game.background==='road') {drawPBadge(ctx,'🚗 ROAD',32,by2,'#5c3300',bf);by2+=22;}
 
   // Score pops
   ctx.textAlign='center'; ctx.textBaseline='middle';
