@@ -3295,7 +3295,7 @@ function playLoop() {
 ═══════════════════════════════════════════════════════════════════════════ */
 const SAVE_KEY = 'uesl_gm_v2';
 const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:8242'
+  ? 'http://localhost:8424'
   : 'https://flask.opencodingsociety.com';
 const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8585'
@@ -4564,7 +4564,7 @@ const game = window._gmGame;
 window._mp = { socket: null, roomId: null, partnerPos: null, _lastEmit: 0, bc: null };
 
 const SOCKET_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:8242' : 'https://flask.opencodingsociety.com';
+  ? 'http://localhost:8424' : 'https://flask.opencodingsociety.com';
 
 // ── Co-op game event system ───────────────────────────────────────────────
 // Handles a co-op event received from the partner (star collected, level done)

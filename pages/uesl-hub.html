@@ -1847,7 +1847,7 @@ permalink: /uesl-hub/
 
   <script>
   (function () {
-    const BACKEND = 'http://localhost:8242';
+    const BACKEND = 'http://localhost:8424';
     const bubble  = document.getElementById('uesl-chat-bubble');
     // Fade in immediately, stay for 6s, then fade out
     setTimeout(() => bubble.classList.add('show'), 200);
@@ -2202,7 +2202,7 @@ permalink: /uesl-hub/
   ═══════════════════════════════════════════════════════════════════════════ */
   const _AUTH = {
     PYTHON_URI: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8242' : 'https://flask.opencodingsociety.com',
+      ? 'http://localhost:8424' : 'https://flask.opencodingsociety.com',
     suEmail: '',
     onSuccess: null,   // set by the social IIFE after it boots
   };
@@ -2422,7 +2422,7 @@ permalink: /uesl-hub/
 
     // ── Config ───────────────────────────────────────────────────────────────
     const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8242'
+      ? 'http://localhost:8424'
       : 'https://flask.opencodingsociety.com';
     const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8585'

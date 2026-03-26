@@ -224,19 +224,18 @@ function handleGoogleDispatch(response) {
                 <input type="text" id="suUid" placeholder="User ID">
             </div>
             <div class="form-group">
-                <input type="text" id="suSid" placeholder="Student ID">
+                <input type="date" id="suBirthdate" placeholder="Birthdate" onchange="checkMinor()">
+            </div>
+            <div id="suParentEmailGroup" style="display:none;">
+                <div class="form-group">
+                    <input type="email" id="suParentEmail" placeholder="Parent/Guardian Email (required for minors)">
+                </div>
+                <p style="font-size:0.8rem; color:#f59e0b; margin: -0.5rem 0 0.75rem;">
+                    You are under 18. A parent or guardian email is required to link their account.
+                </p>
             </div>
             <div class="form-group">
-                <select id="suSchool">
-                    <option value="" disabled selected>Select Your High School</option>
-                    <option value="Abraxas High School">Abraxas</option>
-                    <option value="Del Norte High School">Del Norte</option>
-                    <option value="Mt Carmel High School">Mt Carmel</option>
-                    <option value="Poway High School">Poway</option>
-                    <option value="Poway to Palomar">Poway to Palomar</option>
-                    <option value="Rancho Bernardo High School">Rancho Bernardo</option>
-                    <option value="Westview High School">Westview</option>
-                </select>
+                <input type="text" id="suLocation" placeholder="Location (City, State or Country)">
             </div>
             <div id="suPasswordGroup">
                 <div class="form-group">
@@ -473,8 +472,10 @@ function handleGoogleDispatch(response) {
         document.getElementById('suName').value = suGoogleName;
         document.getElementById('suPasswordGroup').style.display = suIsGoogle ? 'none' : '';
         document.getElementById('suUid').value = '';
-        document.getElementById('suSid').value = '';
-        document.getElementById('suSchool').selectedIndex = 0;
+        document.getElementById('suBirthdate').value = '';
+        document.getElementById('suLocation').value = '';
+        document.getElementById('suParentEmail').value = '';
+        document.getElementById('suParentEmailGroup').style.display = 'none';
         document.getElementById('suCreateMsg').className = 'overall-status hidden';
         suShowStep(3);
     }
@@ -571,17 +572,42 @@ function handleGoogleDispatch(response) {
 
     // ── Signup: Step 3 → create account ───────────────────────────────────────
 
-    window.suCreate = async function() {
-        const name   = document.getElementById('suName').value.trim();
-        const uid    = document.getElementById('suUid').value.trim();
-        const sid    = document.getElementById('suSid').value.trim();
-        const school = document.getElementById('suSchool').value;
-        const kasm   = document.getElementById('suKasm').checked;
+    window.checkMinor = function() {
+        const birthdateVal = document.getElementById('suBirthdate').value;
+        if (!birthdateVal) return;
+        const bdate = new Date(birthdateVal);
+        const today = new Date();
+        let age = today.getFullYear() - bdate.getFullYear();
+        const m = today.getMonth() - bdate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bdate.getDate())) age--;
+        document.getElementById('suParentEmailGroup').style.display = age < 18 ? '' : 'none';
+    };
 
-        if (!name || !uid || !sid || !school) {
+    window.suCreate = async function() {
+        const name      = document.getElementById('suName').value.trim();
+        const uid       = document.getElementById('suUid').value.trim();
+        const birthdate = document.getElementById('suBirthdate').value;
+        const location  = document.getElementById('suLocation').value.trim();
+        const kasm      = document.getElementById('suKasm').checked;
+
+        if (!name || !uid || !birthdate || !location) {
             const el = document.getElementById('suCreateMsg');
             el.className = 'overall-status error';
             el.textContent = 'Please fill in all fields.';
+            return;
+        }
+
+        // Check if minor and require parent email
+        const bdate = new Date(birthdate);
+        const today = new Date();
+        let age = today.getFullYear() - bdate.getFullYear();
+        const m = today.getMonth() - bdate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bdate.getDate())) age--;
+        const parentEmail = document.getElementById('suParentEmail').value.trim();
+        if (age < 18 && !parentEmail) {
+            const el = document.getElementById('suCreateMsg');
+            el.className = 'overall-status error';
+            el.textContent = 'Parent/guardian email is required for users under 18.';
             return;
         }
 
@@ -616,7 +642,7 @@ function handleGoogleDispatch(response) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ name, uid, sid, school, email: suEmail, password, kasm_server_needed: kasm, auth_type: suIsGoogle ? 'google' : 'otp' })
+                body: JSON.stringify({ name, uid, birthdate, location, parent_email: age < 18 ? parentEmail : undefined, email: suEmail, password, kasm_server_needed: kasm, auth_type: suIsGoogle ? 'google' : 'otp' })
             });
             if (res.ok) {
                 msgEl.className = 'overall-status success';
