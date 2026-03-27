@@ -9,10 +9,10 @@ export async function getUserData() {
     let name = null;
     let uid = null;
     let email = null;
-    let sid = null;
+    let age = null;
     let totpEnabled = null;
     let pfp = null;
-    let school = null;
+    let parent = null;
 
     // get the flask data (READ OPERATION)
     try {
@@ -24,10 +24,10 @@ export async function getUserData() {
             name = data.name;
             uid = data.uid;
             email = data.email;
-            sid = data.sid;
+            age = data.age;
             totpEnabled = data.totp_enabled !== undefined ? data.totp_enabled : true;
             pfp = data.pfp;
-            school = data.school;
+            parent = data.parent;
         } else {
             console.error('error fetching data:', response.status);
         }
@@ -36,5 +36,5 @@ export async function getUserData() {
     }
 
     // return all data in an array
-    return [name, uid, email, sid, totpEnabled, pfp, school];
+    return [name, uid, email, age, totpEnabled, pfp, parent];
 }

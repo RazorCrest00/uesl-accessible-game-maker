@@ -68,38 +68,40 @@ active_tab: profile
         </div>
     </div>
 
-    <!-- School Section -->
+    <!-- Age / Parent Section -->
     <div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
-        <h2 class="text-xl font-semibold mb-6">School Information</h2>
+        <h2 class="text-xl font-semibold mb-6">Personal Information</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- High School Selection -->
+            <!-- Age -->
             <div>
-                <label for="schoolChangeInput" class="block text-sm font-medium text-gray-300 mb-1">High School</label>
-                <select id="schoolChangeInput" name="school"
+                <label for="ageChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Age</label>
+                <input type="number" id="ageChangeInput" name="age" min="1" max="120"
                     class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    onchange="checkForChanges()">
-                    <option value="" disabled>Select Your High School</option>
-                    <option value="Abraxas High School">Abraxas</option>
-                    <option value="Del Norte High School">Del Norte</option>
-                    <option value="Mt Carmel High School">Mt Carmel</option>
-                    <option value="Poway High School">Poway</option>
-                    <option value="Poway to Palomar">Poway to Palomar</option>
-                    <option value="Rancho Bernardo High School">Rancho Bernardo</option>
-                    <option value="Westview High School">Westview</option>
-                </select>
+                    value="" onchange="checkForChanges(); toggleParentField();" autocomplete="off">
             </div>
 
-            <!-- Student ID -->
-            <div>
-                <label for="sidChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Student
-                    ID (7 digits)</label>
-                <input type="text" id="sidChangeInput" name="studentId"
+            <!-- Parent / Guardian (shown only if minor) -->
+            <div id="parentFieldWrapper" class="hidden">
+                <label for="parentChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Parent / Guardian Name</label>
+                <input type="text" id="parentChangeInput" name="parent"
                     class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     value="" onchange="checkForChanges()" autocomplete="off">
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleParentField() {
+            const age = parseInt(document.getElementById("ageChangeInput").value, 10);
+            const wrapper = document.getElementById("parentFieldWrapper");
+            if (!isNaN(age) && age < 18) {
+                wrapper.classList.remove("hidden");
+            } else {
+                wrapper.classList.add("hidden");
+            }
+        }
+    </script>
 
     <!-- Classes Section -->
     <div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">

@@ -15,11 +15,11 @@
 #   in _config.yml. It will appear in your document head meta (for Google search
 #   results) and in your feed.xml site description.
 
-title: Open Coding 
-description: "Class of 2026"
-owner_name: SimpleGame 
-github_username: open-coding-society 
-github_repo: "pages" 
+title: UESL
+description: "Unified Esports League — Helping people with disabilities grow through gaming and technology."
+owner_name: Unified Esports League
+github_username: unified-esports-league
+github_repo: "pages"
 baseurl: "" 
 future: true
 
@@ -119,14 +119,11 @@ plugins:
 minima:
   skin: dark
   social_links:
-    - { platform: github, user_url: "https://github.com/open-coding-society" }
-    - { platform: x, user_url: "https://x.com/Open_Coding" }
-    - { platform: youtube, user_url: "https://www.youtube.com/@OpenCodingSociety" } 
+    - { platform: github, user_url: "https://github.com/unified-esports-league" }
   nav_pages:
     - navigation/blog.md
     - navigation/courses.md
     - navigation/search.md
-    - pages/uesl-hub.html
 
 gemini_api_key: AIzaSyBWEz5qHeWx5buC4I4dZ2fllaMk3z8k_-w
 

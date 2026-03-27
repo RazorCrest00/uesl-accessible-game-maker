@@ -1,10 +1,10 @@
 {
-  "name": "SimpleGame",
-  "short_name": "OCS",
-  "start_url": "/mobile/",
+  "name": "Unified Esports League",
+  "short_name": "UESL",
+  "start_url": "/uesl-hub/",
   "display": "standalone",
-  "background_color": "#0f1113",
-  "theme_color": "#60a5fa",
+  "background_color": "#0d1117",
+  "theme_color": "#00d4ff",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [

@@ -1,7 +1,7 @@
 ---
 layout: false
 title: "UESL Hub"
-permalink: /uesl-hub/
+permalink: /
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -1979,19 +1979,8 @@ permalink: /uesl-hub/
             <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px;">Verified: <span id="slm-r-verified-email" style="color:var(--green);"></span></p>
             <div class="slm-field"><label class="slm-label">Full Name</label><input class="slm-input" id="slm-r-name" type="text" placeholder="Your Name"/></div>
             <div class="slm-field"><label class="slm-label">User ID</label><input class="slm-input" id="slm-r-uid" type="text" placeholder="choose_a_username"/></div>
-            <div class="slm-field"><label class="slm-label">Student ID</label><input class="slm-input" id="slm-r-sid" type="text" placeholder="Student ID #"/></div>
-            <div class="slm-field"><label class="slm-label">High School</label>
-              <select class="slm-input" id="slm-r-school">
-                <option value="" disabled selected>Select Your High School</option>
-                <option value="Abraxas High School">Abraxas High School</option>
-                <option value="Del Norte High School">Del Norte High School</option>
-                <option value="Mt Carmel High School">Mt Carmel High School</option>
-                <option value="Poway High School">Poway High School</option>
-                <option value="Poway to Palomar">Poway to Palomar</option>
-                <option value="Rancho Bernardo High School">Rancho Bernardo High School</option>
-                <option value="Westview High School">Westview High School</option>
-              </select>
-            </div>
+            <div class="slm-field"><label class="slm-label">Age</label><input class="slm-input" id="slm-r-age" type="number" min="1" max="120" placeholder="Your age"/></div>
+            <div class="slm-field" id="slm-r-parent-field" style="display:none;"><label class="slm-label">Parent / Guardian Name</label><input class="slm-input" id="slm-r-parent" type="text" placeholder="Parent or guardian name"/></div>
             <div class="slm-field"><label class="slm-label">Password (min 8 chars)</label><input class="slm-input" id="slm-r-pass" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
             <div class="slm-field"><label class="slm-label">Confirm Password</label><input class="slm-input" id="slm-r-pass2" type="password" placeholder="••••••••"/></div>
             <button class="slm-btn" id="slm-r-create-btn" onclick="slmSuCreate()">Create Account</button>
@@ -2147,7 +2136,7 @@ permalink: /uesl-hub/
   ═══════════════════════════════════════════════════════════════════════════ */
   const _AUTH = {
     PYTHON_URI: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8424' : 'https://flask.opencodingsociety.com',
+      ? 'http://localhost:8424' : 'https://flask.uesl.io',
     suEmail: '',
     onSuccess: null,   // set by the social IIFE after it boots
   };
@@ -2280,18 +2269,28 @@ permalink: /uesl-hub/
   }
 
   // ── REGISTER step 3: create account ──────────────────────────────────────
+  function slmToggleParent() {
+    const age = parseInt(document.getElementById('slm-r-age').value, 10);
+    document.getElementById('slm-r-parent-field').style.display = (!isNaN(age) && age < 18) ? '' : 'none';
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    const ageInput = document.getElementById('slm-r-age');
+    if (ageInput) ageInput.addEventListener('input', slmToggleParent);
+  });
+
   async function slmSuCreate() {
     const name   = document.getElementById('slm-r-name').value.trim();
     const uid    = document.getElementById('slm-r-uid').value.trim();
-    const sid    = document.getElementById('slm-r-sid').value.trim();
-    const school = document.getElementById('slm-r-school').value;
+    const age    = parseInt(document.getElementById('slm-r-age').value, 10);
+    const parentEl = document.getElementById('slm-r-parent');
+    const parent = parentEl ? parentEl.value.trim() : '';
     const pw     = document.getElementById('slm-r-pass').value;
     const pw2    = document.getElementById('slm-r-pass2').value;
 
-    if (!name)   { _authMsg('slm-r3-msg','Full name is required.','error'); return; }
-    if (!uid)    { _authMsg('slm-r3-msg','User ID is required.','error'); return; }
-    if (!sid)    { _authMsg('slm-r3-msg','Student ID is required.','error'); return; }
-    if (!school) { _authMsg('slm-r3-msg','Please select your high school.','error'); return; }
+    if (!name)       { _authMsg('slm-r3-msg','Full name is required.','error'); return; }
+    if (!uid)        { _authMsg('slm-r3-msg','User ID is required.','error'); return; }
+    if (isNaN(age))  { _authMsg('slm-r3-msg','Age is required.','error'); return; }
+    if (age < 18 && !parent) { _authMsg('slm-r3-msg','Parent / guardian name is required for minors.','error'); return; }
     if (pw.length < 8) { _authMsg('slm-r3-msg','Password must be at least 8 characters.','error'); return; }
     if (pw !== pw2)    { _authMsg('slm-r3-msg','Passwords do not match.','error'); return; }
     if (!_AUTH.suEmail) { _authMsg('slm-r3-msg','Email verification required — go back to step 1.','error'); return; }
@@ -2304,7 +2303,7 @@ permalink: /uesl-hub/
       const r = await fetch(`${_AUTH.PYTHON_URI}/api/user`, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, uid, sid, school, email: _AUTH.suEmail, password: pw, kasm_server_needed: false, auth_type: 'otp' })
+        body: JSON.stringify({ name, uid, age, parent: age < 18 ? parent : undefined, email: _AUTH.suEmail, password: pw, kasm_server_needed: false, auth_type: 'otp' })
       });
       if (r.ok) {
         _authMsg('slm-r3-msg','Account created! Signing you in…','success');
@@ -2329,10 +2328,10 @@ permalink: /uesl-hub/
     document.getElementById('slm-r1').style.display = '';
     document.getElementById('slm-r2').style.display = 'none';
     document.getElementById('slm-r3').style.display = 'none';
-    ['slm-r-email','slm-r-otp','slm-r-name','slm-r-uid','slm-r-sid','slm-r-pass','slm-r-pass2'].forEach(id => {
+    ['slm-r-email','slm-r-otp','slm-r-name','slm-r-uid','slm-r-age','slm-r-parent','slm-r-pass','slm-r-pass2'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
-    document.getElementById('slm-r-school').selectedIndex = 0;
+    document.getElementById('slm-r-parent-field').style.display = 'none';
     document.getElementById('slm-r-dev-otp-box').style.display = 'none';
     const btn = document.getElementById('slm-r-send-btn');
     btn.disabled = false; btn.textContent = 'Send Verification Code';
@@ -2368,10 +2367,10 @@ permalink: /uesl-hub/
     // ── Config ───────────────────────────────────────────────────────────────
     const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8424'
-      : 'https://flask.opencodingsociety.com';
+      : 'https://flask.uesl.io';
     const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8585'
-      : 'https://spring.opencodingsociety.com';
+      : 'https://spring.uesl.io';
     const FETCH_OPTS = { mode: 'cors', cache: 'default', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' } };
     function getDevMode() { return sessionStorage.getItem('devMode') === 'true'; }
 
