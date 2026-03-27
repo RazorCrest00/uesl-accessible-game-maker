@@ -470,12 +470,13 @@ permalink: /game-maker/
   max-width: 700px;
   margin: 0 auto;
 }
-#gm-play-canvas {
+#gm-play-container {
   display: block;
   border: 2px solid #333;
   border-radius: 10px;
   width: 100%;
-  height: auto;
+  height: 520px;
+  max-width: 800px;
 }
 
 /* HTML overlays on top of play canvas */
@@ -953,6 +954,105 @@ permalink: /game-maker/
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 200px; gap: 10px; color: #7788bb; font-size: 0.95rem; text-align: center;
 }
+/* ─── Step Wizard ────────────────────────────────────────────────────────── */
+#step-bar {
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 0;
+}
+.step-dot {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: background 0.15s;
+}
+.step-dot:hover { background: rgba(255,255,255,0.05); }
+.step-dot-circle {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid #445; background: #1a1a3e; color: #888;
+  font-size: 0.88rem; font-weight: bold;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.step-dot.active .step-dot-circle { border-color: #FFD700; background: #FFD700; color: #000; }
+.step-dot.done   .step-dot-circle { border-color: #00FF88; background: #0a2a1a; color: #00FF88; }
+.step-dot-label {
+  font-size: 0.62rem; color: #556; font-weight: bold;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.step-dot.active .step-dot-label { color: #FFD700; }
+.step-dot.done   .step-dot-label { color: #00FF88; }
+.step-line { height: 2px; background: #2a2a50; min-width: 16px; max-width: 48px; flex: 1; margin-bottom: 20px; }
+.step-panel { display: none; }
+.step-panel.active { display: block; }
+.step-header { margin-bottom: 18px; }
+.step-badge {
+  display: inline-block; background: #1a1a40; border: 1px solid #3344aa; border-radius: 20px;
+  padding: 2px 10px; font-size: 0.72rem; color: #aabbff; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.05em;
+}
+.step-header h2 { margin: 0 0 6px; font-size: 1.35rem; color: #FFD700; }
+.step-header p  { margin: 0; color: #888; font-size: 0.88rem; }
+.step-body { background: #0e0e28; border: 1.5px solid #2a2a50; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.step-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.step-back-btn {
+  padding: 9px 20px; border: 2px solid #556; border-radius: 24px;
+  background: transparent; color: #888; font-size: 0.88rem; font-weight: bold; cursor: pointer; transition: all 0.15s;
+}
+.step-back-btn:hover { border-color: #aaa; color: #fff; }
+.step-next-btn {
+  padding: 9px 24px; border: 2px solid #FFD700; border-radius: 24px;
+  background: #FFD700; color: #000; font-size: 0.88rem; font-weight: bold; cursor: pointer; transition: all 0.15s;
+}
+.step-next-btn:hover { background: #e6c200; }
+.step-play-btn {
+  padding: 11px 30px; border: none; border-radius: 24px;
+  background: #00FF88; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 0 20px rgba(0,255,136,0.35);
+}
+.step-play-btn:hover { background: #00e67a; }
+.step-label-text {
+  display: block; font-size: 0.8rem; color: #aabbff; font-weight: bold;
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px;
+}
+.step-text-input {
+  width: 100%; background: #1a1a40; border: 2px solid #4455bb; border-radius: 8px;
+  color: #FFD700; font-size: 1.05rem; font-weight: bold; padding: 10px 14px; box-sizing: border-box;
+}
+.step-text-input::placeholder { color: #556; }
+.step-text-input:focus { outline: none; border-color: #FFD700; }
+#step-2 #gi-emoji-popup {
+  position: static !important; display: flex !important; flex-wrap: wrap;
+  gap: 6px; background: transparent; border: none; box-shadow: none; padding: 0; width: 100%;
+}
+#step-2 #gi-emoji-popup.hidden { display: flex !important; }
+#step-2 .gi-emoji-opt {
+  font-size: 1.5rem; width: 44px; height: 44px; border: 2px solid #333; border-radius: 10px;
+  background: #111; cursor: pointer; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+#step-2 .gi-emoji-opt:hover  { border-color: #888; background: #1e1e2e; }
+#step-2 .gi-emoji-opt.selected { border-color: #FFD700; background: #2a260a; }
+#goal-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 600px) { #goal-options { grid-template-columns: 1fr; } }
+.goal-opt {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 14px 16px;
+  border: 2px solid #334; border-radius: 12px; background: #141428; color: #ddd;
+  cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.goal-opt:hover  { border-color: #88aaff; background: #1a1a40; }
+.goal-opt.active { border-color: #FFD700; background: #1c1400; box-shadow: 0 0 10px rgba(255,215,0,0.15); }
+.goal-emoji { font-size: 1.6rem; }
+.goal-title { font-size: 0.88rem; font-weight: bold; color: #fff; }
+.goal-desc  { font-size: 0.76rem; color: #888; }
+#config-preview-box {
+  background: #0a0a10; border: 1.5px solid #2a2a40; border-radius: 10px; overflow: hidden; margin-bottom: 14px;
+}
+#config-preview-hdr {
+  display: flex; align-items: center; gap: 10px; padding: 7px 12px;
+  background: #141428; border-bottom: 1px solid #1e1e30; cursor: pointer; user-select: none;
+}
+#config-preview-hdr .cp-dots { display: flex; gap: 5px; }
+#config-preview-hdr .cp-dots span { width: 10px; height: 10px; border-radius: 50%; display: block; }
+#config-preview-hdr .cp-title { font-size: 0.78rem; color: #aabbff; font-weight: bold; letter-spacing: 0.06em; font-family: 'Courier New', monospace; }
+#config-preview-body { padding: 12px 16px; }
+#config-preview-body.hidden { display: none; }
+#config-code { margin: 0; font-family: 'Courier New', monospace; font-size: 0.82rem; color: #c8d0ff; line-height: 1.6; white-space: pre; }
 </style>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
@@ -991,133 +1091,337 @@ permalink: /game-maker/
     <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
       <span style="font-size:2rem;font-weight:900;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(255,255,255,0.25);pointer-events:none;user-select:none;">Game Engine</span>
       <div id="gm-tabs">
-        <button class="gm-tab active" data-mode="design">🎨 Design</button>
+        <button class="gm-tab active" data-mode="design">🏗️ Builder</button>
         <button class="gm-tab"        data-mode="play">▶ Play</button>
-        <button class="gm-tab"        data-mode="settings">⚙️ Settings</button>
         <button class="gm-tab"        data-mode="chat">💬 Chat</button>
       </div>
     </div>
   </div>
 
-  <!-- ══════════ GAME INFO BAR (always visible in Design) ════════════════ -->
-  <div id="gm-game-info-bar">
-    <div class="gi-section">
-      <label>🎮 Game Title</label>
-      <input id="gi-title" type="text" placeholder="My Awesome Game" maxlength="40" autocomplete="off">
-    </div>
-    <div class="gi-section">
-      <label>Your Character</label>
-      <div class="gi-char-row">
-        <div id="gi-emoji-btn" title="Pick an emoji for your character">🎮</div>
-        <div id="gi-emoji-popup" class="hidden"></div>
-        <input id="gi-char-name" type="text" placeholder="Hero" maxlength="20" autocomplete="off">
-      </div>
-    </div>
-    <div class="gi-section">
-      <label>🎨 Background</label>
-      <select id="gi-bg-select" title="Choose a background for your game">
-        <option value="dark">🌌 Dark Space</option>
-        <option value="alien">👽 Alien Planet</option>
-        <option value="sky">☁️ Sky Kingdom</option>
-        <option value="space">🚀 Deep Space</option>
-        <option value="sunset">🌅 Sunset</option>
-        <option value="ocean">🌊 Ocean Sky</option>
-        <option value="maze">🌀 Maze</option>
-        <option value="road">🛣️ Road Drive</option>
-      </select>
-    </div>
-    <div class="gi-section" style="margin-left:auto; font-size:0.78rem; color:#555; line-height:1.7;">
-      Name your game &amp; character<br>— they'll show up when you play!
-    </div>
-  </div>
-
-  <!-- ══════════ DESIGN MODE ════════════════════════════════════════════ -->
+  <!-- ══════════ BUILDER MODE (step-by-step game creator) ════════════════ -->
   <div id="gm-mode-design" class="gm-mode active">
-    <div id="gm-design-layout">
 
-      <!-- Left: Tools -->
-      <div id="gm-toolbar">
-        <h3>Tools</h3>
-        <button class="gm-tool-btn active" data-tool="select"><span class="ti">🖱️</span>Select</button>
-        <button class="gm-tool-btn" data-tool="player"><span class="ti">🎮</span>Start</button>
-        <button class="gm-tool-btn" data-tool="wall"><span class="ti">🧱</span>Wall</button>
-        <button class="gm-tool-btn" data-tool="star"><span class="ti">⭐</span>Star</button>
-        <button class="gm-tool-btn" data-tool="heart"><span class="ti">❤️</span>Heart</button>
-        <button class="gm-tool-btn" data-tool="npc"><span class="ti">👾</span>NPC</button>
-        <button class="gm-tool-btn" data-tool="erase"><span class="ti">🗑️</span>Erase</button>
-
-        <div class="gm-sep"></div>
-        <h3>Edit</h3>
-        <button class="gm-act" id="gm-undo-btn">↩ Undo</button>
-        <button class="gm-act" id="gm-redo-btn">↪ Redo</button>
-        <button class="gm-act danger" id="gm-clear-btn">✕ Clear Level</button>
-
-        <div class="gm-sep"></div>
-        <h3>Game</h3>
-        <button class="gm-act" id="gm-save-btn">💾 Save</button>
-        <button class="gm-act" id="gm-load-btn">📂 My Games</button>
-        <button class="gm-act primary" id="gm-play-btn">▶ Play!</button>
+    <!-- Step Progress Bar -->
+    <div id="step-bar">
+      <div class="step-dot active" data-step="1" onclick="showStep(1)">
+        <div class="step-dot-circle">1</div>
+        <div class="step-dot-label">Name</div>
       </div>
-
-      <!-- Center: Level Tabs + Canvas -->
-      <div id="gm-editor-wrap">
-        <div id="gm-level-tabs-bar">
-          <div id="gm-level-tabs"></div>
-          <button id="gm-add-level-btn">＋ Add Level</button>
-          <button id="gm-remove-level-btn">🗑 Remove</button>
-        </div>
-        <canvas id="gm-editor-canvas" width="800" height="520"
-          aria-label="Game editor canvas — use tools on the left to build your level"></canvas>
-        <div id="gm-status-bar">👋 Welcome! Pick a tool and start building. Hit ▶ Play when ready!</div>
-
-        <!-- Code Snippet Panel -->
-        <div id="gm-code-panel">
-          <div id="gm-code-panel-hdr">
-            <div class="cp-dots">
-              <span style="background:#ff5f57"></span>
-              <span style="background:#febc2e"></span>
-              <span style="background:#28c840"></span>
-            </div>
-            <span class="cp-title">&lt;/&gt; &nbsp;game_config.js</span>
-            <span class="cp-chevron">▼</span>
-          </div>
-          <div id="gm-code-body">
-            <div class="cp-line-wrap">
-              <div id="gm-code-nums"></div>
-              <textarea id="gm-code-editor" spellcheck="false"></textarea>
-            </div>
-            <div id="gm-code-footer">
-              <span id="gm-code-status">ready</span>
-              <button id="gm-code-apply">▶ Apply</button>
-            </div>
-          </div>
-        </div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="2" onclick="showStep(2)">
+        <div class="step-dot-circle">2</div>
+        <div class="step-dot-label">Player</div>
       </div>
-
-      <!-- Right: Properties + Hints -->
-      <div id="gm-props">
-        <div id="gm-props-panel">
-          <h3>Properties</h3>
-          <div id="gm-props-content">
-            <p style="color:#555;font-size:0.8rem;margin:0;">Select an object or a tool to see options here.</p>
-          </div>
-        </div>
-        <div id="gm-hint-box">
-          <b>🖱️ Select</b> — click &amp; drag<br>
-          <b>🧱 Wall</b> — drag to draw<br>
-          <b>⭐ Star</b> — click to place<br>
-          <b>❤️ Heart</b> — click to place (+1 HP pickup)<br>
-          <b>👾 NPC</b> — click ×2 for path<br>
-          <b>🎮 Start</b> — click to set<br>
-          <b>🗑️ Erase</b> — click to delete<br>
-          <b>DEL</b> — delete selected<br>
-          <b>Ctrl+Z/Y</b> — undo / redo<br>
-          <b>🌀 Maze mode:</b> the spline corridors ARE the walls — place ⭐ stars inside the glowing paths!
-        </div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="3" onclick="showStep(3)">
+        <div class="step-dot-circle">3</div>
+        <div class="step-dot-label">Background</div>
       </div>
-
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="4" onclick="showStep(4)">
+        <div class="step-dot-circle">4</div>
+        <div class="step-dot-label">Goal</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="5" onclick="showStep(5)">
+        <div class="step-dot-circle">5</div>
+        <div class="step-dot-label">Design</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="6" onclick="showStep(6)">
+        <div class="step-dot-circle">6</div>
+        <div class="step-dot-label">Settings</div>
+      </div>
     </div>
-  </div>
+
+    <!-- Config Preview (updates as user makes choices) -->
+    <div id="config-preview-box">
+      <div id="config-preview-hdr" onclick="document.getElementById('config-preview-body').classList.toggle('hidden')">
+        <div class="cp-dots">
+          <span style="background:#ff5f57"></span>
+          <span style="background:#febc2e"></span>
+          <span style="background:#28c840"></span>
+        </div>
+        <span class="cp-title">&lt;/&gt; &nbsp;game_config.js — Your game settings so far</span>
+      </div>
+      <div id="config-preview-body">
+        <pre id="config-code">{}</pre>
+      </div>
+    </div>
+
+    <!-- Step 1: Name Your Game -->
+    <div class="step-panel active" id="step-1">
+      <div class="step-header">
+        <span class="step-badge">Step 1 of 6</span>
+        <h2>Name Your Game</h2>
+        <p>What is your game called? Give it a fun, creative title!</p>
+      </div>
+      <div class="step-body">
+        <label class="step-label-text">Game Title</label>
+        <input type="text" id="gi-title" class="step-text-input" placeholder="My Awesome Game" maxlength="40" autocomplete="off">
+      </div>
+      <div class="step-nav">
+        <span></span>
+        <button class="step-next-btn" onclick="nextStep()">Next: Choose Player →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Choose Your Player -->
+    <div class="step-panel" id="step-2">
+      <div class="step-header">
+        <span class="step-badge">Step 2 of 6</span>
+        <h2>Choose Your Player</h2>
+        <p>Pick an emoji character and give them a name!</p>
+      </div>
+      <div class="step-body">
+        <label class="step-label-text">Pick a Character</label>
+        <div id="gi-emoji-btn" style="display:none;">🎮</div>
+        <div id="gi-emoji-popup" class="hidden"></div>
+        <label class="step-label-text" style="margin-top:16px;">Character Name</label>
+        <input type="text" id="gi-char-name" class="step-text-input" placeholder="Hero" maxlength="20" autocomplete="off">
+      </div>
+      <div class="step-nav">
+        <button class="step-back-btn" onclick="prevStep()">← Back</button>
+        <button class="step-next-btn" onclick="nextStep()">Next: Background →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Pick a Background -->
+    <div class="step-panel" id="step-3">
+      <div class="step-header">
+        <span class="step-badge">Step 3 of 6</span>
+        <h2>Pick a Background</h2>
+        <p>What world will your game take place in? Click a thumbnail to choose.</p>
+      </div>
+      <div class="step-body">
+        <div id="gm-bg-picker"></div>
+        <select id="gi-bg-select" style="display:none;">
+          <option value="dark">🌌 Dark Space</option>
+          <option value="alien">👽 Alien Planet</option>
+          <option value="sky">☁️ Sky Kingdom</option>
+          <option value="space">🚀 Deep Space</option>
+          <option value="sunset">🌅 Sunset</option>
+          <option value="ocean">🌊 Ocean Sky</option>
+          <option value="maze">🌀 Maze</option>
+          <option value="road">🛣️ Road Drive</option>
+        </select>
+      </div>
+      <div class="step-nav">
+        <button class="step-back-btn" onclick="prevStep()">← Back</button>
+        <button class="step-next-btn" onclick="nextStep()">Next: Set Goal →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Set Your Goal -->
+    <div class="step-panel" id="step-4">
+      <div class="step-header">
+        <span class="step-badge">Step 4 of 6</span>
+        <h2>What's the Goal?</h2>
+        <p>What does the player need to do to win your game?</p>
+      </div>
+      <div class="step-body">
+        <div id="goal-options">
+          <button class="goal-opt active" data-goal="collect_stars" onclick="chooseGoal('collect_stars')">
+            <span class="goal-emoji">⭐</span>
+            <span class="goal-title">Collect the Stars</span>
+            <span class="goal-desc">Find and collect all the glowing stars on each level</span>
+          </button>
+          <button class="goal-opt" data-goal="explore" onclick="chooseGoal('explore')">
+            <span class="goal-emoji">🗺️</span>
+            <span class="goal-title">Explore and Collect Treasures</span>
+            <span class="goal-desc">Roam the world and gather all the hidden treasures</span>
+          </button>
+          <button class="goal-opt" data-goal="help_friends" onclick="chooseGoal('help_friends')">
+            <span class="goal-emoji">👋</span>
+            <span class="goal-title">Help All Your Friends</span>
+            <span class="goal-desc">Find everyone who needs help and reach them</span>
+          </button>
+          <button class="goal-opt" data-goal="reach_exit" onclick="chooseGoal('reach_exit')">
+            <span class="goal-emoji">🚪</span>
+            <span class="goal-title">Find the Exit</span>
+            <span class="goal-desc">Navigate through each level to reach the goal</span>
+          </button>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button class="step-back-btn" onclick="prevStep()">← Back</button>
+        <button class="step-next-btn" onclick="nextStep()">Next: Design Levels →</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Design Your Levels (canvas editor) -->
+    <div class="step-panel" id="step-5">
+      <div class="step-header">
+        <span class="step-badge">Step 5 of 6</span>
+        <h2>Design Your Levels</h2>
+        <p>Use the tools below to build your game world. Add walls, stars, NPCs, and more!</p>
+      </div>
+      <div id="gm-design-layout">
+        <!-- Left: Tools -->
+        <div id="gm-toolbar">
+          <h3>Tools</h3>
+          <button class="gm-tool-btn active" data-tool="select"><span class="ti">🖱️</span>Select</button>
+          <button class="gm-tool-btn" data-tool="player"><span class="ti">🎮</span>Start</button>
+          <button class="gm-tool-btn" data-tool="wall"><span class="ti">🧱</span>Wall</button>
+          <button class="gm-tool-btn" data-tool="star"><span class="ti">⭐</span>Star</button>
+          <button class="gm-tool-btn" data-tool="heart"><span class="ti">❤️</span>Heart</button>
+          <button class="gm-tool-btn" data-tool="npc"><span class="ti">👾</span>NPC</button>
+          <button class="gm-tool-btn" data-tool="erase"><span class="ti">🗑️</span>Erase</button>
+          <div class="gm-sep"></div>
+          <h3>Edit</h3>
+          <button class="gm-act" id="gm-undo-btn">↩ Undo</button>
+          <button class="gm-act" id="gm-redo-btn">↪ Redo</button>
+          <button class="gm-act danger" id="gm-clear-btn">✕ Clear Level</button>
+          <div class="gm-sep"></div>
+          <h3>Game</h3>
+          <button class="gm-act" id="gm-save-btn">💾 Save</button>
+          <button class="gm-act" id="gm-load-btn">📂 My Games</button>
+          <button class="gm-act primary" id="gm-play-btn">▶ Play!</button>
+        </div>
+        <!-- Center: Level Tabs + Canvas -->
+        <div id="gm-editor-wrap">
+          <div id="gm-level-tabs-bar">
+            <div id="gm-level-tabs"></div>
+            <button id="gm-add-level-btn">＋ Add Level</button>
+            <button id="gm-remove-level-btn">🗑 Remove</button>
+          </div>
+          <canvas id="gm-editor-canvas" width="800" height="520"
+            aria-label="Game editor canvas — use tools on the left to build your level"></canvas>
+          <div id="gm-status-bar">👋 Welcome! Pick a tool and start building. Hit ▶ Play when ready!</div>
+          <!-- Code Panel -->
+          <div id="gm-code-panel">
+            <div id="gm-code-panel-hdr">
+              <div class="cp-dots">
+                <span style="background:#ff5f57"></span>
+                <span style="background:#febc2e"></span>
+                <span style="background:#28c840"></span>
+              </div>
+              <span class="cp-title">&lt;/&gt; &nbsp;game_config.js — Advanced settings</span>
+              <span class="cp-chevron">▼</span>
+            </div>
+            <div id="gm-code-body">
+              <div class="cp-line-wrap">
+                <div id="gm-code-nums"></div>
+                <textarea id="gm-code-editor" spellcheck="false"></textarea>
+              </div>
+              <div id="gm-code-footer">
+                <span id="gm-code-status">ready</span>
+                <button id="gm-code-apply">▶ Apply</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: Properties + Hints -->
+        <div id="gm-props">
+          <div id="gm-props-panel">
+            <h3>Properties</h3>
+            <div id="gm-props-content">
+              <p style="color:#555;font-size:0.8rem;margin:0;">Select an object or a tool to see options here.</p>
+            </div>
+          </div>
+          <div id="gm-hint-box">
+            <b>🖱️ Select</b> — click &amp; drag<br>
+            <b>🧱 Wall</b> — drag to draw<br>
+            <b>⭐ Star</b> — click to place<br>
+            <b>❤️ Heart</b> — click to place (+1 HP pickup)<br>
+            <b>👾 NPC</b> — click ×2 for path<br>
+            <b>🎮 Start</b> — click to set<br>
+            <b>🗑️ Erase</b> — click to delete<br>
+            <b>DEL</b> — delete selected<br>
+            <b>Ctrl+Z/Y</b> — undo / redo<br>
+            <b>🌀 Maze mode:</b> the spline corridors ARE the walls — place ⭐ stars inside the glowing paths!
+          </div>
+        </div>
+      </div>
+      <div class="step-nav" style="margin-top:10px;">
+        <button class="step-back-btn" onclick="prevStep()">← Back</button>
+        <button class="step-next-btn" onclick="nextStep()">Next: Settings →</button>
+      </div>
+    </div>
+
+    <!-- Step 6: Game Settings -->
+    <div class="step-panel" id="step-6">
+      <div class="step-header">
+        <span class="step-badge">Step 6 of 6</span>
+        <h2>Game Settings</h2>
+        <p>Customize accessibility options and how the game plays.</p>
+      </div>
+      <div class="step-body">
+        <div id="gm-settings-panel">
+          <div class="gm-set-sec">
+            <h3>🕹️ Controls</h3>
+            <label class="gm-tog"><input type="checkbox" id="gs-slow">
+              <span>🐌 Slow Mode<span class="td">Halves game speed — more time to react</span></span></label>
+            <label class="gm-tog"><input type="checkbox" id="gs-single">
+              <span>🕹️ Single-Button Mode<span class="td">SPACE cycles direction, ENTER moves</span></span></label>
+          </div>
+          <div class="gm-set-sec">
+            <h3>👁️ Visuals</h3>
+            <label class="gm-tog"><input type="checkbox" id="gs-contrast">
+              <span>⚡ High-Contrast<span class="td">Black bg, bright yellow &amp; white — for visual processing</span></span></label>
+            <label class="gm-tog"><input type="checkbox" id="gs-large">
+              <span>🔍 Large Sprites<span class="td">Bigger player, NPCs, and stars</span></span></label>
+            <label class="gm-tog"><input type="checkbox" id="gs-reduce">
+              <span>🛑 Reduce Motion<span class="td">Removes particles and screen flash</span></span></label>
+          </div>
+          <div class="gm-set-sec">
+            <h3>🧭 Guidance</h3>
+            <label class="gm-tog"><input type="checkbox" id="gs-guided">
+              <span>🧭 Guided Mode<span class="td">Arrow points to nearest star; NPCs become friendly</span></span></label>
+          </div>
+          <div class="gm-set-sec">
+            <h3>🔊 Audio &amp; Feedback</h3>
+            <label class="gm-tog"><input type="checkbox" id="gs-audio" checked>
+              <span>🔊 Sound Effects<span class="td">Collect sounds, hit sound, win jingle</span></span></label>
+            <label class="gm-tog"><input type="checkbox" id="gs-celebrate" checked>
+              <span>🎉 Celebrations<span class="td">Particle bursts on collection &amp; level complete</span></span></label>
+            <label class="gm-tog"><input type="checkbox" id="gs-music">
+              <span>🎵 Background Music<span class="td">Fun chiptune music while you play</span></span></label>
+            <div id="gs-music-tracks" style="margin-top:10px; display:none;">
+              <div style="color:#aaa; font-size:0.82rem; margin-bottom:6px;">Choose a track:</div>
+              <div id="gs-music-track-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+              <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+                <span style="color:#aaa; font-size:0.82rem;">🔈</span>
+                <input type="range" id="gs-music-vol" min="0" max="100" value="80"
+                  style="flex:1; accent-color:#6366f1; cursor:pointer;">
+                <span style="color:#aaa; font-size:0.82rem;">🔊</span>
+              </div>
+            </div>
+          </div>
+          <div class="gm-set-sec">
+            <h3>📷 Face Tracking</h3>
+            <label class="gm-tog"><input type="checkbox" id="gs-face">
+              <span>📷 Face Control<span class="td">Use your head to move — lean left/right/up/down</span></span></label>
+            <div id="gm-face-panel" style="display:none; margin-top:10px;">
+              <video id="gm-face-video" style="display:none;" autoplay playsinline muted></video>
+              <canvas id="gm-face-preview" width="160" height="120"
+                style="border-radius:8px; border:2px solid #556; display:block; margin-bottom:8px;"></canvas>
+              <div id="gm-face-status" style="font-size:0.82rem; color:#aabbff; margin-bottom:8px;">Waiting for camera...</div>
+              <label style="font-size:0.82rem; color:#aabbff; display:block; margin-bottom:4px;">
+                Sensitivity:
+                <input type="range" id="gm-face-sens" min="4" max="25" value="12" style="width:120px; vertical-align:middle;">
+                <span id="gm-face-sens-val">12</span>%
+              </label>
+              <button id="gm-face-recal" style="background:#1a1a40; border:2px solid #4455bb; border-radius:8px; color:#FFD700; font-size:0.85rem; padding:6px 14px; cursor:pointer;">
+                🎯 Recalibrate Center
+              </button>
+              <div id="gm-face-dirs" style="display:flex; gap:6px; margin-top:8px; font-size:1.1rem;">
+                <span id="fd-up" style="opacity:0.25;">↑</span>
+                <span id="fd-down" style="opacity:0.25;">↓</span>
+                <span id="fd-left" style="opacity:0.25;">←</span>
+                <span id="fd-right" style="opacity:0.25;">→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button class="step-back-btn" onclick="prevStep()">← Back</button>
+        <button class="step-play-btn" onclick="runGame(myGame)">▶ Play Your Game!</button>
+      </div>
+    </div>
+
+  </div><!-- #gm-mode-design -->
 
   <!-- Multiplayer modal -->
   <div id="mp-modal-overlay">
@@ -1152,8 +1456,7 @@ permalink: /game-maker/
       <span id="mp-status-text">Partner connected!</span>
     </div>
     <div id="gm-play-area">
-      <canvas id="gm-play-canvas" width="800" height="520"
-        aria-label="Game play canvas"></canvas>
+      <div id="gm-play-container" style="position:relative; width:800px; height:520px; overflow:hidden;" aria-label="Game play area"></div>
 
       <!-- Level complete overlay -->
       <div id="gm-overlay-lc" class="gm-overlay hidden">
@@ -1253,91 +1556,8 @@ permalink: /game-maker/
     </div>
   </div>
 
-  <!-- ══════════ SETTINGS MODE ══════════════════════════════════════════ -->
-  <div id="gm-mode-settings" class="gm-mode">
-    <div id="gm-settings-panel">
-      <div class="gm-set-sec">
-        <h3>🕹️ Controls</h3>
-        <label class="gm-tog"><input type="checkbox" id="gs-slow">
-          <span>🐌 Slow Mode<span class="td">Halves game speed — more time to react</span></span></label>
-        <label class="gm-tog"><input type="checkbox" id="gs-single">
-          <span>🕹️ Single-Button Mode<span class="td">SPACE cycles direction, ENTER moves</span></span></label>
-      </div>
-      <div class="gm-set-sec">
-        <h3>👁️ Visuals</h3>
-        <label class="gm-tog"><input type="checkbox" id="gs-contrast">
-          <span>⚡ High-Contrast<span class="td">Black bg, bright yellow & white — for visual processing</span></span></label>
-        <label class="gm-tog"><input type="checkbox" id="gs-large">
-          <span>🔍 Large Sprites<span class="td">Bigger player, NPCs, and stars</span></span></label>
-        <label class="gm-tog"><input type="checkbox" id="gs-reduce">
-          <span>🛑 Reduce Motion<span class="td">Removes particles and screen flash</span></span></label>
-      </div>
-      <div class="gm-set-sec">
-        <h3>🎨 Background</h3>
-        <div id="gm-bg-picker"></div>
-      </div>
-      <div class="gm-set-sec">
-        <h3>🧭 Guidance</h3>
-        <label class="gm-tog"><input type="checkbox" id="gs-guided">
-          <span>🧭 Guided Mode<span class="td">Arrow points to nearest star; NPCs become friendly</span></span></label>
-      </div>
-      <div class="gm-set-sec">
-        <h3>🔊 Audio &amp; Feedback</h3>
-        <label class="gm-tog"><input type="checkbox" id="gs-audio" checked>
-          <span>🔊 Sound Effects<span class="td">Collect sounds, hit sound, win jingle</span></span></label>
-        <label class="gm-tog"><input type="checkbox" id="gs-celebrate" checked>
-          <span>🎉 Celebrations<span class="td">Particle bursts on collection &amp; level complete</span></span></label>
-        <label class="gm-tog"><input type="checkbox" id="gs-music">
-          <span>🎵 Background Music<span class="td">Fun chiptune music while you play</span></span></label>
-        <div id="gs-music-tracks" style="margin-top:10px; display:none;">
-          <div style="color:#aaa; font-size:0.82rem; margin-bottom:6px;">Choose a track:</div>
-          <div id="gs-music-track-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-          <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
-            <span style="color:#aaa; font-size:0.82rem;">🔈</span>
-            <input type="range" id="gs-music-vol" min="0" max="100" value="80"
-              style="flex:1; accent-color:#6366f1; cursor:pointer;">
-            <span style="color:#aaa; font-size:0.82rem;">🔊</span>
-          </div>
-        </div>
-      </div>
-      <div class="gm-set-sec">
-        <h3>📷 Face Tracking</h3>
-        <label class="gm-tog"><input type="checkbox" id="gs-face">
-          <span>📷 Face Control<span class="td">Use your head to move — lean left/right/up/down</span></span></label>
-        <div id="gm-face-panel" style="display:none; margin-top:10px;">
-          <!-- Hidden video element — webcam feed goes here -->
-          <video id="gm-face-video" style="display:none;" autoplay playsinline muted></video>
-          <!-- Small live preview thumbnail -->
-          <canvas id="gm-face-preview" width="160" height="120"
-            style="border-radius:8px; border:2px solid #556; display:block; margin-bottom:8px;"></canvas>
-          <!-- Status line -->
-          <div id="gm-face-status" style="font-size:0.82rem; color:#aabbff; margin-bottom:8px;">
-            Waiting for camera...
-          </div>
-          <!-- Sensitivity slider -->
-          <label style="font-size:0.82rem; color:#aabbff; display:block; margin-bottom:4px;">
-            Sensitivity:
-            <input type="range" id="gm-face-sens" min="4" max="25" value="12"
-              style="width:120px; vertical-align:middle;">
-            <span id="gm-face-sens-val">12</span>%
-          </label>
-          <!-- Recalibrate button -->
-          <button id="gm-face-recal" style="
-            background:#1a1a40; border:2px solid #4455bb; border-radius:8px;
-            color:#FFD700; font-size:0.85rem; padding:6px 14px; cursor:pointer;">
-            🎯 Recalibrate Center
-          </button>
-          <!-- Live direction indicator -->
-          <div id="gm-face-dirs" style="display:flex; gap:6px; margin-top:8px; font-size:1.1rem;">
-            <span id="fd-up"    style="opacity:0.25;">↑</span>
-            <span id="fd-down"  style="opacity:0.25;">↓</span>
-            <span id="fd-left"  style="opacity:0.25;">←</span>
-            <span id="fd-right" style="opacity:0.25;">→</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Settings content moved into Builder Step 6 above -->
+  <div id="gm-mode-settings" class="gm-mode" style="display:none !important;"></div>
 
   <!-- ══════════ CHAT MODE ═══════════════════════════════════════════════ -->
   <div id="gm-mode-chat" class="gm-mode">
@@ -1407,8 +1627,382 @@ if (location.hostname === '127.0.0.1') {
 </script>
 
 <script>
-(function () {
 'use strict';
+
+/* =====================================================
+   PART 1: YOUR GAME CONFIG
+   This simple object describes your game.
+   The game runner reads it to set everything up!
+   ===================================================== */
+
+var myGame = {
+  title:      'My Awesome Game',
+  player:     '🦸',
+  playerName: 'Hero',
+  background: 'space',
+  goal:       'collect_stars',
+  settings: {
+    slowMode:     false,
+    singleButton: false,
+    highContrast: false,
+    largeSprites: false,
+    reduceMotion: false,
+    sound:        true,
+    music:        false,
+    guided:       false
+  }
+};
+
+/* =====================================================
+   PART 2: BUILDER STEPS
+   These functions control the step-by-step builder.
+   ===================================================== */
+
+var currentStep = 1;
+
+// Show a specific step number in the builder
+function showStep(num) {
+  document.querySelectorAll('.step-panel').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  document.querySelectorAll('.step-dot').forEach(function(d) {
+    var n = parseInt(d.dataset.step);
+    d.classList.toggle('active', n === num);
+    d.classList.toggle('done',   n < num);
+  });
+  var panel = document.getElementById('step-' + num);
+  if (panel) panel.classList.add('active');
+  currentStep = num;
+  // Hide config preview in step 5 — canvas needs the space
+  var previewBox = document.getElementById('config-preview-box');
+  if (previewBox) previewBox.style.display = (num === 5) ? 'none' : '';
+  updateConfigDisplay();
+}
+
+// Go to the next step
+function nextStep() {
+  if (currentStep < 6) showStep(currentStep + 1);
+}
+
+// Go back one step
+function prevStep() {
+  if (currentStep > 1) showStep(currentStep - 1);
+}
+
+/* =====================================================
+   PART 3: CHOOSE YOUR GAME OPTIONS
+   Each function handles one step of the builder.
+   ===================================================== */
+
+// Step 1: Name the game
+function chooseName(title) {
+  myGame.title = title;
+  if (typeof game !== 'undefined') game.title = title;
+  updateConfigDisplay();
+}
+
+// Step 2: Pick the player emoji
+function choosePlayer(emoji) {
+  myGame.player = emoji;
+  if (typeof game !== 'undefined') game.playerEmoji = emoji;
+  document.querySelectorAll('.gi-emoji-opt').forEach(function(b) {
+    b.classList.toggle('selected', b.textContent === emoji);
+  });
+  var btn = document.getElementById('gi-emoji-btn');
+  if (btn) btn.textContent = emoji;
+  if (typeof renderEditor === 'function') renderEditor();
+  updateConfigDisplay();
+}
+
+// Step 3: Pick the background world
+function chooseBackground(bgId) {
+  myGame.background = bgId;
+  if (typeof game !== 'undefined') game.background = bgId;
+  var sel = document.getElementById('gi-bg-select');
+  if (sel) sel.value = bgId;
+  if (typeof syncBgActive === 'function') syncBgActive();
+  if (typeof renderEditor === 'function') renderEditor();
+  updateConfigDisplay();
+}
+
+// Step 4: Pick the game goal
+function chooseGoal(goalType) {
+  myGame.goal = goalType;
+  document.querySelectorAll('.goal-opt').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.goal === goalType);
+  });
+  updateConfigDisplay();
+}
+
+// Show the game config in OCS-style code (like GameEnginev1.1 student code)
+function updateConfigDisplay() {
+  var el = document.getElementById('config-code');
+  if (!el) return;
+  var levelCount = (typeof game !== 'undefined' && game.levels) ? game.levels.length : 0;
+  var levelNames = [];
+  for (var i = 0; i < levelCount; i++) levelNames.push('  GameLevel' + (i + 1));
+
+  el.textContent = [
+    '// ── Your Game Config ───────────────────────────────',
+    'var myGame = {',
+    '  title:      ' + JSON.stringify(myGame.title || 'My Awesome Game') + ',',
+    '  player:     ' + JSON.stringify(myGame.player || '🦸') + ',',
+    '  playerName: ' + JSON.stringify(myGame.playerName || 'Hero') + ',',
+    '  background: ' + JSON.stringify(myGame.background || 'space') + ',',
+    '  goal:       ' + JSON.stringify(myGame.goal || 'collect_stars') + ',',
+    '};',
+    '',
+    '// ── Level Classes (built by the editor) ─────────────',
+    'var gameLevelClasses = [',
+    (levelNames.length ? levelNames.join(',\n') : '  // Design levels in Step 5 above'),
+    '];',
+    '',
+    '// ── Start the game ──────────────────────────────────',
+    'runGame(myGame, gameLevelClasses);',
+  ].join('\n');
+}
+
+/* =====================================================
+   PART 4: OCS-STYLE LEVEL BUILDERS
+   These mirror GameEnginev1.1's declarative config pattern.
+   Each builder returns a data object just like OCS does.
+   ===================================================== */
+
+// Build a player data object — mirrors OCS GameEnginev1.1 playerData config
+function buildPlayerData(config) {
+  return {
+    id:             'player',
+    emoji:          config.player     || '🦸',
+    name:           config.playerName || 'Hero',
+    SCALE_FACTOR:   5,
+    STEP_FACTOR:    100,
+    ANIMATION_RATE: 1,
+    INIT_POSITION:  { x: 60, y: 60 },
+    keypress:       { up: 87, left: 65, down: 83, right: 68 },
+    hitbox:         { widthPercentage: 0.45, heightPercentage: 0.2 }
+  };
+}
+
+// Build a background data object — mirrors OCS Background / GameEnvBackground config
+function buildBackgroundData(config) {
+  var bgList = (typeof BACKGROUNDS !== 'undefined') ? BACKGROUNDS : [];
+  var bg = bgList.find(function(b) { return b.id === config.background; }) || bgList[0] || {};
+  return {
+    id:     bg.id    || config.background || 'dark',
+    type:   bg.type  || 'color',
+    src:    bg.src   || null,
+    label:  bg.label || config.background,
+    zIndex: '0'
+  };
+}
+
+// Build an OCS-style GameLevel constructor from one editor level
+// Mirrors: class GameLevel { constructor(gameEnv) { this.classes = [...] } }
+function buildLevelClass(levelData, levelIdx, config, UESLGame) {
+  var playerData = buildPlayerData(config);
+  var bgData     = buildBackgroundData(config);
+  playerData.INIT_POSITION = { x: levelData.playerStart.x, y: levelData.playerStart.y };
+
+  var totalLevels = (typeof game !== 'undefined' && game.levels) ? game.levels.length : 1;
+
+  // OCS-style level constructor — gameEnv is passed in by the engine
+  function GameLevelN(gameEnv) {
+    this.gameEnv     = gameEnv;
+    this.background  = bgData;
+    this.player      = playerData;
+    this.barriers    = levelData.barriers    || [];
+    this.stars       = levelData.stars       || [];
+    this.npcs        = levelData.npcs        || [];
+    this.hearts      = levelData.hearts      || [];
+    this.startHearts = levelData.startHearts || 3;
+    this.goal        = config.goal;
+
+    // OCS-style: single UESLGame object handles all UESL rendering
+    this.classes = [{
+      class: UESLGame,
+      data: {
+        background:   bgData,
+        player:       playerData,
+        barriers:     levelData.barriers    || [],
+        stars:        levelData.stars       || [],
+        npcs:         levelData.npcs        || [],
+        hearts:       levelData.hearts      || [],
+        startHearts:  levelData.startHearts || 3,
+        goal:         config.goal,
+        levelIdx:     levelIdx,
+        totalLevels:  totalLevels,
+        playerEmoji:  (typeof game !== 'undefined') ? game.playerEmoji : '🦸',
+        playerName:   (typeof game !== 'undefined') ? game.playerName  : 'Hero',
+        gameTitle:    (typeof game !== 'undefined') ? game.title       : 'My Game',
+        playerStart:  levelData.playerStart || { x: 60, y: 60 },
+      }
+    }];
+  }
+
+  GameLevelN.levelName = (config.title || 'Game') + ' \u2014 Level ' + (levelIdx + 1);
+  return GameLevelN;
+}
+
+/* =====================================================
+   PART 5: GAME RUNNER  (mirrors Game.main() from OCS)
+   Builds gameLevelClasses then hands them to the
+   UESL engine — which adds face tracking, voice,
+   multiplayer, splines, hearts on top of the OCS model.
+   ===================================================== */
+
+async function runGame(config) {
+  // Stop any previously running game
+  if (_gameCore && _gameCore.gameControl) {
+    try { _gameCore.gameControl.stopGame(); } catch (e) {}
+    _gameCore = null;
+  }
+
+  // Sync config into shared game state
+  setupPlayer(config.player, config.playerName);
+  if (typeof game !== 'undefined') {
+    game.background = config.background || 'space';
+    game.title      = config.title      || game.title;
+    game.goal       = config.goal       || game.goal;
+  }
+
+  applyGameSettings(config.settings);
+  _currentGameConfig = config;
+
+  // Validate: at least one level has stars
+  const hasAny = game.levels.some(lv => lv.stars.length > 0);
+  if (!hasAny) { alert('⭐ Add at least one star to your level before playing!'); return; }
+
+  const baseUrl    = window.location.origin;
+  const engineBase = baseUrl + '/assets/js/GameEnginev1.1';
+
+  try {
+    // Dynamically import OCS engine + UESL wrappers
+    const [GameModule, UESLGameModule, UESLGameControlModule] = await Promise.all([
+      import(engineBase + '/essentials/Game.js'),
+      import(engineBase + '/uesl/UESLGame.js'),
+      import(engineBase + '/uesl/UESLGameControl.js'),
+    ]);
+
+    const GameCore          = GameModule.GameCore;  // named export from Game.js
+    const UESLGame          = UESLGameModule.default;
+    const UESLGameControl   = UESLGameControlModule.default;
+
+    // Set up window.UESL bridge so UESLGame can access game-maker.html globals
+    window.UESL = {
+      a11y:             a11y,
+      gameConfig:       gameConfig,
+      bgImages:         bgImages,
+      drawFunctions: {
+        space:   drawSpaceBg,
+        sunset:  drawSunsetBg,
+        ocean:   drawOceanBg,
+        maze:    drawMazeBg,
+        road:    drawRoadBg,
+      },
+      MAZE_CX:          typeof MAZE_CX  !== 'undefined' ? MAZE_CX  : [],
+      MAZE_RY:          typeof MAZE_RY  !== 'undefined' ? MAZE_RY  : [],
+      ROAD_WAYPOINTS:   typeof ROAD_WAYPOINTS !== 'undefined' ? ROAD_WAYPOINTS : [],
+      ROAD_OBSTACLES:   typeof ROAD_OBSTACLES !== 'undefined' ? ROAD_OBSTACLES : [],
+      resolveMaze:      typeof resolveMazeCollision !== 'undefined' ? resolveMazeCollision : null,
+      resolveRoad:      typeof resolveRoadCollision !== 'undefined' ? resolveRoadCollision : null,
+      sfxCollect:       typeof sfxCollect      === 'function' ? sfxCollect      : () => {},
+      sfxHit:           typeof sfxHit          === 'function' ? sfxHit          : () => {},
+      sfxLevelComplete: typeof sfxLevelComplete === 'function' ? sfxLevelComplete : () => {},
+      sfxWin:           typeof sfxWin          === 'function' ? sfxWin          : () => {},
+      onLevelComplete:  (idx, isEmpty) => showLevelCompleteUI(idx, isEmpty),
+      onFinalWin:       () => showFinalWin(),
+      onPause:  () => {
+        document.getElementById('gm-ctrl-pause')?.classList.add('lit');
+        document.getElementById('gm-ctrl-play') ?.classList.remove('lit');
+      },
+      onResume: () => {
+        document.getElementById('gm-ctrl-play') ?.classList.add('lit');
+        document.getElementById('gm-ctrl-pause')?.classList.remove('lit');
+      },
+    };
+
+    // Build OCS-style gameLevelClasses with UESLGame as the single renderer
+    const gameLevelClasses = game.levels.map((levelData, i) =>
+      buildLevelClass(levelData, i, config, UESLGame)
+    );
+
+    hideAllOverlays();
+    document.getElementById('gm-play-title').textContent = game.title || 'My Game';
+    document.getElementById('gm-play-level-info').textContent =
+      `Level 1 of ${game.levels.length}${game.playerName ? ' — playing as ' + game.playerName : ''}`;
+
+    const gameContainer  = document.getElementById('gm-play-container');
+    const containerWidth = gameContainer.clientWidth  || 800;
+
+    const environment = {
+      path:                       '',
+      gameContainer:              gameContainer,
+      gameLevelClasses:           gameLevelClasses,
+      innerWidth:                 containerWidth,
+      innerHeight:                520,
+      disablePauseMenu:           true,
+      disableContainerAdjustment: true,
+    };
+
+    // Launch OCS GameCore with UESLGameControl
+    _gameCore = GameCore.main(environment, UESLGameControl);
+
+    // GameCore._adjustGameContainerPosition adds a 40px margin — undo it for our embedded layout
+    const _gc = document.getElementById('gm-play-container');
+    if (_gc) { _gc.style.removeProperty('margin-top'); _gc.style.removeProperty('top'); const _p = _gc.parentElement; if(_p) _p.style.removeProperty('margin-top'); }
+
+    // GameCore also adds its own Escape-key handler which conflicts with UESLGameControl.handleExitKey — remove it
+    if (_gameCore.escapeKeyHandler) {
+      document.removeEventListener('keydown', _gameCore.escapeKeyHandler);
+      _gameCore.escapeKeyHandler = null;
+    }
+
+    if (config.settings && config.settings.music && typeof startMusic === 'function') startMusic();
+    switchToPlayMode();
+    window._gmEnvironment = environment;
+
+  } catch (err) {
+    console.error('runGame error:', err);
+    alert('Failed to start game: ' + err.message);
+  }
+}
+
+// Set up the player character from config
+function setupPlayer(emoji, name) {
+  if (typeof game !== 'undefined') {
+    game.playerEmoji = emoji || '🦸';
+    game.playerName  = name  || 'Hero';
+  }
+}
+
+// Apply all settings from the config object
+function applyGameSettings(settings) {
+  if (!settings || typeof a11y === 'undefined') return;
+  a11y.slowMode     = !!settings.slowMode;
+  a11y.singleButton = !!settings.singleButton;
+  a11y.highContrast = !!settings.highContrast;
+  a11y.largeSprites = !!settings.largeSprites;
+  a11y.reduceMotion = !!settings.reduceMotion;
+  a11y.audioEnabled = settings.sound !== false;
+  a11y.guidedMode   = !!settings.guided;
+}
+
+// Switch the UI to play mode
+function switchToPlayMode() {
+  document.querySelectorAll('.gm-tab').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.gm-mode').forEach(function(p) { p.classList.remove('active'); });
+  var playTab  = document.querySelector('.gm-tab[data-mode="play"]');
+  var playMode = document.getElementById('gm-mode-play');
+  if (playTab)  playTab.classList.add('active');
+  if (playMode) playMode.classList.add('active');
+}
+
+/* =====================================================
+   PART 6: UESL ENGINE — custom renderer that extends
+   the OCS model with face tracking, voice commands,
+   multiplayer (Socket.IO + BroadcastChannel), spline
+   backgrounds, hearts/lives, and the level editor.
+   ===================================================== */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONSTANTS
@@ -1784,10 +2378,10 @@ function applyCodePanel() {
     if (changed.playerSize  !== undefined) gameConfig.playerSize  = clamp(changed.playerSize,  16,  80);
     if (changed.starRadius  !== undefined) gameConfig.starRadius  = clamp(changed.starRadius,   6,  50);
     // Apply live if game is running
-    if (playState) {
-      playState.player.spd  = gameConfig.playerSpeed;
-      playState.player.size = gameConfig.playerSize;
-      for (const n of playState.npcs) n.speed = gameConfig.npcSpeed;
+    const _liveState = window._activeUESLGame ? window._activeUESLGame.state : null;
+    if (_liveState) {
+      if (_liveState.player) { _liveState.player.spd = gameConfig.playerSpeed; _liveState.player.size = gameConfig.playerSize; }
+      if (_liveState.npcs) { for (const n of _liveState.npcs) n.speed = gameConfig.npcSpeed; }
     }
     ta.value = codePanelSnippet();
     syncCodeNums();
@@ -1800,23 +2394,27 @@ function applyCodePanel() {
 
 /* ── Pause / Resume / Stop ──────────────────────────────────────────────── */
 function pauseGame() {
-  if (!playState) return;
-  playState.paused = true;
-  _syncPlayCtrl();
+  if (!_gameCore || !_gameCore.gameControl) return;
+  _gameCore.gameControl.pauseMenu();
 }
 function resumeGame() {
-  if (!playState) return;
-  playState.paused = false;
-  _syncPlayCtrl();
+  if (!_gameCore || !_gameCore.gameControl) return;
+  _gameCore.gameControl.resume();
 }
 function stopGame() {
-  loadPlayLevel(playLevelIdx); // reset level to beginning
-  _syncPlayCtrl();
+  if (!_gameCore || !_gameCore.gameControl) return;
+  _gameCore.gameControl.stopGame();
+  // Restart the level from scratch
+  _gameCore.gameControl._stopped = false;
+  _gameCore.gameControl.currentLevelIndex = 0;
+  _gameCore.gameControl.transitionToLevel();
 }
 function _syncPlayCtrl() {
-  const paused = !!(playState && playState.paused);
-  document.getElementById('gm-ctrl-play') ?.classList.toggle('lit',  !paused);
-  document.getElementById('gm-ctrl-pause')?.classList.toggle('lit',   paused);
+  const paused = !!(
+    _gameCore && _gameCore.gameControl && _gameCore.gameControl.isPaused
+  );
+  document.getElementById('gm-ctrl-play') ?.classList.toggle('lit', !paused);
+  document.getElementById('gm-ctrl-pause')?.classList.toggle('lit',  paused);
 }
 
 const bgImages = {};
@@ -1903,9 +2501,11 @@ function initBgPicker() {
       wrap.appendChild(lbl);
       wrap.addEventListener('click', ()=>{
         game.background = bg.id;
+        myGame.background = bg.id;
         if (sel) sel.value = bg.id;
         syncBgActive();
         renderEditor();
+        updateConfigDisplay();
       });
       settingsPicker.appendChild(wrap);
     });
@@ -2353,6 +2953,8 @@ function updateLevelTabs() {
     btn.onclick   = () => switchToLevel(i);
     container.appendChild(btn);
   });
+  // Keep the OCS-style code preview in sync with the current level count
+  if (typeof updateConfigDisplay === 'function') updateConfigDisplay();
 }
 
 function switchToLevel(idx) {
@@ -2554,8 +3156,8 @@ function initGameInfoUI() {
   charIn.value  = game.playerName;
   emojiBtn.textContent = game.playerEmoji;
 
-  titleIn.addEventListener('input', () => { game.title = titleIn.value || 'My Game'; });
-  charIn.addEventListener('input',  () => { game.playerName = charIn.value || 'Hero'; renderEditor(); });
+  titleIn.addEventListener('input', () => { game.title = titleIn.value || 'My Game'; myGame.title = game.title; updateConfigDisplay(); });
+  charIn.addEventListener('input',  () => { game.playerName = charIn.value || 'Hero'; myGame.playerName = game.playerName; renderEditor(); updateConfigDisplay(); });
 
   // Build emoji popup
   CHAR_EMOJIS.forEach(em => {
@@ -2565,11 +3167,13 @@ function initGameInfoUI() {
     btn.title       = em;
     btn.onclick = () => {
       game.playerEmoji = em;
+      myGame.player = em;
       emojiBtn.textContent = em;
       popup.classList.add('hidden');
       popup.querySelectorAll('.gi-emoji-opt').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       renderEditor();
+      updateConfigDisplay();
     };
     popup.appendChild(btn);
   });
@@ -2691,134 +3295,59 @@ function stopMusic() {
 /* ═══════════════════════════════════════════════════════════════════════════
    PLAY ENGINE — multi-level
 ═══════════════════════════════════════════════════════════════════════════ */
-const pCanvas    = document.getElementById('gm-play-canvas');
-const pCtx       = pCanvas.getContext('2d');
-const playKeys   = {};
-let   playState    = null;
-let   playLevelIdx = 0;
-let   playRAF      = null;
+// OCS GameCore instance — set by runGame(), used by pause/stop/resume
+let _gameCore          = null;
+let _currentGameConfig = null;
 // Expose for co-op handler outside IIFE
-window._gmShowFinalWin = () => showFinalWin();
-window._mpCheckLevelWin = (st) => { const pcx = st.x != null ? st.x + (st.size||40)/2 : 400; mpCheckLevelWin(st, pcx, 260); };
+window._gmShowFinalWin  = () => showFinalWin();
+window._mpCheckLevelWin = () => { /* handled by UESLGame internally */ };
 
 /* ── Voice command state ────────────────────────────────────────────────── */
 let voiceRecognition = null;   // SpeechRecognition instance
 let voiceListening   = false;  // is the mic currently open?
 let voiceBubbleTimer = null;   // timeout to hide the bubble
 
-/* ── Co-op helpers (called from updatePlay; wired to window so MP block can use them) ── */
+/* ── Co-op helpers ── */
 function mpEmitCoopEvent(data) { window._mpEmitCoopEvent && window._mpEmitCoopEvent(data); }
 function mpHandleCoopEvent(data) { window._mpHandleCoopEvent && window._mpHandleCoopEvent(data); }
-function mpCheckLevelWin(st, pcx, pcy) {
-  const W = st.W || 800, H = st.H || 520;
-  if (st.totalStars > 0 && st.score >= st.totalStars) {
-    st.won = true;
-    spawnParticles(st, pcx, pcy); spawnParticles(st, W/2, H/2);
-    if (!st.wonHandled) {
-      st.wonHandled = true;
-      const hasNext = playLevelIdx + 1 < game.levels.length;
-      // Tell partner to advance too
-      mpEmitCoopEvent({ type: 'level_done', level: playLevelIdx, next: hasNext ? playLevelIdx+1 : -1 });
-      if (hasNext) {
-        setTimeout(() => { sfxLevelComplete(); showLevelCompleteUI(playLevelIdx, false); }, 1200);
-      } else {
-        setTimeout(() => { sfxWin(); showFinalWin(); }, 1400);
-      }
-    }
+// Level-win check is now handled inside UESLGame._checkWin()
+function mpCheckLevelWin() { /* no-op — UESLGame handles this */ }
+window._gmLoadPlayLevel = function(idx) {
+  if (_gameCore && _gameCore.gameControl) {
+    _gameCore.gameControl.goToLevel(idx);
   }
-}
-window._gmLoadPlayLevel = function(idx) { loadPlayLevel(idx); };
+};
 
 /* ── Multi-level orchestration ─────────────────────────────────────────── */
-function startPlay() {
-  // Validate: at least one level has stars
-  const hasAny = game.levels.some(lv => lv.stars.length > 0);
-  if (!hasAny) { alert('⭐ Add at least one star to your level before playing!'); return false; }
-
-  hideAllOverlays();
-  document.getElementById('gm-play-title').textContent = game.title || 'My Game';
-  playLevelIdx = 0;
-  return loadPlayLevel(0);
-}
-window._gmStartPlay = startPlay; // expose for multiplayer code outside IIFE
-
+// startPlay / loadPlayLevel / buildPlayState are now handled by UESLGame + OCS GameCore.
+// These stubs keep any residual call sites from throwing.
+function startPlay()       { return true; }
 function loadPlayLevel(idx) {
-  if (idx >= game.levels.length) { showFinalWin(); return true; }
-
-  hideAllOverlays();
-  playLevelIdx = idx;
-
-  if (playRAF) cancelAnimationFrame(playRAF);
-  playState = buildPlayState(game.levels[idx]);
-  playState.keys       = playKeys;
-  playState.levelIdx   = idx;
-  playState.wonHandled = false;
-  // If this level has no stars, mark it as empty so we auto-show the next-level popup
-  if (playState.totalStars === 0) {
-    playState.isEmpty = true;
-    // After a brief moment, show the level-complete overlay so player can advance
-    setTimeout(() => {
-      const isLast = playLevelIdx + 1 >= game.levels.length;
-      isLast ? showFinalWin() : showLevelCompleteUI(playLevelIdx, true);
-    }, 600);
+  if (_gameCore && _gameCore.gameControl) {
+    hideAllOverlays();
+    const li = document.getElementById('gm-play-level-info');
+    if (li) li.textContent = `Level ${idx+1} of ${game.levels.length}${game.playerName ? ' — playing as ' + game.playerName : ''}`;
+    _gameCore.gameControl.goToLevel(idx);
   }
-
-  document.getElementById('gm-play-level-info').textContent =
-    `Level ${idx+1} of ${game.levels.length}${game.playerName ? ' — playing as ' + game.playerName : ''}`;
-
-  playLoop();
   return true;
 }
+function buildPlayState()  { return {}; }
+window._gmStartPlay = () => { if (_currentGameConfig) runGame(_currentGameConfig); };
 
-function buildPlayState(lv) {
-  const lvClone    = JSON.parse(JSON.stringify(lv));
-  const totalStars = lvClone.stars.length;
-  // For maze background always spawn at the maze start node so the player
-  // begins inside a corridor regardless of where the editor marker was placed.
-  const mazeMode = game.background === 'maze';
-  const roadMode = game.background === 'road';
-  const spawnX = mazeMode ? MAZE_CX[0] - 20 : roadMode ? ROAD_WAYPOINTS[0][0] - 20 : lvClone.playerStart.x - 20;
-  const spawnY = mazeMode ? MAZE_RY[0] - 20 : roadMode ? ROAD_WAYPOINTS[0][1] - 20 : lvClone.playerStart.y - 20;
-  return {
-    player: {
-      x:    spawnX,
-      y:    spawnY,
-      size: a11y.largeSprites ? 52 : gameConfig.playerSize,
-      spd:  gameConfig.playerSpeed, vx:0, vy:0,
-    },
-    barriers:      lvClone.barriers,
-    stars:         lvClone.stars.map(s=>({...s, collected:false})),
-    heartPickups:  (lvClone.hearts||[]).map(h=>({...h, collected:false})),
-    startHearts:   Math.min(5, Math.max(1, lvClone.startHearts ?? 3)),
-    currentHearts: Math.min(5, Math.max(1, lvClone.startHearts ?? 3)),
-    invincible:    0,
-    npcs:       lvClone.npcs.map(n=>({
-      ...n, cx:n.x, cy:n.y, size:36,
-      path:[{x:n.x,y:n.y},{x:n.ex,y:n.ey}], pathIdx:0,
-    })),
-    totalStars, score:0,
-    won:false, wonHandled:false,
-    hitFlash:0, particles:[], scorePops: roadMode ? [{x:W/2,y:H/2-40,alpha:1,dy:-0.5,text:'🚗 You\'re now driving!'}] : [],
-    sbDir:0, sbMoving:false, keys:{},
-    spawnX, spawnY,
-  };
-}
-
-/* Key listeners for play */
+/* Key listeners for play — R key restarts level, forwarded to UESLGameControl */
 document.addEventListener('keydown', e => {
-  playKeys[e.key] = true;
-  if (!playState) return;
-  if (a11y.singleButton) {
-    if (e.key===' ') { playState.sbDir=(playState.sbDir+1)%4; e.preventDefault(); }
-    if (e.key==='Enter') { playState.sbMoving=true; e.preventDefault(); }
+  const st = window._activeUESLGame ? window._activeUESLGame.state : null;
+  if (a11y && a11y.singleButton && st) {
+    if (e.key===' ')   { st.sbDir = (st.sbDir + 1) % 4; e.preventDefault(); }
+    if (e.key==='Enter') { st.sbMoving = true; e.preventDefault(); }
   }
   if ((e.key==='r'||e.key==='R') && document.getElementById('gm-mode-play').classList.contains('active')) {
-    loadPlayLevel(playLevelIdx);
+    if (_gameCore && _gameCore.gameControl) _gameCore.gameControl.restartLevel();
   }
 });
 document.addEventListener('keyup', e => {
-  delete playKeys[e.key];
-  if (playState && e.key==='Enter') playState.sbMoving=false;
+  const st = window._activeUESLGame ? window._activeUESLGame.state : null;
+  if (st && e.key==='Enter') st.sbMoving = false;
 });
 
 /* ── Overlay helpers ─────────────────────────────────────────────────────── */
@@ -3258,37 +3787,10 @@ function drawPBadge(ctx,text,x,y,bg,font) {
   ctx.fillStyle='#FFF'; ctx.fillText(text,x+2,y+1);
 }
 
-function playLoop() {
-  if (!playState) return;
-  // Expose current state for co-op handler outside IIFE
-  window._activePlayState    = playState;
-  window._activePlayLevelIdx = playLevelIdx;
-  if (!playState.paused) updatePlay(playState);
-  drawPlay(playState);
-  // Emit own position to partner (BroadcastChannel for same-device, Socket.IO for cross-device)
-  if (window._mp && window._mp.roomId) {
-    const now = Date.now();
-    if (!window._mp._lastEmit || now - window._mp._lastEmit > 50) {
-      window._mp._lastEmit = now;
-      const pl = playState.player; // player object lives at playState.player
-      const posData = {
-        type: '_pos',
-        room_id: window._mp.roomId,
-        x: pl.x + pl.size / 2,
-        y: pl.y + pl.size / 2,
-        emoji: game.playerEmoji || '🙂',
-        name:  game.playerName  || 'P1',
-      };
-      // Same-device: BroadcastChannel (never echoes back to sender automatically)
-      if (window._mp.bc) window._mp.bc.postMessage(posData);
-      // Cross-device: Socket.IO
-      if (window._mp.socket && window._mp.socket.connected) {
-        window._mp.socket.emit('player_update', posData);
-      }
-    }
-  }
-  playRAF=requestAnimationFrame(playLoop);
-}
+// playLoop, updatePlay, drawPlay are no longer used — rendering is handled by UESLGame via OCS GameCore
+function playLoop()    { /* no-op — UESLGame + OCS GameControl runs the loop */ }
+function updatePlay()  { /* no-op */ }
+function drawPlay()    { /* no-op */ }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SAVE / LOAD
@@ -3510,7 +4012,6 @@ document.querySelectorAll('.gm-tab').forEach(btn => {
       startMusic();
       _syncPlayCtrl();
     } else {
-      if (playRAF) { cancelAnimationFrame(playRAF); playRAF=null; }
       stopMusic();
     }
 
@@ -3525,7 +4026,10 @@ document.querySelectorAll('.gm-tab').forEach(btn => {
 
 // Back to editor button
 function goBackToDesign() {
-  if (playRAF) { cancelAnimationFrame(playRAF); playRAF=null; }
+  if (_gameCore && _gameCore.gameControl) {
+    try { _gameCore.gameControl.stopGame(); } catch (e) {}
+    _gameCore = null;
+  }
   stopMusic();
   // Stop mic when leaving play mode
   if (voiceListening && voiceRecognition) {
@@ -3541,6 +4045,7 @@ function goBackToDesign() {
   document.querySelector('.gm-tab[data-mode="design"]').classList.add('active');
   document.querySelectorAll('.gm-mode').forEach(p=>p.classList.remove('active'));
   document.getElementById('gm-mode-design').classList.add('active');
+  showStep(5);
   renderEditor();
 }
 document.getElementById('gm-back-btn').addEventListener('click', goBackToDesign);
@@ -3559,15 +4064,17 @@ document.getElementById('gm-code-editor').addEventListener('keydown', codeEditor
 // Level complete overlay buttons
 document.getElementById('gm-next-level-btn').addEventListener('click', () => {
   hideAllOverlays();
-  loadPlayLevel(playLevelIdx + 1);
+  const nextIdx = _gameCore && _gameCore.gameControl ? _gameCore.gameControl.currentLevelIndex + 1 : 0;
+  loadPlayLevel(nextIdx);
 });
 document.getElementById('gm-replay-level-btn').addEventListener('click', () => {
   hideAllOverlays();
-  loadPlayLevel(playLevelIdx);
+  if (_gameCore && _gameCore.gameControl) _gameCore.gameControl.restartLevel();
 });
 document.getElementById('gm-play-again-btn').addEventListener('click', () => {
   hideAllOverlays();
-  startPlay();
+  if (_gameCore && _gameCore.gameControl) { _gameCore.gameControl.goToLevel(0); }
+  else if (_currentGameConfig) { runGame(_currentGameConfig); }
   startMusic();
 });
 document.getElementById('gm-back-design-btn').addEventListener('click', goBackToDesign);
@@ -3620,7 +4127,7 @@ document.getElementById('gm-remove-level-btn').addEventListener('click', removeC
  ['gs-audio','audioEnabled'],['gs-celebrate','celebrations']].forEach(([id,key])=>{
   const el=document.getElementById(id); if(!el) return;
   el.checked=a11y[key];
-  el.addEventListener('change',()=>{ a11y[key]=el.checked; if(playState) playState.player.size=a11y.largeSprites?52:40; });
+  el.addEventListener('change',()=>{ a11y[key]=el.checked; const _ls=window._activeUESLGame?.state; if(_ls&&_ls.player) _ls.player.size=a11y.largeSprites?52:40; });
 });
 
 // Music toggle + track selector
@@ -3709,13 +4216,13 @@ document.getElementById('gm-remove-level-btn').addEventListener('click', removeC
   musicChk.addEventListener('change', () => {
     a11y.musicEnabled = musicChk.checked;
     trackPanel.style.display = a11y.musicEnabled ? 'block' : 'none';
-    if (a11y.musicEnabled && musicActive === false && playState) startMusic();
+    if (a11y.musicEnabled && musicActive === false && window._activeUESLGame) startMusic();
     else if (!a11y.musicEnabled) stopMusic();
   });
 })();
 
-// Resume audio on first canvas click
-pCanvas.addEventListener('click',()=>{ if(audioCtxP&&audioCtxP.state==='suspended') audioCtxP.resume(); },{once:true});
+// Resume audio on first interaction with the play container
+document.getElementById('gm-play-container')?.addEventListener('click',()=>{ if(audioCtxP&&audioCtxP.state==='suspended') audioCtxP.resume(); },{once:true});
 
 /* ═══════════════════════════════════════════════════════════════════════════
    VOICE COMMANDS  (Web Speech API)
@@ -3806,16 +4313,18 @@ function handleVoiceTranscript(transcript) {
   }
 
   if (cmd.stop) {
-    if (playState) playState.voiceMove = null;
+    const _vs = window._activeUESLGame?.state;
+    if (_vs) _vs.voiceMove = null;
     showVoiceBubble('Stopped!', true);
     setVoiceStatus('Stopped. Say a direction to move again.');
     return;
   }
 
-  // Queue the move on the active play state
-  if (playState && !playState.won && !playState.isEmpty) {
+  // Queue the move on the active UESLGame state
+  const _voiceSt = window._activeUESLGame?.state;
+  if (_voiceSt && !_voiceSt.won && !_voiceSt.isEmpty) {
     const totalPx = cmd.blocks * GRID;
-    playState.voiceMove = {
+    _voiceSt.voiceMove = {
       vx: cmd.vx,
       vy: cmd.vy,
       remainingPx: totalPx,
@@ -3859,9 +4368,10 @@ function initDpad() {
     btn.addEventListener('click', () => {
       const dir = DPAD_DIR[btn.dataset.dir];
       if (!dir) return;
-      if (!playState || playState.won || playState.isEmpty) return;
+      const _dpSt = window._activeUESLGame?.state;
+      if (!_dpSt || _dpSt.won || _dpSt.isEmpty) return;
       const totalPx = dpadBlocks * GRID;
-      playState.voiceMove = { vx: dir.vx, vy: dir.vy, remainingPx: totalPx, totalPx, label: dir.label };
+      _dpSt.voiceMove = { vx: dir.vx, vy: dir.vy, remainingPx: totalPx, totalPx, label: dir.label };
       showVoiceBubble(`${dir.label} ×${dpadBlocks}`, true);
     });
 
@@ -3984,7 +4494,7 @@ function initVoice() {
     btn.classList.remove('listening');
     setVoiceStatus('Voice off. Click the button to turn it back on.');
     examples.classList.remove('show');
-    if (playState) playState.voiceMove = null;
+    const _voiceOffSt = window._activeUESLGame?.state; if (_voiceOffSt) _voiceOffSt.voiceMove = null;
   }
 
   // Mic button toggle
@@ -4031,7 +4541,17 @@ saveHistory();
 updateLevelTabs();
 renderEditor();
 updatePropsPanel();
-setStatus('👋 Welcome! Customize your Game Title and Character above, then build your levels!');
+setStatus('👋 Welcome! Follow the steps above to build your game, then hit ▶ Play Your Game!');
+
+// Connect the title input in Step 1 to the config
+document.getElementById('gi-title').addEventListener('input', function() {
+  myGame.title = this.value || 'My Awesome Game';
+  updateConfigDisplay();
+});
+
+// Show step 1 and initialize config display
+showStep(1);
+updateConfigDisplay();
 
 /* ═══════════════════════════════════════════════════════════════════════════
    FACE TRACKING — play-area button + settings panel wiring
@@ -4554,13 +5074,9 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
 
 })();
 
-})();
-
 /* ═══════════════════════════════════════════════════════════════════════════
    MULTIPLAYER
 ═══════════════════════════════════════════════════════════════════════════ */
-// `game` lives inside the main IIFE; access it via the window alias set above
-const game = window._gmGame;
 window._mp = { socket: null, roomId: null, partnerPos: null, _lastEmit: 0, bc: null };
 
 const SOCKET_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
