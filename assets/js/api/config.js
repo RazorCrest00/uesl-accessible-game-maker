@@ -12,7 +12,7 @@ export const DEV_MODE = false;
 export function getDevMode() { return sessionStorage.getItem('devMode') === 'true'; }
 export async function setDevMode(enabled, pythonURIParam) {
     const uri = pythonURIParam || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-        ? 'http://localhost:8424' : 'https://flask.uesl.io');
+        ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com');
     const res = await fetch(`${uri}/api/id`, { credentials: 'include' });
     if (!res.ok) throw new Error('Not authenticated');
     const data = await res.json();
@@ -24,8 +24,9 @@ export async function setDevMode(enabled, pythonURIParam) {
 export var pythonURI;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
     pythonURI = "http://localhost:8424";  // Same URI for localhost or 127.0.0.1
+    pythonURI = "http://localhost:8424";  // Same URI for localhost or 127.0.0.1
 } else {
-    pythonURI = "https://flask.uesl.io";
+    pythonURI = "https://uesl.opencodingsociety.com";
 
 }
 
