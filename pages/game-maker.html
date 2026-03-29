@@ -1300,6 +1300,11 @@ permalink: /game-maker/
         </div>
       </div>
       <div class="gm-set-sec">
+        <h3>🎮 Challenge Mode</h3>
+        <label class="gm-tog"><input type="checkbox" id="gs-coach">
+          <span>🧑‍🏫 UESL Coach<span class="td">An AI coach hunts you down and taunts you — beat the level before it catches you!</span></span></label>
+      </div>
+      <div class="gm-set-sec">
         <h3>📷 Face Tracking</h3>
         <label class="gm-tog"><input type="checkbox" id="gs-face">
           <span>📷 Face Control<span class="td">Use your head to move — lean left/right/up/down</span></span></label>
@@ -2035,6 +2040,7 @@ const a11y = {
   musicEnabled: false,
   musicTrack:   0,
   musicVolume:  0.8,
+  coachMode:    false,
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2800,6 +2806,16 @@ function buildPlayState(lv) {
     hitFlash:0, particles:[], scorePops: roadMode ? [{x:W/2,y:H/2-40,alpha:1,dy:-0.5,text:'🚗 You\'re now driving!'}] : [],
     sbDir:0, sbMoving:false, keys:{},
     spawnX, spawnY,
+    // UESL Coach enemy — spawns center-right when coachMode is on
+    coach: a11y.coachMode ? {
+      x: W * 0.6, y: H * 0.5, size: 38,
+      vx: -1.4, vy: 0,
+      chasing: false,
+      taunt: "I'm coming for you! 😤",
+      tauntAlpha: 1,              // visible immediately on spawn
+      tauntTick: 180,             // fetch first AI taunt after 3s
+      fetchingTaunt: false,
+    } : null,
   };
 }
 
@@ -2981,6 +2997,96 @@ function updatePlay(st) {
     }
   }
 
+  // UESL Coach AI
+  if (st.coach && !st.won) {
+    const c = st.coach;
+    const pcx2 = ps.x + ps.size/2, pcy2 = ps.y + ps.size/2;
+    const ccx  = c.x  + c.size/2,  ccy  = c.y  + c.size/2;
+    const dx   = pcx2 - ccx,        dy   = pcy2 - ccy;
+    const dist = Math.hypot(dx, dy);
+    const chaseRange = W * 0.6;  // chase from 60% of canvas width away
+    const scale = a11y.slowMode ? 0.45 : 1;
+
+    if (dist < chaseRange) {
+      // Chase mode
+      if (!c.chasing) {
+        c.chasing = true;
+        c.tauntTick = 0; // immediate taunt on first detection
+      }
+      const speed = 2.4 * scale;
+      c.x += (dx / dist) * speed;
+      c.y += (dy / dist) * speed;
+    } else {
+      // Patrol mode — bounce left/right
+      c.chasing = false;
+      c.x += c.vx * scale;
+      if (c.x <= 0)       { c.x = 0;        c.vx = Math.abs(c.vx); }
+      if (c.x + c.size >= W) { c.x = W - c.size; c.vx = -Math.abs(c.vx); }
+    }
+
+    // Keep within canvas vertically
+    if (c.y < 0)           c.y = 0;
+    if (c.y + c.size > H)  c.y = H - c.size;
+
+    // Taunt timer — fetch new AI taunt every ~270 frames (~4.5s at 60fps)
+    if (c.chasing) {
+      c.tauntTick--;
+      if (c.tauntTick <= 0 && !c.fetchingTaunt) {
+        c.tauntTick = 270;
+        c.fetchingTaunt = true;
+        const ctx2 = dist < 60 ? 'nearby' : 'chasing';
+        fetch(`${PYTHON_URI}/api/ainpc/coach-taunt`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' },
+          body: JSON.stringify({ context: ctx2 }),
+        })
+        .then(r => r.json())
+        .then(d => { c.taunt = d.taunt || 'You can\'t outrun me!'; c.tauntAlpha = 1; })
+        .catch(() => {
+          const bank = ['You can\'t outrun me!','This level ends NOW!','Nowhere to hide!','Speed won\'t save you!'];
+          c.taunt = bank[Math.floor(Math.random() * bank.length)];
+          c.tauntAlpha = 1;
+        })
+        .finally(() => { c.fetchingTaunt = false; });
+      }
+    } else {
+      c.tauntTick = 60; // reset timer when not chasing
+    }
+
+    // Fade taunt out over time
+    if (c.tauntAlpha > 0 && !c.fetchingTaunt) {
+      c.tauntAlpha = Math.max(0, c.tauntAlpha - 0.004);
+    }
+
+    // Collision with player
+    if (st.invincible <= 0 && !a11y.guidedMode) {
+      if (Math.abs(pcx2 - ccx) < (ps.size + c.size) / 2 &&
+          Math.abs(pcy2 - ccy) < (ps.size + c.size) / 2) {
+        sfxHit();
+        st.currentHearts = Math.max(0, st.currentHearts - 1);
+        st.hitFlash  = a11y.reduceMotion ? 1 : 36;
+        st.invincible = 120;
+        ps.x = st.spawnX; ps.y = st.spawnY;
+
+        // Fetch caught taunt and show it
+        fetch(`${PYTHON_URI}/api/ainpc/coach-taunt`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' },
+          body: JSON.stringify({ context: 'caught' }),
+        })
+        .then(r => r.json())
+        .then(d => { c.taunt = d.taunt || 'Got you!'; c.tauntAlpha = 1; c.tauntTick = 300; })
+        .catch(() => { c.taunt = 'Got you!'; c.tauntAlpha = 1; });
+
+        const msg = st.currentHearts <= 0
+          ? '🧑‍🏫 Coach caught you! No hearts left — respawning…'
+          : `🧑‍🏫 Coach caught you! -1 ❤️`;
+        st.scorePops.push({ x: W/2, y: H/2-30, alpha: 1, dy: -0.9, text: msg });
+        if (st.currentHearts <= 0) st.currentHearts = st.startHearts;
+      }
+    }
+  }
+
   // Star collection
   const pcx=ps.x+ps.size/2, pcy=ps.y+ps.size/2;
   st.stars.forEach((s, starIdx) => {
@@ -3065,6 +3171,82 @@ function drawPlay(st) {
     else{ctx.shadowColor=a11y.guidedMode?'#00AAFF':n.color;ctx.shadowBlur=a11y.reduceMotion?0:14;ctx.fillStyle=a11y.guidedMode?'#0077cc':n.color;ctx.beginPath();ctx.arc(cx,cy,npcSz/2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
     ctx.font=`${Math.floor(npcSz*0.55)}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(a11y.guidedMode?'😊':n.emoji,cx,cy+1);
+  }
+
+  // UESL Coach — drawn as a distinct red-ringed circle with 🧑‍🏫 emoji + speech bubble
+  if (st.coach) {
+    const c   = st.coach;
+    const ccx = c.x + c.size/2, ccy = c.y + c.size/2;
+    const sz  = LG ? 48 : 38;
+
+    // Outer warning ring (pulses red when chasing)
+    ctx.save();
+    if (c.chasing) {
+      ctx.shadowColor = '#ff2244';
+      ctx.shadowBlur  = a11y.reduceMotion ? 0 : 20;
+    }
+    ctx.strokeStyle = c.chasing ? '#ff2244' : '#a855f7';
+    ctx.lineWidth   = 3;
+    ctx.beginPath(); ctx.arc(ccx, ccy, sz/2 + 3, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+
+    // Body fill
+    ctx.save();
+    ctx.shadowColor = c.chasing ? '#ff2244' : '#7c3aed';
+    ctx.shadowBlur  = a11y.reduceMotion ? 0 : 14;
+    ctx.fillStyle   = HC ? '#FF0000' : (c.chasing ? '#3b0a0a' : '#1e0a3c');
+    ctx.beginPath(); ctx.arc(ccx, ccy, sz/2, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur  = 0;
+    ctx.restore();
+
+    // Emoji
+    ctx.font = `${Math.floor(sz * 0.55)}px Arial`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🧑‍🏫', ccx, ccy + 1);
+
+    // "UESL Coach" label below
+    ctx.fillStyle = HC ? '#FF8800' : (c.chasing ? '#ff6688' : '#c084fc');
+    ctx.font = `bold ${LG ? 11 : 9}px Arial`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('UESL Coach', ccx, c.y + sz + 3);
+
+    // Speech bubble with AI taunt
+    if (c.taunt && c.tauntAlpha > 0.05) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, c.tauntAlpha);
+      const bubFont = `bold ${LG ? 12 : 10}px Arial`;
+      ctx.font = bubFont;
+      const tw = ctx.measureText(c.taunt).width;
+      const bw = tw + 16, bh = 18;
+      const bx = ccx - bw/2, by = c.y - bh - 14;
+
+      // Bubble background
+      ctx.fillStyle = 'rgba(20,5,50,0.92)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 6);
+      else ctx.rect(bx, by, bw, bh);
+      ctx.fill();
+
+      // Bubble border
+      ctx.strokeStyle = c.chasing ? '#ff2244' : '#7c3aed';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+
+      // Pointer triangle
+      ctx.fillStyle = c.chasing ? '#ff2244' : '#7c3aed';
+      ctx.beginPath();
+      ctx.moveTo(ccx - 5, by + bh);
+      ctx.lineTo(ccx + 5, by + bh);
+      ctx.lineTo(ccx,     by + bh + 7);
+      ctx.closePath(); ctx.fill();
+
+      // Taunt text
+      ctx.fillStyle = HC ? '#FFFF00' : '#e9d5ff';
+      ctx.font = bubFont;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(c.taunt, ccx, by + bh/2);
+      ctx.restore();
+    }
   }
 
   // Player — uses custom emoji + name; road mode shows 🚗 rotated by movement direction
@@ -3621,6 +3803,31 @@ document.getElementById('gm-remove-level-btn').addEventListener('click', removeC
   el.checked=a11y[key];
   el.addEventListener('change',()=>{ a11y[key]=el.checked; if(playState) playState.player.size=a11y.largeSprites?52:40; });
 });
+
+// UESL Coach toggle — wire separately so we can hot-swap the coach into a running game
+(function() {
+  const coachEl = document.getElementById('gs-coach');
+  if (!coachEl) return;
+  coachEl.checked = false;
+  coachEl.addEventListener('change', () => {
+    a11y.coachMode = coachEl.checked;
+    if (!playState) return;
+    if (a11y.coachMode && !playState.coach) {
+      // Inject coach mid-game immediately
+      playState.coach = {
+        x: W * 0.5, y: H * 0.5, size: 38,
+        vx: -1.4, vy: 0,
+        chasing: false,
+        taunt: "I'm watching you… 👀",
+        tauntAlpha: 1,
+        tauntTick: 180,
+        fetchingTaunt: false,
+      };
+    } else if (!a11y.coachMode) {
+      playState.coach = null;
+    }
+  });
+})();
 
 // Music toggle + track selector
 (function() {

@@ -4,6 +4,7 @@ import Player from './essentials/Player.js';
 import Npc from './essentials/Npc.js';
 import GameControl from './essentials/GameControl.js';
 import GameLevelStarWars from './GameLevelStarWars.js';
+import UESLCoach from './UESLCoach.js';
 
 class GameLevelBasic {
   constructor(gameEnv) {
@@ -95,11 +96,39 @@ class GameLevelBasic {
         }
     };
 
+    // UESL Coach — enemy that patrols and chases the player
+    const sprite_src_coach = path + "/images/gamify/historyProf.png";
+    const sprite_data_coach = {
+        id: 'UESLCoach',
+        src: sprite_src_coach,
+        SCALE_FACTOR: 5,
+        ANIMATION_RATE: 10,
+        pixels: { height: 263, width: 559 },
+        INIT_POSITION: { x: width * 0.6, y: height - (height / 5) },
+        orientation: { rows: 4, columns: 9 },
+        down:  { row: 3, start: 0, columns: 9 },
+        up:    { row: 3, start: 0, columns: 9 },
+        left:  { row: 3, start: 0, columns: 9 },
+        right: { row: 3, start: 0, columns: 9 },
+        hitbox: { widthPercentage: 0.4, heightPercentage: 0.3 },
+        // AI settings
+        chaseRange:  width * 0.35,   // start chasing when player is within 35% of canvas width
+        chaseSpeed:  2.2,            // pixels per frame while chasing
+        patrolSpeed: 1.2,            // pixels per frame while patrolling
+        walkingArea: {
+            xMin: width * 0.45,
+            xMax: width * 0.95,
+            yMin: 0,
+            yMax: height,
+        },
+    };
+
     // List of objects defnitions for this level
     this.classes = [
       { class: GamEnvBackground, data: image_data_desert },
       { class: Player, data: sprite_data_chillguy },
       { class: Npc, data: sprite_data_r2d2 },
+      { class: UESLCoach, data: sprite_data_coach },
     ];
   }
 
