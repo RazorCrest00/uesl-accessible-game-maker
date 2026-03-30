@@ -1,0 +1,75 @@
+---
+layout: uesl
+title: "Play"
+description: "Build & Play Your Own Game — Accessible game maker for UESL students."
+permalink: /play/
+---
+
+    <section id="game" class="section" aria-labelledby="game-heading">
+      <div class="game-intro fade-in">
+        <div>
+          <div class="section-label">Interactive</div>
+          <h2 class="section-title" id="game-heading">Build &amp; Play Your Own Game</h2>
+          <p class="section-sub">
+            Design custom levels, choose your character, and play — right here in the browser.
+            Built specifically for UESL students with accessibility-first controls.
+          </p>
+          <div style="margin-top:28px;">
+            <a href="#game" class="btn-primary" style="display:inline-flex">🕹️ Jump In</a>
+          </div>
+        </div>
+        <div class="game-features">
+          <div class="gf-item">
+            <div class="gf-icon">🎨</div>
+            <div>
+              <div class="gf-title">Level Designer</div>
+              <div class="gf-desc">Place platforms, enemies, coins, and goals with a simple drag-and-drop editor.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">🎮</div>
+            <div>
+              <div class="gf-title">Play Mode</div>
+              <div class="gf-desc">Jump right in with keyboard, D-pad, or on-screen touch controls.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">😶</div>
+            <div>
+              <div class="gf-title">Face Tracking</div>
+              <div class="gf-desc">Control your character with head movements — no hands required.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">🎙️</div>
+            <div>
+              <div class="gf-title">Voice Commands</div>
+              <div class="gf-desc">Say "jump", "left", "right" — fully voice-navigable gameplay.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">💾</div>
+            <div>
+              <div class="gf-title">Save &amp; Share</div>
+              <div class="gf-desc">Save up to 20 games to your browser, export as JSON, or start fresh any time.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Embedded game maker / dashboard tabs -->
+      <div class="game-frame-wrap fade-in" aria-label="Game maker application">
+        <div class="game-frame-header" aria-hidden="true">
+          <div class="gfh-dot red"></div>
+          <div class="gfh-dot amber"></div>
+          <div class="gfh-dot green"></div>
+          <div class="gfh-label">UESL Game Maker — Design · Play · Accessibility Controls</div>
+        </div>
+        <iframe
+          src="/game-maker/"
+          title="UESL Game Maker — Design and play your own accessible platformer"
+          allow="camera; microphone"
+          loading="lazy"
+        ></iframe>
+      </div>
+    </section>

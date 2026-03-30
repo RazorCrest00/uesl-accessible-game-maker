@@ -1,8 +1,3 @@
----
-layout: false
-title: "UESL Hub"
-permalink: /
----
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1055,6 +1050,11 @@ permalink: /
       .game-frame-wrap iframe { height: 520px; }
       .locations-grid { grid-template-columns: 1fr; }
     }
+
+    /* Extra top padding when section is the page entry point */
+    main > .section:first-child {
+      padding-top: calc(var(--nav-h) + clamp(48px,7vw,80px));
+    }
   </style>
 </head>
 <body>
@@ -1062,7 +1062,7 @@ permalink: /
 
   <!-- ── Navbar ───────────────────────────────────────────────── -->
   <nav id="nav" role="navigation" aria-label="Main navigation">
-    <a href="#home" aria-label="UESL Home">
+    <a href="/" aria-label="UESL Home">
       <img id="nav-logo"
         src="https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/efa49c03-11c6-4c97-b21e-05266875502d/UnifiedESL-horizontal.png"
         alt="Unified Esports League"
@@ -1071,7 +1071,7 @@ permalink: /
       <span style="display:none; font-family:var(--font-h); font-size:1.1rem; color:var(--cyan); font-weight:700;">UESL</span>
     </a>
     <ul id="nav-links" role="list">
-      <li><a href="#home">Home</a></li>
+      <li><a href="/">Home</a></li>
       <li>
         <button id="nav-social-btn" class="nav-social-btn" aria-label="Open Social Hub">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -1079,10 +1079,10 @@ permalink: /
           <span class="invite-dot"></span>
         </button>
       </li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#locations">Locations</a></li>
-      <li><a href="#game">Play</a></li>
-      <li><a href="#contact">Contact</a></li>
+      <li><a href="/about/">About</a></li>
+      <li><a href="/locations/">Locations</a></li>
+      <li><a href="/play/">Play</a></li>
+      <li><a href="/contact/">Contact</a></li>
       <li>
         <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
            class="nav-donate" target="_blank" rel="noopener">Donate</a>
@@ -1093,398 +1093,9 @@ permalink: /
     </button>
   </nav>
 
+
   <main id="main">
-    <!-- ── Hero ─────────────────────────────────────────────────── -->
-    <section id="home" aria-labelledby="hero-heading">
-      <div id="hero-bg"></div>
-      <div id="hero-img" role="img" aria-hidden="true"></div>
-      <canvas id="hero-particles" aria-hidden="true"></canvas>
-      <div class="hero-cols">
-        <div class="hero-content">
-          <div class="hero-badge">Now Open Year-Round · Ages 8+</div>
-          <h1 class="hero-h1" id="hero-heading">
-            Make Friends.<br/>
-            Play on a Team.<br/>
-            <span>Grow Through Tech.</span>
-          </h1>
-          <p class="hero-sub">
-            Unified Esports League helps people with intellectual and
-            developmental disabilities build confidence, friendships, and
-            skills through gaming and technology — at no cost to SDRC clients.
-          </p>
-          <div class="hero-btns">
-            <a href="#game" class="btn-primary">
-              🎮 Play the Game
-            </a>
-            <a href="#about" class="btn-outline">
-              Learn More ↓
-            </a>
-          </div>
-          <div class="hero-stats" aria-label="Key statistics">
-            <div class="hs-item">
-              <div class="hs-num" data-target="7">0</div>
-              <div class="hs-label">Tech Centers</div>
-            </div>
-            <div class="hs-item">
-              <div class="hs-num" data-target="100" data-suffix="+">0</div>
-              <div class="hs-label">Participants</div>
-            </div>
-            <div class="hs-item">
-              <div class="hs-num" data-target="1" data-colon="3">0</div>
-              <div class="hs-label">Coach Ratio</div>
-            </div>
-            <div class="hs-item">
-              <div class="hs-num" data-target="8" data-suffix="+">0</div>
-              <div class="hs-label">Years & Up</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Our Mission panel — right column of hero -->
-        <div class="hero-mission-panel">
-          <div class="section-label" style="margin-bottom:20px;">Our Mission</div>
-          <div class="value-cards">
-            <div class="vc">
-              <div class="vc-icon">🤝</div>
-              <div class="vc-title">Community</div>
-              <div class="vc-desc">Team-based learning where every player belongs and grows together.</div>
-            </div>
-            <div class="vc">
-              <div class="vc-icon">🎯</div>
-              <div class="vc-title">Expert Coaching</div>
-              <div class="vc-desc">Trained coaches provide personalized support at a 1:3 ratio.</div>
-            </div>
-            <div class="vc">
-              <div class="vc-icon">♿</div>
-              <div class="vc-title">Accessibility</div>
-              <div class="vc-desc">Adaptive controls and inclusive tech for every ability level.</div>
-            </div>
-            <div class="vc">
-              <div class="vc-icon">🚀</div>
-              <div class="vc-title">Real Skills</div>
-              <div class="vc-desc">Confidence, collaboration, and technology fluency that last a lifetime.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── About ─────────────────────────────────────────────────── -->
-    <section id="about" class="section" aria-labelledby="about-heading">
-      <h2 id="about-heading" style="display:none;">About UESL</h2>
-
-      <!-- Photo row: left = real image, right = placeholder for second photo -->
-      <div class="photo-row fade-in">
-
-        <!-- LEFT: UESL team photo -->
-        <div class="photo-slot photo-slot--framed">
-          <img
-            src="/images/UESL-piuc.png"
-            alt="UESL team group photo"
-            loading="lazy"
-          />
-        </div>
-
-        <!-- RIGHT: placeholder — swap src above with your second photo when ready -->
-        <div class="photo-slot">
-          <div class="photo-slot-empty">
-            <div class="pse-icon">📷</div>
-            <div class="pse-border-hint"></div>
-            <div class="pse-text">Your Photo Here</div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Partners -->
-      <div class="partners fade-in">
-        <div class="partners-label">Trusted Partners &amp; Affiliations</div>
-        <div class="partners-row">
-          <img class="partner-logo"
-            src="https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/de1f0ba7-3472-4964-ac4b-fce208880050/UESL+Logos.png"
-            alt="UESL Partner Logos" loading="lazy"
-          />
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Locations ─────────────────────────────────────────────── -->
-    <section id="locations" class="section" aria-labelledby="locations-heading">
-      <div class="section-hdr fade-in">
-        <div class="section-label">Where We Are</div>
-        <h2 class="section-title" id="locations-heading">7 Tech Centers Across San Diego</h2>
-        <p class="section-sub">
-          All locations serve clients of all abilities, ages 8 and up —
-          at no cost to SDRC-referred participants.
-        </p>
-      </div>
-      <div class="locations-grid">
-        <div class="loc-card fade-in" style="--accent-color:#00d4ff">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">Rancho Bernardo</div>
-          <div class="loc-school">RB High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>13010 Paseo Lucido, San Diego, CA 92128</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-        <div class="loc-card fade-in" style="--accent-color:#7c3aed">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">Mira Mesa</div>
-          <div class="loc-school">Mira Mesa High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>10510 Westview Pkwy, San Diego, CA 92126</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-        <div class="loc-card fade-in" style="--accent-color:#00ff88">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">Scripps Ranch</div>
-          <div class="loc-school">Scripps Ranch High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>10410 Treena St, San Diego, CA 92131</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-        <div class="loc-card fade-in" style="--accent-color:#ffd700">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">El Cajon</div>
-          <div class="loc-school">El Cajon Valley High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>1035 E Madison Ave, El Cajon, CA 92021</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-        <div class="loc-card fade-in" style="--accent-color:#ff6b6b">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">National City</div>
-          <div class="loc-school">Sweetwater High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>2900 Highland Ave, National City, CA 91950</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-        <div class="loc-card fade-in" style="--accent-color:#ff8c00">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">Chula Vista</div>
-          <div class="loc-school">Eastlake High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>1120 Eastlake Pkwy, Chula Vista, CA 91915</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-        <div class="loc-card fade-in" style="--accent-color:#e040fb">
-          <div class="loc-badge">Open</div>
-          <div class="loc-name">Imperial Valley</div>
-          <div class="loc-school">Imperial High School</div>
-          <div class="loc-info">
-            <div class="loc-row"><span>📍</span><span>Imperial County, CA</span></div>
-            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
-          </div>
-          <div class="loc-free">✓ No cost to SDRC clients</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Game ──────────────────────────────────────────────────── -->
-    <section id="game" class="section" aria-labelledby="game-heading">
-      <div class="game-intro fade-in">
-        <div>
-          <div class="section-label">Interactive</div>
-          <h2 class="section-title" id="game-heading">Build &amp; Play Your Own Game</h2>
-          <p class="section-sub">
-            Design custom levels, choose your character, and play — right here in the browser.
-            Built specifically for UESL students with accessibility-first controls.
-          </p>
-          <div style="margin-top:28px;">
-            <a href="#game" class="btn-primary" style="display:inline-flex">🕹️ Jump In</a>
-          </div>
-        </div>
-        <div class="game-features">
-          <div class="gf-item">
-            <div class="gf-icon">🎨</div>
-            <div>
-              <div class="gf-title">Level Designer</div>
-              <div class="gf-desc">Place platforms, enemies, coins, and goals with a simple drag-and-drop editor.</div>
-            </div>
-          </div>
-          <div class="gf-item">
-            <div class="gf-icon">🎮</div>
-            <div>
-              <div class="gf-title">Play Mode</div>
-              <div class="gf-desc">Jump right in with keyboard, D-pad, or on-screen touch controls.</div>
-            </div>
-          </div>
-          <div class="gf-item">
-            <div class="gf-icon">😶</div>
-            <div>
-              <div class="gf-title">Face Tracking</div>
-              <div class="gf-desc">Control your character with head movements — no hands required.</div>
-            </div>
-          </div>
-          <div class="gf-item">
-            <div class="gf-icon">🎙️</div>
-            <div>
-              <div class="gf-title">Voice Commands</div>
-              <div class="gf-desc">Say "jump", "left", "right" — fully voice-navigable gameplay.</div>
-            </div>
-          </div>
-          <div class="gf-item">
-            <div class="gf-icon">💾</div>
-            <div>
-              <div class="gf-title">Save &amp; Share</div>
-              <div class="gf-desc">Save up to 20 games to your browser, export as JSON, or start fresh any time.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Embedded game maker / dashboard tabs -->
-      <div class="game-frame-wrap fade-in" aria-label="Game maker application">
-        <div class="game-frame-header" aria-hidden="true">
-          <div class="gfh-dot red"></div>
-          <div class="gfh-dot amber"></div>
-          <div class="gfh-dot green"></div>
-          <div class="gfh-label">UESL Game Maker — Design · Play · Accessibility Controls</div>
-        </div>
-        <iframe
-          src="/game-maker/"
-          title="UESL Game Maker — Design and play your own accessible platformer"
-          allow="camera; microphone"
-          loading="lazy"
-        ></iframe>
-      </div>
-    </section>
-
-    <!-- ── Contact ───────────────────────────────────────────────── -->
-    <section id="contact" class="section" aria-labelledby="contact-heading">
-      <div class="section-hdr fade-in">
-        <div class="section-label">Get In Touch</div>
-        <h2 class="section-title" id="contact-heading">Connect With Client Services</h2>
-      </div>
-      <div class="contact-grid fade-in">
-        <!-- Form -->
-        <div class="contact-form-wrap">
-          <h3>Send Us a Message</h3>
-          <form action="https://formspree.io/f/matthew@unifiedesl.com" method="POST" novalidate>
-            <div class="cf-row">
-              <label for="cf-name">Full Name</label>
-              <input type="text" id="cf-name" name="name" placeholder="Your name" required autocomplete="name"/>
-            </div>
-            <div class="cf-row">
-              <label for="cf-email">Email</label>
-              <input type="email" id="cf-email" name="email" placeholder="you@example.com" required autocomplete="email"/>
-            </div>
-            <div class="cf-row">
-              <label for="cf-phone">Phone (optional)</label>
-              <input type="tel" id="cf-phone" name="phone" placeholder="(619) 000-0000" autocomplete="tel"/>
-            </div>
-            <div class="cf-row">
-              <label for="cf-sdrc">Are you an SDRC client?</label>
-              <select id="cf-sdrc" name="sdrc">
-                <option value="">Select…</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-                <option value="unsure">Not sure</option>
-              </select>
-            </div>
-            <div class="cf-row">
-              <label for="cf-location">Location of interest</label>
-              <select id="cf-location" name="location">
-                <option value="">Select a location…</option>
-                <option>Rancho Bernardo</option>
-                <option>Mira Mesa</option>
-                <option>Scripps Ranch</option>
-                <option>El Cajon</option>
-                <option>National City</option>
-                <option>Chula Vista</option>
-                <option>Imperial Valley</option>
-              </select>
-            </div>
-            <div class="cf-row">
-              <label for="cf-message">How can we help?</label>
-              <textarea id="cf-message" name="message" placeholder="Tell us about yourself and your interest in UESL…"></textarea>
-            </div>
-            <button type="submit" class="cf-submit">Send Message →</button>
-          </form>
-        </div>
-        <!-- Info -->
-        <div class="contact-info">
-          <div>
-            <h3 class="ci-title">We'd Love to Hear From You</h3>
-            <p class="ci-sub">
-              Reach out to learn more about enrollment, locations, volunteer
-              opportunities, or media inquiries.
-            </p>
-          </div>
-          <div class="ci-items">
-            <div class="ci-item">
-              <div class="ci-icon">📞</div>
-              <div>
-                <div class="ci-item-label">Client Services</div>
-                <div class="ci-item-val"><a href="tel:6193540733">(619) 354-0733</a></div>
-              </div>
-            </div>
-            <div class="ci-item">
-              <div class="ci-icon">☎️</div>
-              <div>
-                <div class="ci-item-label">General Line</div>
-                <div class="ci-item-val"><a href="tel:8584498478">(858) 449-8478</a></div>
-              </div>
-            </div>
-            <div class="ci-item">
-              <div class="ci-icon">✉️</div>
-              <div>
-                <div class="ci-item-label">Admissions</div>
-                <div class="ci-item-val"><a href="mailto:wendy@unifiedesl.com">wendy@unifiedesl.com</a></div>
-              </div>
-            </div>
-            <div class="ci-item">
-              <div class="ci-icon">📸</div>
-              <div>
-                <div class="ci-item-label">Media Inquiries</div>
-                <div class="ci-item-val"><a href="mailto:kelly@unifiedesl.com">kelly@unifiedesl.com</a></div>
-              </div>
-            </div>
-            <div class="ci-bilingual">
-              <span>🇲🇽</span>
-              <span>Se habla español — Contact Wendy Muñoz at (619) 354-0733</span>
-            </div>
-          </div>
-          <div>
-            <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">Follow Us</div>
-            <div class="social-row">
-              <a href="https://www.facebook.com/unifiedesl" class="social-btn" target="_blank" rel="noopener" aria-label="Facebook">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-              </a>
-              <a href="https://www.instagram.com/unifiedesl" class="social-btn" target="_blank" rel="noopener" aria-label="Instagram">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-              </a>
-              <a href="https://www.youtube.com/@unifiedesl" class="social-btn" target="_blank" rel="noopener" aria-label="YouTube">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#0d1117"/></svg>
-              </a>
-              <a href="https://twitter.com/UnifiedESL" class="social-btn" target="_blank" rel="noopener" aria-label="X / Twitter">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </a>
-              <a href="https://www.linkedin.com/company/98848005" class="social-btn" target="_blank" rel="noopener" aria-label="LinkedIn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-              </a>
-            </div>
-          </div>
-          <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
-             target="_blank" rel="noopener"
-             style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border-radius:30px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;font-size:.95rem;transition:opacity .2s,transform .15s;">
-            ❤️ Support UESL — Donate
-          </a>
-        </div>
-      </div>
-    </section>
+    {{ content }}
   </main>
 
   <!-- ── Footer ─────────────────────────────────────────────────── -->
@@ -1511,11 +1122,11 @@ permalink: /
       <div class="footer-col">
         <h4>Navigate</h4>
         <ul>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#locations">Locations</a></li>
-          <li><a href="#game">Play the Game</a></li>
-          <li><a href="#contact">Contact</a></li>
+          <li><a href="/">Home</a></li>
+          <li><a href="/about/">About</a></li>
+          <li><a href="/locations/">Locations</a></li>
+          <li><a href="/play/">Play the Game</a></li>
+          <li><a href="/contact/">Contact</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -1588,7 +1199,7 @@ permalink: /
 
     // ── Hero particle canvas ────────────────────────────────────
     const canvas = document.getElementById('hero-particles');
-    const ctx    = canvas.getContext('2d');
+    if (canvas) { const ctx = canvas.getContext('2d');
     let W, H, particles;
 
     function resizeCanvas() {
@@ -1628,6 +1239,7 @@ permalink: /
     const ro = new ResizeObserver(() => { resizeCanvas(); makeParticles(); });
     ro.observe(canvas.parentElement);
     resizeCanvas(); makeParticles(); drawParticles();
+    } // end if(canvas)
 
     // ── Stat counters (hero) ────────────────────────────────────
     const statsObserver = new IntersectionObserver(entries => {
