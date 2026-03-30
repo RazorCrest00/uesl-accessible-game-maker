@@ -1,0 +1,3070 @@
+---
+layout: false
+title: "UESL Hub"
+permalink: /
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UESL Hub — Unified Esports League</title>
+  <meta name="description" content="Unified Esports League — Helping people with disabilities grow through their passion for technology. Play, build, and explore with our free game maker."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Design Tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b27;
+      --surface2:  #1e2535;
+      --surface3:  #252d40;
+      --cyan:      #00d4ff;
+      --cyan-dim:  rgba(0,212,255,.12);
+      --purple:    #7c3aed;
+      --gold:      #ffd700;
+      --green:     #00ff88;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --navy:      #1a2b5e;
+      --border:    rgba(255,255,255,.07);
+      --r:         12px;
+      --r-lg:      20px;
+      --font-h:    'Oswald', sans-serif;
+      --font-b:    'Inter', sans-serif;
+      --nav-h:     68px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-b);
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ── Accessibility ──────────────────────────────────────────── */
+    .skip-link {
+      position: absolute; top: -100px; left: 16px; z-index: 10000;
+      background: var(--cyan); color: #000; padding: 10px 18px;
+      border-radius: 0 0 var(--r) var(--r); font-weight: 700; font-size: .9rem;
+      transition: top .2s;
+    }
+    .skip-link:focus { top: 0; }
+    :focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    /* ── Navbar ─────────────────────────────────────────────────── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(16px, 4vw, 48px);
+      background: rgba(13,17,23,.85);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      transition: background .3s;
+    }
+    #nav.scrolled { background: rgba(13,17,23,.96); }
+    #nav-logo { height: 42px; object-fit: contain; }
+    #nav-links {
+      display: flex; align-items: center; gap: clamp(4px,1.5vw,24px);
+      list-style: none;
+    }
+    #nav-links a {
+      font-size: .92rem; font-weight: 600; color: var(--muted);
+      padding: 6px 4px; border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+      white-space: nowrap;
+    }
+    #nav-links a:hover, #nav-links a.active { color: var(--text); border-color: var(--cyan); }
+    .nav-donate {
+      margin-left: 8px; padding: 8px 20px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      border: none; border-radius: 30px;
+      color: #fff; font-size: .88rem; font-weight: 700;
+      transition: opacity .2s, transform .15s;
+    }
+    .nav-donate:hover { opacity: .88; transform: scale(1.04); }
+
+    /* Social nav button */
+    .nav-social-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border: 1.5px solid rgba(0,212,255,.45); border-radius: 30px;
+      background: rgba(0,212,255,.08); color: var(--cyan);
+      font-size: .88rem; font-weight: 700; cursor: pointer;
+      transition: background .2s, border-color .2s, transform .15s;
+      white-space: nowrap;
+    }
+    .nav-social-btn:hover { background: rgba(0,212,255,.18); border-color: var(--cyan); transform: scale(1.04); }
+    .nav-social-btn svg { flex-shrink: 0; }
+    .nav-social-btn .invite-dot {
+      display: none; width: 9px; height: 9px; border-radius: 50%;
+      background: #ff4444; margin-left: 2px; flex-shrink: 0;
+      box-shadow: 0 0 6px #ff4444; animation: inviteDotPulse 1s infinite;
+    }
+    .nav-social-btn.has-invite .invite-dot { display: inline-block; }
+    @keyframes inviteDotPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+    /* ── Game Invite Toast ──────────────────────────────────────── */
+    #invite-toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 99999;
+      background: #0b0b1e;
+      border: 2px solid #00FF88;
+      border-radius: 20px;
+      padding: 0; width: 320px;
+      box-shadow: 0 0 0 1px rgba(0,255,136,.15), 0 12px 50px rgba(0,255,136,.4), 0 4px 20px rgba(0,0,0,.7);
+      transform: translateX(360px); opacity: 0;
+      transition: transform .4s cubic-bezier(.22,1,.36,1), opacity .3s;
+      pointer-events: none; overflow: hidden;
+    }
+    #invite-toast.show { transform: translateX(0); opacity: 1; pointer-events: auto; }
+    #invite-toast .it-header {
+      background: linear-gradient(90deg, #003320, #001830);
+      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(0,255,136,.2);
+    }
+    #invite-toast .it-header-icon { font-size: 1.5rem; line-height: 1; }
+    #invite-toast .it-header-label {
+      font-size: .7rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: #00FF88;
+    }
+    #invite-toast .it-header-ping {
+      margin-left: auto; width: 10px; height: 10px; border-radius: 50%;
+      background: #00FF88; animation: inviteDotPulse .9s infinite;
+      box-shadow: 0 0 8px #00FF88;
+    }
+    #invite-toast .it-body { padding: 14px 16px 16px; }
+    #invite-toast .it-title {
+      font-weight: 800; color: #fff; font-size: 1rem; margin-bottom: 3px;
+      line-height: 1.3;
+    }
+    #invite-toast .it-sub {
+      color: #9ba3af; font-size: .82rem; margin-bottom: 14px; line-height: 1.4;
+    }
+    #invite-toast .it-sub strong { color: #00FF88; }
+    #invite-toast .it-btns { display: flex; gap: 8px; }
+    #invite-toast .it-join {
+      flex: 1; padding: 10px 14px; background: #00FF88; color: #000;
+      border: none; border-radius: 12px; font-weight: 800; font-size: .88rem;
+      cursor: pointer; text-decoration: none; text-align: center; display: block;
+      letter-spacing: .02em; transition: transform .1s, box-shadow .1s;
+      box-shadow: 0 4px 16px rgba(0,255,136,.4);
+    }
+    #invite-toast .it-join:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,255,136,.55); }
+    #invite-toast .it-join:active { transform: translateY(0); }
+    #invite-toast .it-dismiss {
+      padding: 10px 14px; background: transparent; color: #666;
+      border: 1px solid #333; border-radius: 12px; font-size: .82rem;
+      cursor: pointer; transition: color .15s, border-color .15s;
+    }
+    #invite-toast .it-dismiss:hover { color: #aaa; border-color: #555; }
+
+    /* ── Social Hub Overlay ─────────────────────────────────────── */
+    #social-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: var(--bg);
+      display: none; flex-direction: column;
+      font-family: var(--font-b);
+    }
+    #social-overlay.open { display: flex; }
+
+    /* Social top bar */
+    #social-topbar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 clamp(16px,3vw,40px);
+      height: var(--nav-h);
+      background: rgba(13,17,23,.95);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #social-topbar .st-logo {
+      font-family: var(--font-h); font-size: 1.1rem; font-weight: 700; color: var(--cyan);
+      display: flex; align-items: center; gap: 8px; margin-right: 8px;
+    }
+    #social-topbar .st-logo svg { color: var(--cyan); }
+    #social-search {
+      flex: 1; max-width: 340px;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 30px; padding: 7px 16px;
+      transition: border-color .2s;
+    }
+    #social-search:focus-within { border-color: rgba(0,212,255,.5); }
+    #social-search input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-size: .9rem; font-family: var(--font-b);
+    }
+    #social-search input::placeholder { color: var(--muted); }
+    #social-search svg { color: var(--muted); flex-shrink: 0; }
+    #social-user-chip {
+      margin-left: auto; display: flex; align-items: center; gap: 10px;
+    }
+    .suc-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .95rem; color: #fff; flex-shrink: 0;
+      cursor: pointer; border: 2px solid transparent;
+      transition: border-color .2s;
+    }
+    .suc-avatar:hover { border-color: var(--cyan); }
+    #suc-name { font-size: .9rem; font-weight: 600; color: var(--text); }
+    #social-close-btn {
+      margin-left: 12px; background: none; border: none;
+      color: var(--muted); font-size: 1.5rem; cursor: pointer; line-height: 1;
+      transition: color .2s;
+    }
+    #social-close-btn:hover { color: var(--text); }
+
+    /* Social / Dashboard view switcher */
+    #social-view-tabs {
+      display: flex; gap: 4px;
+      background: var(--surface2);
+      border-radius: 20px;
+      padding: 3px;
+      margin: 0 8px;
+    }
+    .svt-btn {
+      padding: 5px 16px; border-radius: 16px; border: none;
+      background: transparent; color: var(--muted);
+      font-size: .82rem; font-weight: 700; cursor: pointer;
+      transition: background .2s, color .2s;
+      white-space: nowrap;
+    }
+    .svt-btn.active { background: rgba(0,212,255,.15); color: var(--cyan); }
+    .svt-btn:hover:not(.active) { color: var(--text); }
+
+    /* Settings panel */
+    #social-dashboard-panel {
+      display: none; flex: 1; overflow: hidden; flex-direction: column;
+    }
+    #social-dashboard-panel.active { display: flex; }
+
+    /* Settings pane */
+    .sstab-pane { flex: 1; overflow: hidden; display: none; }
+    .sstab-pane.active { display: flex; }
+    .sstab-pane iframe { width: 100%; height: 100%; border: none; flex: 1; }
+
+    /* Social body */
+    #social-body {
+      display: flex; flex: 1; overflow: hidden;
+    }
+
+    /* Sidebar */
+    #social-sidebar {
+      width: 280px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .ss-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px 8px;
+      font-size: .72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+    .ss-add-btn {
+      background: none; border: none; color: var(--cyan); font-size: 1.2rem;
+      cursor: pointer; line-height: 1; transition: transform .15s;
+    }
+    .ss-add-btn:hover { transform: scale(1.2); }
+    #friend-list {
+      flex: 1; overflow-y: auto; padding: 4px 8px 12px;
+    }
+    #friend-list::-webkit-scrollbar { width: 4px; }
+    #friend-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .friend-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px; border-radius: var(--r); cursor: pointer;
+      transition: background .15s;
+    }
+    .friend-item:hover, .friend-item.active { background: var(--surface2); }
+    .friend-item.active { background: var(--surface3); }
+    .fi-avatar {
+      position: relative; flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: #fff;
+    }
+    .fi-status {
+      position: absolute; bottom: 0; right: 0;
+      width: 11px; height: 11px; border-radius: 50%;
+      border: 2px solid var(--surface);
+    }
+    .fi-status.online  { background: var(--green); }
+    .fi-status.offline { background: var(--muted); }
+    .fi-status.away    { background: var(--gold); }
+    .fi-info { flex: 1; min-width: 0; }
+    .fi-name { font-size: .9rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fi-preview { font-size: .75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fi-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .fi-time { font-size: .7rem; color: var(--muted); }
+    .fi-badge {
+      background: var(--cyan); color: #000; font-size: .65rem; font-weight: 700;
+      min-width: 18px; height: 18px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center; padding: 0 5px;
+    }
+    .ss-divider {
+      height: 1px; background: var(--border); margin: 8px 18px;
+    }
+
+    /* Chat area */
+    #social-chat {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    }
+    #chat-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    #chat-friend-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; color: #fff; flex-shrink: 0;
+    }
+    #chat-friend-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+    #chat-friend-status { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    #chat-friend-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.online  { background: var(--green); }
+    .dot.offline { background: var(--muted); }
+    .dot.away    { background: var(--gold); }
+    #chat-actions { margin-left: auto; display: flex; gap: 12px; }
+    .chat-action-btn {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; padding: 6px; border-radius: 8px;
+      transition: color .2s, background .2s;
+    }
+    .chat-action-btn:hover { color: var(--text); background: var(--surface2); }
+
+    #chat-messages {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    #chat-messages::-webkit-scrollbar { width: 5px; }
+    #chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .msg-day-label {
+      text-align: center; color: var(--muted); font-size: .72rem;
+      margin: 12px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+    }
+    .msg-row {
+      display: flex; gap: 10px; align-items: flex-end; max-width: 72%;
+    }
+    .msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-bubble-avatar {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; color: #fff;
+    }
+    .msg-bubble {
+      padding: 10px 14px; border-radius: 18px;
+      font-size: .9rem; line-height: 1.5; max-width: 100%;
+      word-break: break-word;
+    }
+    .msg-row:not(.me) .msg-bubble {
+      background: var(--surface3); color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-row.me .msg-bubble {
+      background: linear-gradient(135deg, var(--cyan), #0090b8);
+      color: #000; font-weight: 500;
+      border-bottom-right-radius: 4px;
+    }
+    .msg-time { font-size: .68rem; color: var(--muted); margin-top: 4px; text-align: right; }
+    .msg-row:not(.me) .msg-time { text-align: left; }
+
+    #chat-input-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    #chat-input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 24px; padding: 10px 18px;
+      color: var(--text); font-size: .92rem; font-family: var(--font-b);
+      outline: none; transition: border-color .2s;
+      resize: none; max-height: 120px; min-height: 42px; overflow-y: auto;
+    }
+    #chat-input:focus { border-color: rgba(0,212,255,.5); }
+    #chat-input::placeholder { color: var(--muted); }
+    .chat-icon-btn {
+      width: 38px; height: 38px; border-radius: 50%; border: none; flex-shrink: 0;
+      background: var(--surface2); color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1.2rem; transition: background .15s, color .15s;
+    }
+    .chat-icon-btn:hover { background: var(--border); color: var(--text); }
+    .chat-send-btn {
+      width: 44px; height: 44px; border-radius: 50%; border: none; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--cyan), #0090b8);
+      color: #000; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: transform .15s, box-shadow .2s;
+      box-shadow: 0 0 16px rgba(0,212,255,.3);
+    }
+    .chat-send-btn:hover { transform: scale(1.08); box-shadow: 0 0 24px rgba(0,212,255,.5); }
+
+    /* Emoji picker */
+    #emoji-picker {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 10px; z-index: 3000;
+      flex-wrap: wrap; gap: 4px; width: 264px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      margin: 0 16px 8px 16px;
+    }
+    .emoji-btn {
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; padding: 5px; border-radius: 8px;
+      transition: background .1s; line-height: 1;
+    }
+    .emoji-btn:hover { background: var(--border); }
+
+    /* Image messages */
+    .msg-img {
+      max-width: 200px; max-height: 200px; border-radius: 12px;
+      display: block; margin-top: 4px; cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    /* Lightbox */
+    #img-lightbox {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(0,0,0,.85); display: none;
+      align-items: center; justify-content: center;
+    }
+    #img-lightbox.open { display: flex; }
+    #img-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
+    #img-lightbox-close {
+      position: absolute; top: 20px; right: 28px;
+      background: none; border: none; color: #fff;
+      font-size: 2rem; cursor: pointer; line-height: 1;
+    }
+
+    /* Empty chat state */
+    #chat-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      color: var(--muted); text-align: center; padding: 40px;
+    }
+    #chat-empty svg { opacity: .3; }
+    #chat-empty h3 { font-size: 1.2rem; color: var(--text); }
+    #chat-empty p { font-size: .9rem; max-width: 320px; }
+
+    /* Login modal */
+    #social-login-modal {
+      position: absolute; inset: 0; z-index: 100;
+      background: rgba(13,17,23,.97);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    #social-login-modal.hidden { display: none; }
+    .slm-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: clamp(28px,4vw,48px);
+      width: min(460px, 92vw);
+      box-shadow: 0 24px 80px rgba(0,0,0,.7);
+    }
+    .slm-logo {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+    }
+    .slm-logo span { font-family: var(--font-h); font-size: 1.4rem; color: var(--cyan); font-weight: 700; }
+    .slm-tabs {
+      display: flex; gap: 0; margin-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .slm-tab {
+      padding: 10px 24px; background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--muted); font-size: .95rem; font-weight: 600; cursor: pointer;
+      transition: color .2s, border-color .2s; margin-bottom: -1px;
+    }
+    .slm-tab.active { color: var(--cyan); border-color: var(--cyan); }
+    .slm-field { margin-bottom: 16px; }
+    .slm-label { display: block; font-size: .82rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .slm-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 11px 14px;
+      color: var(--text); font-size: .95rem; font-family: var(--font-b); outline: none;
+      transition: border-color .2s;
+    }
+    .slm-input:focus { border-color: rgba(0,212,255,.5); }
+    .slm-btn {
+      width: 100%; padding: 13px; border: none; border-radius: 30px; margin-top: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: opacity .2s, transform .15s;
+    }
+    .slm-btn:hover { opacity: .9; transform: scale(1.01); }
+    .slm-err { color: #ff6b6b; font-size: .82rem; margin-top: -8px; margin-bottom: 8px; display: none; }
+
+    /* Add-friend modal */
+    #add-friend-modal {
+      position: absolute; inset: 0; z-index: 110;
+      background: rgba(13,17,23,.85);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px);
+    }
+    #add-friend-modal.hidden { display: none; }
+    .afm-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 32px;
+      width: min(420px, 92vw);
+    }
+    .afm-title {
+      font-family: var(--font-h); font-size: 1.3rem; color: var(--text);
+      margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+    }
+    .afm-title svg { color: var(--cyan); }
+    .afm-search-row {
+      display: flex; gap: 10px; margin-bottom: 18px;
+    }
+    .afm-search-row input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 10px 14px;
+      color: var(--text); font-size: .92rem; font-family: var(--font-b); outline: none;
+      transition: border-color .2s;
+    }
+    .afm-search-row input:focus { border-color: rgba(0,212,255,.5); }
+    .afm-search-btn {
+      padding: 10px 18px; border: none; border-radius: var(--r);
+      background: var(--cyan); color: #000; font-weight: 700; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .afm-search-btn:hover { opacity: .85; }
+    #afm-results { min-height: 60px; }
+    .afm-result-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .afm-result-item:last-child { border-bottom: none; }
+    .afm-r-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: #fff; flex-shrink: 0;
+    }
+    .afm-r-name { flex: 1; font-weight: 600; color: var(--text); }
+    .afm-r-tag { font-size: .75rem; color: var(--muted); }
+    .afm-add-btn {
+      padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--cyan);
+      background: none; color: var(--cyan); font-size: .82rem; font-weight: 700; cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .afm-add-btn:hover { background: var(--cyan); color: #000; }
+    .afm-add-btn:disabled { border-color: var(--muted); color: var(--muted); cursor: default; }
+    .afm-add-btn:disabled:hover { background: none; }
+    .afm-close { display: block; margin-top: 20px; width: 100%; padding: 10px; border: 1px solid var(--border);
+      border-radius: var(--r); background: none; color: var(--muted); cursor: pointer; font-size: .9rem;
+      transition: color .2s, border-color .2s; }
+    .afm-close:hover { color: var(--text); border-color: var(--text); }
+
+    /* Responsive tweaks for social */
+    @media (max-width: 700px) {
+      #social-sidebar { width: 100%; position: absolute; inset: 0; z-index: 10; transform: translateX(-100%); transition: transform .3s; }
+      #social-sidebar.slide-in { transform: translateX(0); }
+      #social-body { position: relative; }
+    }
+
+    /* Hamburger */
+    #nav-hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; padding: 4px;
+    }
+    #nav-hamburger span {
+      display: block; width: 24px; height: 2px;
+      background: var(--text); border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    #nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    #nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    #nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── Hero Section ───────────────────────────────────────────── */
+    #home {
+      position: relative; min-height: 100vh;
+      display: flex; align-items: center;
+      padding: calc(var(--nav-h) + 40px) clamp(16px,6vw,80px) 60px;
+      overflow: hidden;
+    }
+    #hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(160deg, #0d1117 30%, #111827 60%, #0a0f1e 100%);
+    }
+    #hero-img {
+      position: absolute; inset: 0; z-index: 1;
+      background: url('https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/fbad9628-e179-467c-9206-029acd6c6d12/IMG_0567.jpg') center/cover no-repeat;
+      opacity: .18;
+    }
+    #hero-particles { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+    .hero-content { position: relative; max-width: 100%; }
+    .hero-cols {
+      position: relative; z-index: 3;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(32px, 5vw, 64px);
+      align-items: center;
+      width: 100%;
+    }
+    .hero-mission-panel {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: clamp(24px, 4vw, 40px);
+      backdrop-filter: blur(8px);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--cyan-dim); border: 1px solid rgba(0,212,255,.3);
+      color: var(--cyan); font-size: .8rem; font-weight: 700;
+      padding: 6px 14px; border-radius: 30px; margin-bottom: 24px;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .hero-badge::before { content: '●'; font-size: .55rem; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    .hero-h1 {
+      font-family: var(--font-h); font-size: clamp(2.4rem,6vw,4.2rem);
+      font-weight: 700; line-height: 1.1; margin-bottom: 20px;
+      color: var(--text);
+    }
+    .hero-h1 span { color: var(--cyan); }
+    .hero-sub {
+      font-size: clamp(.95rem,2vw,1.15rem); color: var(--muted);
+      margin-bottom: 36px; max-width: 520px; line-height: 1.75;
+    }
+    .hero-btns { display: flex; flex-wrap: wrap; gap: 14px; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border: none; border-radius: 30px;
+      background: linear-gradient(135deg, var(--cyan), #0090b8);
+      color: #000; font-weight: 700; font-size: 1rem;
+      transition: transform .15s, box-shadow .2s;
+      box-shadow: 0 0 20px rgba(0,212,255,.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(0,212,255,.45); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border: 2px solid rgba(255,255,255,.2); border-radius: 30px;
+      color: var(--text); font-weight: 600; font-size: 1rem; background: transparent;
+      transition: border-color .2s, background .2s;
+    }
+    .btn-outline:hover { border-color: var(--cyan); background: var(--cyan-dim); }
+
+    /* Stats strip in hero */
+    .hero-stats {
+      display: flex; gap: 32px; flex-wrap: wrap;
+      margin-top: 48px; padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .hs-item { text-align: left; }
+    .hs-num {
+      font-family: var(--font-h); font-size: 2.2rem; font-weight: 700;
+      color: var(--cyan); line-height: 1;
+    }
+    .hs-label { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Section Shell ──────────────────────────────────────────── */
+    .section {
+      padding: clamp(60px,8vw,100px) clamp(16px,6vw,80px);
+    }
+    .section-label {
+      font-size: .78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--cyan); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-h); font-size: clamp(1.8rem,4vw,2.8rem);
+      font-weight: 700; line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 1rem; color: var(--muted); max-width: 560px; line-height: 1.75;
+    }
+    .section-hdr { margin-bottom: clamp(36px,6vw,56px); }
+
+    /* Fade-in animation */
+    .fade-in { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+    .fade-in.visible { opacity: 1; transform: none; }
+
+    /* ── About Section ──────────────────────────────────────────── */
+    #about { background: var(--surface); }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .about-img-wrap { position: relative; border-radius: var(--r-lg); overflow: hidden; }
+    .about-img-wrap img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
+    .about-img-badge {
+      position: absolute; bottom: 20px; left: 20px;
+      background: rgba(13,17,23,.9); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: var(--r);
+      padding: 12px 18px;
+    }
+    .about-img-badge .aib-num {
+      font-family: var(--font-h); font-size: 1.6rem; color: var(--gold); line-height: 1;
+    }
+    .about-img-badge .aib-txt { font-size: .75rem; color: var(--muted); }
+
+    .value-cards {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      margin-top: 32px;
+    }
+    .vc {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      transition: border-color .2s, transform .2s;
+    }
+    .vc:hover { border-color: var(--cyan); transform: translateY(-3px); }
+    .vc-icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .vc-title { font-weight: 700; font-size: .95rem; margin-bottom: 4px; }
+    .vc-desc { font-size: .82rem; color: var(--muted); line-height: 1.6; }
+
+    /* Partner logos */
+    .partners { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border); }
+    .partners-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 24px; }
+    .partners-row { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+    .partner-logo {
+      height: 36px; object-fit: contain; opacity: .55; filter: grayscale(1);
+      transition: opacity .2s, filter .2s;
+    }
+    .partner-logo:hover { opacity: 1; filter: none; }
+
+    /* FAQ accordion inside About */
+    .faq-wrap { margin-top: 40px; }
+    .faq-wrap h3 {
+      font-family: var(--font-h); font-size: 1.4rem; margin-bottom: 20px;
+    }
+    .faq-item {
+      border: 1px solid var(--border); border-radius: var(--r);
+      margin-bottom: 8px; overflow: hidden;
+      transition: border-color .2s;
+    }
+    .faq-item:hover { border-color: rgba(0,212,255,.3); }
+    .faq-q {
+      width: 100%; text-align: left; background: var(--surface2);
+      border: none; color: var(--text); font-size: .95rem; font-weight: 600;
+      padding: 16px 18px; display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; gap: 12px;
+    }
+    .faq-arrow { font-size: .75rem; color: var(--muted); transition: transform .3s; flex-shrink: 0; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-a {
+      display: none; padding: 0 18px 16px;
+      background: var(--surface2); color: var(--muted);
+      font-size: .88rem; line-height: 1.7;
+    }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── Photo Row ───────────────────────────────────────────────── */
+    .photo-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(20px, 3vw, 40px);
+      margin-bottom: clamp(48px, 7vw, 80px);
+    }
+    .photo-slot {
+      border-radius: var(--r-lg);
+      border: 2px solid rgba(255,255,255,.15);
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      position: relative;
+      background: linear-gradient(135deg, var(--slot-a, #00d4ff22), var(--slot-b, #7c3aed33));
+      transition: border-color .25s, box-shadow .25s;
+      box-shadow: 0 4px 24px rgba(0,0,0,.35);
+    }
+    .photo-slot:hover {
+      border-color: rgba(0,212,255,.45);
+      box-shadow: 0 8px 40px rgba(0,212,255,.15);
+    }
+    /* Filled slot — real image */
+    .photo-slot img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Empty placeholder slot */
+    .photo-slot-empty {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #7c3aed44 0%, #00d4ff33 100%);
+    }
+    .pse-icon { font-size: 2.8rem; opacity: .55; }
+    .pse-text {
+      font-size: .8rem; font-weight: 700;
+      color: rgba(255,255,255,.5);
+      text-transform: uppercase; letter-spacing: .12em;
+      text-align: center; padding: 0 16px;
+    }
+    .pse-border-hint {
+      width: 48px; height: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      border-radius: 2px; opacity: .6;
+    }
+    /* Framed photo — decorative border treatment */
+    .photo-slot--framed {
+      border: 3px solid transparent;
+      background-clip: padding-box;
+      box-shadow:
+        0 0 0 3px rgba(0,212,255,.5),
+        0 0 0 6px rgba(124,58,237,.3),
+        0 16px 48px rgba(0,0,0,.55);
+    }
+    .photo-slot--framed::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: calc(var(--r-lg) - 2px);
+      box-shadow: inset 0 0 20px rgba(0,212,255,.1);
+      pointer-events: none;
+    }
+    @media (max-width: 700px) {
+      .photo-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Locations Section ──────────────────────────────────────── */
+    #locations { background: var(--bg); }
+
+    .locations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .loc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      position: relative;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+      overflow: hidden;
+    }
+    .loc-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--accent-color, var(--cyan));
+    }
+    .loc-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0,212,255,.25);
+      box-shadow: 0 12px 40px rgba(0,0,0,.4);
+    }
+    .loc-badge {
+      display: inline-block; padding: 3px 10px;
+      background: rgba(0,255,136,.1); border: 1px solid rgba(0,255,136,.25);
+      color: var(--green); font-size: .72rem; font-weight: 700;
+      border-radius: 20px; margin-bottom: 14px; text-transform: uppercase;
+    }
+    .loc-name { font-family: var(--font-h); font-size: 1.2rem; font-weight: 600; margin-bottom: 6px; }
+    .loc-school { font-size: .82rem; color: var(--cyan); margin-bottom: 12px; font-weight: 600; }
+    .loc-info { display: flex; flex-direction: column; gap: 6px; }
+    .loc-row { display: flex; gap: 8px; align-items: flex-start; font-size: .83rem; color: var(--muted); }
+    .loc-row span:first-child { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .loc-free {
+      margin-top: 16px; padding: 8px 14px;
+      background: rgba(0,212,255,.07); border: 1px solid rgba(0,212,255,.15);
+      border-radius: 8px; font-size: .78rem; color: var(--cyan); font-weight: 600;
+    }
+
+    /* ── Game Section ───────────────────────────────────────────── */
+    #game { background: var(--surface); }
+
+    .game-intro {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; align-items: center; margin-bottom: 48px;
+    }
+    .game-features { display: flex; flex-direction: column; gap: 14px; }
+    .gf-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 18px; border-radius: var(--r);
+      background: var(--surface2); border: 1px solid var(--border);
+      transition: border-color .2s;
+    }
+    .gf-item:hover { border-color: var(--cyan); }
+    .gf-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .gf-title { font-weight: 700; font-size: .92rem; margin-bottom: 3px; }
+    .gf-desc  { font-size: .8rem; color: var(--muted); line-height: 1.55; }
+
+    .game-frame-wrap {
+      border: 2px solid var(--border); border-radius: var(--r-lg);
+      overflow: hidden; background: #07071a;
+      box-shadow: 0 0 60px rgba(0,0,0,.6);
+    }
+    .game-frame-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 18px; background: #0e0e1e;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .gfh-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .gfh-dot.red   { background: #ff5f57; }
+    .gfh-dot.amber { background: #ffbd2e; }
+    .gfh-dot.green { background: #28c840; }
+    .gfh-label {
+      margin-left: 8px; font-size: .78rem; color: #555;
+      font-family: 'Courier New', monospace;
+    }
+    .game-frame-wrap iframe {
+      display: block; width: 100%; height: 860px; border: none;
+    }
+
+
+    /* ── Contact Section ────────────────────────────────────────── */
+    #contact { background: var(--bg); }
+
+    .contact-grid {
+      display: grid; grid-template-columns: 1.2fr 1fr; gap: 56px;
+    }
+    .contact-form-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 36px;
+    }
+    .contact-form-wrap h3 {
+      font-family: var(--font-h); font-size: 1.5rem; margin-bottom: 24px;
+    }
+    .cf-row { margin-bottom: 18px; }
+    .cf-row label {
+      display: block; font-size: .82rem; font-weight: 700;
+      color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .06em;
+    }
+    .cf-row input, .cf-row select, .cf-row textarea {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--r);
+      color: var(--text); font-family: var(--font-b); font-size: .93rem;
+      padding: 12px 16px; transition: border-color .2s;
+    }
+    .cf-row input:focus, .cf-row select:focus, .cf-row textarea:focus {
+      outline: none; border-color: var(--cyan);
+    }
+    .cf-row textarea { resize: vertical; min-height: 100px; }
+    .cf-row select { cursor: pointer; }
+    .cf-row select option { background: var(--surface2); }
+    .cf-submit {
+      width: 100%; padding: 14px; border: none; border-radius: 30px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #fff; font-size: 1rem; font-weight: 700;
+      transition: opacity .2s, transform .15s; margin-top: 6px;
+    }
+    .cf-submit:hover { opacity: .88; transform: scale(1.01); }
+
+    .contact-info { display: flex; flex-direction: column; gap: 28px; }
+    .ci-title { font-family: var(--font-h); font-size: 1.7rem; margin-bottom: 12px; }
+    .ci-sub { color: var(--muted); font-size: .92rem; line-height: 1.7; }
+    .ci-items { display: flex; flex-direction: column; gap: 16px; }
+    .ci-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 18px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--r);
+      transition: border-color .2s;
+    }
+    .ci-item:hover { border-color: rgba(0,212,255,.25); }
+    .ci-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .ci-item-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+    .ci-item-val { font-size: .92rem; font-weight: 600; }
+    .ci-item-val a { color: var(--cyan); }
+    .ci-bilingual {
+      display: flex; gap: 10px; align-items: center;
+      padding: 12px 16px; border-radius: var(--r);
+      background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.25);
+      font-size: .85rem;
+    }
+    .ci-bilingual span:first-child { font-size: 1.3rem; }
+
+    /* Social links */
+    .social-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .social-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 1.2rem; transition: background .2s, border-color .2s, transform .15s;
+      text-decoration: none;
+    }
+    .social-btn:hover { background: var(--surface3); border-color: var(--cyan); transform: translateY(-2px); }
+
+    /* ── Footer ─────────────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 48px clamp(16px,6vw,80px) 28px;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px; margin-bottom: 40px;
+    }
+    .footer-brand img { height: 40px; margin-bottom: 14px; }
+    .footer-tagline { font-size: .88rem; color: var(--muted); line-height: 1.7; max-width: 280px; }
+    .footer-newsletter { margin-top: 20px; }
+    .fn-label { font-size: .8rem; color: var(--muted); margin-bottom: 10px; }
+    .fn-row { display: flex; gap: 8px; }
+    .fn-input {
+      flex: 1; padding: 10px 14px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 30px;
+      color: var(--text); font-size: .85rem;
+    }
+    .fn-input:focus { outline: none; border-color: var(--cyan); }
+    .fn-btn {
+      padding: 10px 18px; border: none; border-radius: 30px;
+      background: var(--cyan); color: #000; font-weight: 700; font-size: .85rem;
+      transition: opacity .2s;
+    }
+    .fn-btn:hover { opacity: .85; }
+    .footer-col h4 { font-family: var(--font-h); font-size: .95rem; margin-bottom: 16px; color: var(--text); }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col a { font-size: .87rem; color: var(--muted); transition: color .2s; }
+    .footer-col a:hover { color: var(--cyan); }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+      gap: 12px; padding-top: 24px; border-top: 1px solid var(--border);
+      font-size: .8rem; color: var(--muted);
+    }
+    .footer-bottom a { color: var(--muted); transition: color .2s; }
+    .footer-bottom a:hover { color: var(--cyan); }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      #nav-links { display: none; flex-direction: column; position: fixed; inset: var(--nav-h) 0 0 0;
+        background: rgba(13,17,23,.97); padding: 32px 24px; gap: 0;
+        border-top: 1px solid var(--border);
+      }
+      #nav-links.open { display: flex; }
+      #nav-links li { border-bottom: 1px solid var(--border); }
+      #nav-links a { display: block; padding: 16px 0; font-size: 1.1rem; }
+      #nav-hamburger { display: flex; }
+      .about-grid, .game-intro, .contact-grid { grid-template-columns: 1fr; }
+      .hero-cols { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .game-frame-wrap iframe { height: 660px; }
+    }
+    @media (max-width: 600px) {
+      .value-cards { grid-template-columns: 1fr; }
+      .hero-stats { gap: 20px; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .game-frame-wrap iframe { height: 520px; }
+      .locations-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- ── Navbar ───────────────────────────────────────────────── -->
+  <nav id="nav" role="navigation" aria-label="Main navigation">
+    <a href="#home" aria-label="UESL Home">
+      <img id="nav-logo"
+        src="https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/efa49c03-11c6-4c97-b21e-05266875502d/UnifiedESL-horizontal.png"
+        alt="Unified Esports League"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+      />
+      <span style="display:none; font-family:var(--font-h); font-size:1.1rem; color:var(--cyan); font-weight:700;">UESL</span>
+    </a>
+    <ul id="nav-links" role="list">
+      <li><a href="#home">Home</a></li>
+      <li>
+        <button id="nav-social-btn" class="nav-social-btn" aria-label="Open Social Hub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Social
+          <span class="invite-dot"></span>
+        </button>
+      </li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#locations">Locations</a></li>
+      <li><a href="#game">Play</a></li>
+      <li><a href="#contact">Contact</a></li>
+      <li>
+        <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
+           class="nav-donate" target="_blank" rel="noopener">Donate</a>
+      </li>
+    </ul>
+    <button id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <main id="main">
+    <!-- ── Hero ─────────────────────────────────────────────────── -->
+    <section id="home" aria-labelledby="hero-heading">
+      <div id="hero-bg"></div>
+      <div id="hero-img" role="img" aria-hidden="true"></div>
+      <canvas id="hero-particles" aria-hidden="true"></canvas>
+      <div class="hero-cols">
+        <div class="hero-content">
+          <div class="hero-badge">Now Open Year-Round · Ages 8+</div>
+          <h1 class="hero-h1" id="hero-heading">
+            Make Friends.<br/>
+            Play on a Team.<br/>
+            <span>Grow Through Tech.</span>
+          </h1>
+          <p class="hero-sub">
+            Unified Esports League helps people with intellectual and
+            developmental disabilities build confidence, friendships, and
+            skills through gaming and technology — at no cost to SDRC clients.
+          </p>
+          <div class="hero-btns">
+            <a href="#game" class="btn-primary">
+              🎮 Play the Game
+            </a>
+            <a href="#about" class="btn-outline">
+              Learn More ↓
+            </a>
+          </div>
+          <div class="hero-stats" aria-label="Key statistics">
+            <div class="hs-item">
+              <div class="hs-num" data-target="7">0</div>
+              <div class="hs-label">Tech Centers</div>
+            </div>
+            <div class="hs-item">
+              <div class="hs-num" data-target="100" data-suffix="+">0</div>
+              <div class="hs-label">Participants</div>
+            </div>
+            <div class="hs-item">
+              <div class="hs-num" data-target="1" data-colon="3">0</div>
+              <div class="hs-label">Coach Ratio</div>
+            </div>
+            <div class="hs-item">
+              <div class="hs-num" data-target="8" data-suffix="+">0</div>
+              <div class="hs-label">Years & Up</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Our Mission panel — right column of hero -->
+        <div class="hero-mission-panel">
+          <div class="section-label" style="margin-bottom:20px;">Our Mission</div>
+          <div class="value-cards">
+            <div class="vc">
+              <div class="vc-icon">🤝</div>
+              <div class="vc-title">Community</div>
+              <div class="vc-desc">Team-based learning where every player belongs and grows together.</div>
+            </div>
+            <div class="vc">
+              <div class="vc-icon">🎯</div>
+              <div class="vc-title">Expert Coaching</div>
+              <div class="vc-desc">Trained coaches provide personalized support at a 1:3 ratio.</div>
+            </div>
+            <div class="vc">
+              <div class="vc-icon">♿</div>
+              <div class="vc-title">Accessibility</div>
+              <div class="vc-desc">Adaptive controls and inclusive tech for every ability level.</div>
+            </div>
+            <div class="vc">
+              <div class="vc-icon">🚀</div>
+              <div class="vc-title">Real Skills</div>
+              <div class="vc-desc">Confidence, collaboration, and technology fluency that last a lifetime.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── About ─────────────────────────────────────────────────── -->
+    <section id="about" class="section" aria-labelledby="about-heading">
+      <h2 id="about-heading" style="display:none;">About UESL</h2>
+
+      <!-- Photo row: left = real image, right = placeholder for second photo -->
+      <div class="photo-row fade-in">
+
+        <!-- LEFT: UESL team photo -->
+        <div class="photo-slot photo-slot--framed">
+          <img
+            src="/images/UESL-piuc.png"
+            alt="UESL team group photo"
+            loading="lazy"
+          />
+        </div>
+
+        <!-- RIGHT: placeholder — swap src above with your second photo when ready -->
+        <div class="photo-slot">
+          <div class="photo-slot-empty">
+            <div class="pse-icon">📷</div>
+            <div class="pse-border-hint"></div>
+            <div class="pse-text">Your Photo Here</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Partners -->
+      <div class="partners fade-in">
+        <div class="partners-label">Trusted Partners &amp; Affiliations</div>
+        <div class="partners-row">
+          <img class="partner-logo"
+            src="https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/de1f0ba7-3472-4964-ac4b-fce208880050/UESL+Logos.png"
+            alt="UESL Partner Logos" loading="lazy"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Locations ─────────────────────────────────────────────── -->
+    <section id="locations" class="section" aria-labelledby="locations-heading">
+      <div class="section-hdr fade-in">
+        <div class="section-label">Where We Are</div>
+        <h2 class="section-title" id="locations-heading">7 Tech Centers Across San Diego</h2>
+        <p class="section-sub">
+          All locations serve clients of all abilities, ages 8 and up —
+          at no cost to SDRC-referred participants.
+        </p>
+      </div>
+      <div class="locations-grid">
+        <div class="loc-card fade-in" style="--accent-color:#00d4ff">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">Rancho Bernardo</div>
+          <div class="loc-school">RB High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>13010 Paseo Lucido, San Diego, CA 92128</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+        <div class="loc-card fade-in" style="--accent-color:#7c3aed">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">Mira Mesa</div>
+          <div class="loc-school">Mira Mesa High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>10510 Westview Pkwy, San Diego, CA 92126</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+        <div class="loc-card fade-in" style="--accent-color:#00ff88">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">Scripps Ranch</div>
+          <div class="loc-school">Scripps Ranch High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>10410 Treena St, San Diego, CA 92131</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+        <div class="loc-card fade-in" style="--accent-color:#ffd700">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">El Cajon</div>
+          <div class="loc-school">El Cajon Valley High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>1035 E Madison Ave, El Cajon, CA 92021</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+        <div class="loc-card fade-in" style="--accent-color:#ff6b6b">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">National City</div>
+          <div class="loc-school">Sweetwater High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>2900 Highland Ave, National City, CA 91950</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+        <div class="loc-card fade-in" style="--accent-color:#ff8c00">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">Chula Vista</div>
+          <div class="loc-school">Eastlake High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>1120 Eastlake Pkwy, Chula Vista, CA 91915</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+        <div class="loc-card fade-in" style="--accent-color:#e040fb">
+          <div class="loc-badge">Open</div>
+          <div class="loc-name">Imperial Valley</div>
+          <div class="loc-school">Imperial High School</div>
+          <div class="loc-info">
+            <div class="loc-row"><span>📍</span><span>Imperial County, CA</span></div>
+            <div class="loc-row"><span>🕐</span><span>Check with client services for hours</span></div>
+          </div>
+          <div class="loc-free">✓ No cost to SDRC clients</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Game ──────────────────────────────────────────────────── -->
+    <section id="game" class="section" aria-labelledby="game-heading">
+      <div class="game-intro fade-in">
+        <div>
+          <div class="section-label">Interactive</div>
+          <h2 class="section-title" id="game-heading">Build &amp; Play Your Own Game</h2>
+          <p class="section-sub">
+            Design custom levels, choose your character, and play — right here in the browser.
+            Built specifically for UESL students with accessibility-first controls.
+          </p>
+          <div style="margin-top:28px;">
+            <a href="#game" class="btn-primary" style="display:inline-flex">🕹️ Jump In</a>
+          </div>
+        </div>
+        <div class="game-features">
+          <div class="gf-item">
+            <div class="gf-icon">🎨</div>
+            <div>
+              <div class="gf-title">Level Designer</div>
+              <div class="gf-desc">Place platforms, enemies, coins, and goals with a simple drag-and-drop editor.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">🎮</div>
+            <div>
+              <div class="gf-title">Play Mode</div>
+              <div class="gf-desc">Jump right in with keyboard, D-pad, or on-screen touch controls.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">😶</div>
+            <div>
+              <div class="gf-title">Face Tracking</div>
+              <div class="gf-desc">Control your character with head movements — no hands required.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">🎙️</div>
+            <div>
+              <div class="gf-title">Voice Commands</div>
+              <div class="gf-desc">Say "jump", "left", "right" — fully voice-navigable gameplay.</div>
+            </div>
+          </div>
+          <div class="gf-item">
+            <div class="gf-icon">💾</div>
+            <div>
+              <div class="gf-title">Save &amp; Share</div>
+              <div class="gf-desc">Save up to 20 games to your browser, export as JSON, or start fresh any time.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Embedded game maker / dashboard tabs -->
+      <div class="game-frame-wrap fade-in" aria-label="Game maker application">
+        <div class="game-frame-header" aria-hidden="true">
+          <div class="gfh-dot red"></div>
+          <div class="gfh-dot amber"></div>
+          <div class="gfh-dot green"></div>
+          <div class="gfh-label">UESL Game Maker — Design · Play · Accessibility Controls</div>
+        </div>
+        <iframe
+          src="/game-maker/"
+          title="UESL Game Maker — Design and play your own accessible platformer"
+          allow="camera; microphone"
+          loading="lazy"
+        ></iframe>
+      </div>
+    </section>
+
+    <!-- ── Contact ───────────────────────────────────────────────── -->
+    <section id="contact" class="section" aria-labelledby="contact-heading">
+      <div class="section-hdr fade-in">
+        <div class="section-label">Get In Touch</div>
+        <h2 class="section-title" id="contact-heading">Connect With Client Services</h2>
+      </div>
+      <div class="contact-grid fade-in">
+        <!-- Form -->
+        <div class="contact-form-wrap">
+          <h3>Send Us a Message</h3>
+          <form action="https://formspree.io/f/matthew@unifiedesl.com" method="POST" novalidate>
+            <div class="cf-row">
+              <label for="cf-name">Full Name</label>
+              <input type="text" id="cf-name" name="name" placeholder="Your name" required autocomplete="name"/>
+            </div>
+            <div class="cf-row">
+              <label for="cf-email">Email</label>
+              <input type="email" id="cf-email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+            </div>
+            <div class="cf-row">
+              <label for="cf-phone">Phone (optional)</label>
+              <input type="tel" id="cf-phone" name="phone" placeholder="(619) 000-0000" autocomplete="tel"/>
+            </div>
+            <div class="cf-row">
+              <label for="cf-sdrc">Are you an SDRC client?</label>
+              <select id="cf-sdrc" name="sdrc">
+                <option value="">Select…</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="unsure">Not sure</option>
+              </select>
+            </div>
+            <div class="cf-row">
+              <label for="cf-location">Location of interest</label>
+              <select id="cf-location" name="location">
+                <option value="">Select a location…</option>
+                <option>Rancho Bernardo</option>
+                <option>Mira Mesa</option>
+                <option>Scripps Ranch</option>
+                <option>El Cajon</option>
+                <option>National City</option>
+                <option>Chula Vista</option>
+                <option>Imperial Valley</option>
+              </select>
+            </div>
+            <div class="cf-row">
+              <label for="cf-message">How can we help?</label>
+              <textarea id="cf-message" name="message" placeholder="Tell us about yourself and your interest in UESL…"></textarea>
+            </div>
+            <button type="submit" class="cf-submit">Send Message →</button>
+          </form>
+        </div>
+        <!-- Info -->
+        <div class="contact-info">
+          <div>
+            <h3 class="ci-title">We'd Love to Hear From You</h3>
+            <p class="ci-sub">
+              Reach out to learn more about enrollment, locations, volunteer
+              opportunities, or media inquiries.
+            </p>
+          </div>
+          <div class="ci-items">
+            <div class="ci-item">
+              <div class="ci-icon">📞</div>
+              <div>
+                <div class="ci-item-label">Client Services</div>
+                <div class="ci-item-val"><a href="tel:6193540733">(619) 354-0733</a></div>
+              </div>
+            </div>
+            <div class="ci-item">
+              <div class="ci-icon">☎️</div>
+              <div>
+                <div class="ci-item-label">General Line</div>
+                <div class="ci-item-val"><a href="tel:8584498478">(858) 449-8478</a></div>
+              </div>
+            </div>
+            <div class="ci-item">
+              <div class="ci-icon">✉️</div>
+              <div>
+                <div class="ci-item-label">Admissions</div>
+                <div class="ci-item-val"><a href="mailto:wendy@unifiedesl.com">wendy@unifiedesl.com</a></div>
+              </div>
+            </div>
+            <div class="ci-item">
+              <div class="ci-icon">📸</div>
+              <div>
+                <div class="ci-item-label">Media Inquiries</div>
+                <div class="ci-item-val"><a href="mailto:kelly@unifiedesl.com">kelly@unifiedesl.com</a></div>
+              </div>
+            </div>
+            <div class="ci-bilingual">
+              <span>🇲🇽</span>
+              <span>Se habla español — Contact Wendy Muñoz at (619) 354-0733</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">Follow Us</div>
+            <div class="social-row">
+              <a href="https://www.facebook.com/unifiedesl" class="social-btn" target="_blank" rel="noopener" aria-label="Facebook">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+              <a href="https://www.instagram.com/unifiedesl" class="social-btn" target="_blank" rel="noopener" aria-label="Instagram">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              </a>
+              <a href="https://www.youtube.com/@unifiedesl" class="social-btn" target="_blank" rel="noopener" aria-label="YouTube">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#0d1117"/></svg>
+              </a>
+              <a href="https://twitter.com/UnifiedESL" class="social-btn" target="_blank" rel="noopener" aria-label="X / Twitter">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <a href="https://www.linkedin.com/company/98848005" class="social-btn" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            </div>
+          </div>
+          <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
+             target="_blank" rel="noopener"
+             style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border-radius:30px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;font-size:.95rem;transition:opacity .2s,transform .15s;">
+            ❤️ Support UESL — Donate
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────── -->
+  <footer role="contentinfo">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img
+          src="https://images.squarespace-cdn.com/content/v1/62745a437b7f84059eb84a95/efa49c03-11c6-4c97-b21e-05266875502d/UnifiedESL-horizontal.png"
+          alt="Unified Esports League"
+          onerror="this.style.display='none';"
+        />
+        <p class="footer-tagline">
+          Helping people with disabilities grow through their passion for technology.
+          A 501(c)(3) nonprofit — EIN: 88-2591302.
+        </p>
+        <div class="footer-newsletter">
+          <div class="fn-label">Stay in the loop</div>
+          <div class="fn-row">
+            <input class="fn-input" type="email" placeholder="your@email.com" aria-label="Newsletter email"/>
+            <button class="fn-btn">Subscribe</button>
+          </div>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Navigate</h4>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#locations">Locations</a></li>
+          <li><a href="#game">Play the Game</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Organization</h4>
+        <ul>
+          <li><a href="https://www.unifiedesl.com/foundation" target="_blank" rel="noopener">Foundation</a></li>
+          <li><a href="https://www.unifiedesl.com/about" target="_blank" rel="noopener">Leadership</a></li>
+          <li><a href="https://www.unifiedesl.com/theportal" target="_blank" rel="noopener">The Portal</a></li>
+          <li><a href="https://www.unifiedesl.com/faq" target="_blank" rel="noopener">Full FAQ</a></li>
+          <li><a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32" target="_blank" rel="noopener">Donate</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:6193540733">(619) 354-0733</a></li>
+          <li><a href="tel:8584498478">(858) 449-8478</a></li>
+          <li><a href="mailto:matthew@unifiedesl.com">matthew@unifiedesl.com</a></li>
+          <li><a href="mailto:wendy@unifiedesl.com">wendy@unifiedesl.com</a></li>
+          <li><a href="tel:18333338375">Attendance: (833) 333-8375</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Unified Esports League · 501(c)(3) Nonprofit · EIN 88-2591302</span>
+      <span>Built with ♥ for the UESL community · <a href="https://www.unifiedesl.com" target="_blank" rel="noopener">unifiedesl.com</a></span>
+    </div>
+  </footer>
+
+  <!-- ── JS ─────────────────────────────────────────────────────── -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Navbar: scroll class + active link ─────────────────────
+    const nav = document.getElementById('nav');
+    const navLinks = document.querySelectorAll('#nav-links a[href^="#"]');
+    const sections = document.querySelectorAll('section[id]');
+
+    function onScroll() {
+      nav.classList.toggle('scrolled', window.scrollY > 60);
+      // Highlight active nav link
+      let current = '';
+      sections.forEach(s => {
+        if (window.scrollY >= s.offsetTop - 100) current = s.id;
+      });
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // ── Mobile hamburger ────────────────────────────────────────
+    const ham = document.getElementById('nav-hamburger');
+    const nl  = document.getElementById('nav-links');
+    ham.addEventListener('click', () => {
+      const open = nl.classList.toggle('open');
+      ham.classList.toggle('open', open);
+      ham.setAttribute('aria-expanded', open);
+    });
+    // Close on link click
+    nl.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        nl.classList.remove('open');
+        ham.classList.remove('open');
+        ham.setAttribute('aria-expanded', false);
+      });
+    });
+
+    // ── Hero particle canvas ────────────────────────────────────
+    const canvas = document.getElementById('hero-particles');
+    const ctx    = canvas.getContext('2d');
+    let W, H, particles;
+
+    function resizeCanvas() {
+      W = canvas.width  = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
+    }
+
+    function makeParticles() {
+      particles = [];
+      const count = Math.floor(W * H / 10000);
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: Math.random() * 1.5 + 0.3,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          alpha: Math.random() * 0.5 + 0.1,
+        });
+      }
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,212,255,${p.alpha})`;
+        ctx.fill();
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      });
+      requestAnimationFrame(drawParticles);
+    }
+
+    const ro = new ResizeObserver(() => { resizeCanvas(); makeParticles(); });
+    ro.observe(canvas.parentElement);
+    resizeCanvas(); makeParticles(); drawParticles();
+
+    // ── Stat counters (hero) ────────────────────────────────────
+    const statsObserver = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.querySelectorAll('[data-target]').forEach(el => {
+          const target  = +el.dataset.target;
+          const suffix  = el.dataset.suffix  || '';
+          const colon   = el.dataset.colon   || '';
+          let cur = 0;
+          const step = Math.ceil(target / 40);
+          const timer = setInterval(() => {
+            cur = Math.min(cur + step, target);
+            el.textContent = colon ? `${cur}:${colon}` : `${cur}${suffix}`;
+            if (cur >= target) clearInterval(timer);
+          }, 28);
+        });
+        statsObserver.unobserve(e.target);
+      });
+    }, { threshold: 0.4 });
+    const statsWrap = document.querySelector('.hero-stats');
+    if (statsWrap) statsObserver.observe(statsWrap);
+
+    // ── Scroll fade-in ──────────────────────────────────────────
+    const fadeObserver = new IntersectionObserver(entries => {
+      entries.forEach((e, i) => {
+        if (!e.isIntersecting) return;
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        fadeObserver.unobserve(e.target);
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+
+    // ── FAQ accordion ───────────────────────────────────────────
+    document.querySelectorAll('.faq-q').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        // Close all
+        document.querySelectorAll('.faq-item.open').forEach(i => {
+          i.classList.remove('open');
+          i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    // ── Newsletter no-op (just UI feedback) ─────────────────────
+    document.querySelectorAll('.fn-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = btn.previousElementSibling;
+        if (!input.value.includes('@')) {
+          input.focus(); return;
+        }
+        btn.textContent = '✓ Subscribed!';
+        btn.style.background = 'var(--green)';
+        setTimeout(() => { btn.textContent = 'Subscribe'; btn.style.background = ''; }, 3000);
+      });
+    });
+
+  })();
+  </script>
+
+  <!-- ── UESL Coach Chat Widget ──────────────────────────────────────────── -->
+  <style>
+    #uesl-chat-btn {
+      position: fixed; bottom: 28px; right: 28px; z-index: 9000;
+      width: 60px; height: 60px; border-radius: 50%; border: none;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #fff; font-size: 1.6rem; cursor: pointer;
+      box-shadow: 0 4px 24px rgba(0,212,255,.45);
+      transition: transform .2s, box-shadow .2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #uesl-chat-btn:hover { transform: scale(1.1); box-shadow: 0 6px 32px rgba(0,212,255,.6); }
+
+    #uesl-chat-bubble {
+      position: fixed; bottom: 100px; right: 96px; z-index: 9999;
+      background: #1e2535;
+      border: 1.5px solid var(--cyan);
+      color: #fff;
+      font-size: .85rem; font-weight: 700;
+      padding: 10px 16px;
+      border-radius: 18px 18px 4px 18px;
+      box-shadow: 0 4px 24px rgba(0,212,255,.35);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(6px) scale(.95);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    #uesl-chat-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    #uesl-chat-window {
+      position: fixed; bottom: 100px; right: 28px; z-index: 9000;
+      width: 360px; max-height: 520px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: 0 16px 60px rgba(0,0,0,.6);
+      display: none; flex-direction: column;
+      overflow: hidden;
+      font-family: var(--font-b);
+    }
+    #uesl-chat-window.open { display: flex; }
+
+    #uesl-chat-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(0,212,255,.15), rgba(124,58,237,.15));
+      border-bottom: 1px solid var(--border);
+    }
+    .uch-avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .uch-info { flex: 1; }
+    .uch-name { font-weight: 700; font-size: .95rem; color: var(--text); }
+    .uch-status { font-size: .72rem; color: var(--green); display: flex; align-items: center; gap: 5px; }
+    .uch-status::before { content: '●'; font-size: .5rem; }
+    #uesl-chat-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 1.1rem; cursor: pointer; padding: 4px;
+      transition: color .2s;
+    }
+    #uesl-chat-close:hover { color: var(--text); }
+
+    #uesl-chat-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      scroll-behavior: smooth;
+    }
+    #uesl-chat-messages::-webkit-scrollbar { width: 4px; }
+    #uesl-chat-messages::-webkit-scrollbar-track { background: transparent; }
+    #uesl-chat-messages::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+    .chat-msg {
+      max-width: 82%; padding: 10px 14px;
+      border-radius: 16px; font-size: .875rem; line-height: 1.55;
+      word-break: break-word;
+    }
+    .chat-msg.bot {
+      background: var(--surface2); color: var(--text);
+      border-bottom-left-radius: 4px; align-self: flex-start;
+      border: 1px solid var(--border);
+    }
+    .chat-msg.user {
+      background: linear-gradient(135deg, var(--cyan), #0090b8);
+      color: #000; font-weight: 600;
+      border-bottom-right-radius: 4px; align-self: flex-end;
+    }
+    .chat-msg.typing { opacity: .6; font-style: italic; }
+
+    #uesl-chat-input-row {
+      display: flex; gap: 8px; padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    #uesl-chat-input {
+      flex: 1; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 24px;
+      color: var(--text); font-family: var(--font-b); font-size: .875rem;
+      padding: 9px 16px; outline: none;
+      transition: border-color .2s;
+    }
+    #uesl-chat-input:focus { border-color: var(--cyan); }
+    #uesl-chat-send {
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #fff; font-size: 1rem; cursor: pointer; flex-shrink: 0;
+      transition: opacity .2s, transform .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #uesl-chat-send:hover { opacity: .85; transform: scale(1.08); }
+    #uesl-chat-send:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    @media (max-width: 420px) {
+      #uesl-chat-window { width: calc(100vw - 24px); right: 12px; bottom: 88px; }
+      #uesl-chat-btn { bottom: 16px; right: 16px; }
+    }
+  </style>
+
+  <!-- Speech bubble -->
+  <div id="uesl-chat-bubble">Ask me anything! 👋</div>
+
+  <!-- Floating button -->
+  <button id="uesl-chat-btn" aria-label="Open UESL Coach chat">💬</button>
+
+  <!-- Chat window -->
+  <div id="uesl-chat-window" role="dialog" aria-label="UESL Coach chat">
+    <div id="uesl-chat-header">
+      <div class="uch-avatar">🎮</div>
+      <div class="uch-info">
+        <div class="uch-name">UESL Coach</div>
+        <div class="uch-status">Online — Ask me anything!</div>
+      </div>
+      <button id="uesl-chat-close" aria-label="Close chat">✕</button>
+    </div>
+    <div id="uesl-chat-messages">
+      <div class="chat-msg bot">
+        Hey! I'm <strong>UESL Coach</strong> 👋 Ask me anything about Unified Esports League — locations, how to join, our games, or anything else!
+      </div>
+    </div>
+    <div id="uesl-chat-input-row">
+      <input id="uesl-chat-input" type="text" placeholder="Ask a question…" autocomplete="off" maxlength="300" />
+      <button id="uesl-chat-send" aria-label="Send">➤</button>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    const BACKEND = 'http://localhost:8424';
+    const bubble  = document.getElementById('uesl-chat-bubble');
+    // Fade in immediately, stay for 6s, then fade out
+    setTimeout(() => bubble.classList.add('show'), 200);
+    setTimeout(() => bubble.classList.remove('show'), 6200);
+    const btn     = document.getElementById('uesl-chat-btn');
+    const win     = document.getElementById('uesl-chat-window');
+    const close   = document.getElementById('uesl-chat-close');
+    const input   = document.getElementById('uesl-chat-input');
+    const send    = document.getElementById('uesl-chat-send');
+    const msgs    = document.getElementById('uesl-chat-messages');
+    const history = []; // { role, content }
+
+    // Clear any stale saved position from old draggable feature
+    try { localStorage.removeItem('uesl_chat_btn_pos'); } catch (_) {}
+
+    btn.addEventListener('click', () => {
+      bubble.classList.remove('show');
+      win.classList.toggle('open');
+      if (win.classList.contains('open')) input.focus();
+    });
+    close.addEventListener('click', () => win.classList.remove('open'));
+
+    function addMsg(text, role) {
+      const el = document.createElement('div');
+      el.className = 'chat-msg ' + role;
+      el.innerHTML = text.replace(/\n/g, '<br>');
+      msgs.appendChild(el);
+      msgs.scrollTop = msgs.scrollHeight;
+      return el;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      send.disabled = true;
+
+      addMsg(text, 'user');
+      history.push({ role: 'user', content: text });
+
+      const typing = addMsg('Typing…', 'bot typing');
+
+      try {
+        const res = await fetch(`${BACKEND}/api/uesl-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: history }),
+        });
+        const data = await res.json();
+        typing.remove();
+
+        const reply = data.reply || data.error || 'Sorry, something went wrong.';
+        addMsg(reply, 'bot');
+        history.push({ role: 'assistant', content: reply });
+      } catch (err) {
+        typing.remove();
+        addMsg('Could not connect to UESL Coach. Make sure the backend server is running.', 'bot');
+      }
+      send.disabled = false;
+      input.focus();
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+  })();
+  </script>
+
+  <!-- ── Social Hub Overlay ───────────────────────────────────────────────── -->
+  <div id="social-overlay" role="dialog" aria-modal="true" aria-label="UESL App">
+
+    <!-- Auth wall (shown when not logged in) -->
+    <div id="social-login-modal">
+      <div class="slm-card">
+        <!-- header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <span style="font-family:var(--font-h);font-size:1.2rem;color:var(--cyan);font-weight:700;">UESL Social</span>
+          </div>
+          <button id="slm-close-btn" aria-label="Close" onclick="document.getElementById('social-overlay').classList.remove('open');document.body.style.overflow='';" style="background:none;border:none;color:var(--muted);font-size:1.5rem;line-height:1;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .2s;" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted)'">✕</button>
+        </div>
+
+        <!-- tabs -->
+        <div class="slm-tabs" id="slm-tabs">
+          <button class="slm-tab active" id="slm-tab-login" onclick="slmSwitchTab('login')">Sign In</button>
+          <button class="slm-tab" id="slm-tab-register" onclick="slmSwitchTab('register')">Create Account</button>
+        </div>
+
+        <!-- ── LOGIN FLOW ── -->
+        <div id="slm-login-flow">
+          <!-- Step 1: credentials -->
+          <div id="slm-l1">
+            <div class="slm-field"><label class="slm-label">User ID</label><input class="slm-input" id="slm-uid" type="text" placeholder="your_user_id" autocomplete="username"/></div>
+            <div class="slm-field"><label class="slm-label">Password</label><input class="slm-input" id="slm-pw" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+            <div class="slm-err" id="slm-l1-msg" style="display:none;"></div>
+            <button class="slm-btn" id="slm-send-otp-btn" onclick="slmSendOtp()">Sign In</button>
+          </div>
+          <!-- Step 2: OTP -->
+          <div id="slm-l2" style="display:none;">
+            <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;">Enter the 6-digit code sent to your registered email.</p>
+            <div id="slm-dev-otp-box" style="display:none;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:.85rem;color:var(--cyan);">Dev mode — code: <strong id="slm-dev-otp-code" style="letter-spacing:.12rem;"></strong></div>
+            <div class="slm-field"><input class="slm-input" id="slm-otp" type="text" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="text-align:center;letter-spacing:.4rem;font-size:1.4rem;"/></div>
+            <div class="slm-err" id="slm-l2-msg" style="display:none;"></div>
+            <button class="slm-btn" onclick="slmVerifyOtp()">Verify &amp; Sign In</button>
+            <button class="slm-btn" onclick="slmBackToL1()" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);">Back</button>
+          </div>
+        </div>
+
+        <!-- ── REGISTER FLOW ── -->
+        <div id="slm-register-flow" style="display:none;">
+          <!-- Step 1: email -->
+          <div id="slm-r1">
+            <div class="slm-field"><label class="slm-label">Email Address</label><input class="slm-input" id="slm-r-email" type="email" placeholder="you@email.com" autocomplete="email"/></div>
+            <div class="slm-err" id="slm-r1-msg" style="display:none;"></div>
+            <button class="slm-btn" id="slm-r-send-btn" onclick="slmSuSendOtp()">Send Verification Code</button>
+          </div>
+          <!-- Step 2: OTP verify -->
+          <div id="slm-r2" style="display:none;">
+            <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;">Enter the 6-digit code sent to <strong id="slm-r-otp-target" style="color:var(--text);"></strong>.</p>
+            <div id="slm-r-dev-otp-box" style="display:none;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:.85rem;color:var(--cyan);">Dev mode — code: <strong id="slm-r-dev-otp-code" style="letter-spacing:.12rem;"></strong></div>
+            <div class="slm-field"><input class="slm-input" id="slm-r-otp" type="text" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="text-align:center;letter-spacing:.4rem;font-size:1.4rem;"/></div>
+            <div class="slm-err" id="slm-r2-msg" style="display:none;"></div>
+            <button class="slm-btn" onclick="slmSuVerifyOtp()">Verify Code</button>
+            <button class="slm-btn" onclick="slmSuBackTo1()" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);">Back</button>
+          </div>
+          <!-- Step 3: account details -->
+          <div id="slm-r3" style="display:none;">
+            <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px;">Verified: <span id="slm-r-verified-email" style="color:var(--green);"></span></p>
+            <div class="slm-field"><label class="slm-label">Full Name</label><input class="slm-input" id="slm-r-name" type="text" placeholder="Your Name"/></div>
+            <div class="slm-field"><label class="slm-label">User ID</label><input class="slm-input" id="slm-r-uid" type="text" placeholder="choose_a_username"/></div>
+            <div class="slm-field"><label class="slm-label">Age</label><input class="slm-input" id="slm-r-age" type="number" min="1" max="120" placeholder="Your age"/></div>
+            <div class="slm-field" id="slm-r-parent-field" style="display:none;"><label class="slm-label">Parent / Guardian Name</label><input class="slm-input" id="slm-r-parent" type="text" placeholder="Parent or guardian name"/></div>
+            <div class="slm-field"><label class="slm-label">Password (min 8 chars)</label><input class="slm-input" id="slm-r-pass" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+            <div class="slm-field"><label class="slm-label">Confirm Password</label><input class="slm-input" id="slm-r-pass2" type="password" placeholder="••••••••"/></div>
+            <button class="slm-btn" id="slm-r-create-btn" onclick="slmSuCreate()">Create Account</button>
+            <div id="slm-r3-msg" style="display:none;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Add Friend Modal -->
+    <div id="add-friend-modal" class="hidden">
+      <div class="afm-card">
+        <div class="afm-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Add a Friend
+        </div>
+        <div class="afm-search-row">
+          <input id="afm-input" type="text" placeholder="Search by username…"/>
+          <button class="afm-search-btn" id="afm-search-btn">Search</button>
+        </div>
+        <div id="afm-results"></div>
+        <button class="afm-close" id="afm-close-btn">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Top bar -->
+    <div id="social-topbar">
+      <div class="st-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        UESL
+      </div>
+      <!-- View switcher -->
+      <div id="social-view-tabs" role="tablist">
+        <button class="svt-btn active" id="svt-social" role="tab" aria-selected="true" data-view="social">💬 Social</button>
+        <button class="svt-btn" id="svt-dashboard" role="tab" aria-selected="false" data-view="dashboard">⚙️ Settings</button>
+      </div>
+      <div id="social-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search messages…" id="social-msg-search" aria-label="Search messages"/>
+      </div>
+      <div id="social-user-chip">
+        <div class="suc-avatar" id="suc-avatar-el" title="Your profile">?</div>
+        <span id="suc-name">—</span>
+        <button id="social-logout-btn" title="Sign out" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.82rem;padding:4px 8px;border-radius:8px;transition:color .2s;" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted)'">Sign out</button>
+      </div>
+      <button id="social-close-btn" aria-label="Close Social Hub" onclick="document.getElementById('social-overlay').classList.remove('open');document.body.style.overflow='';">✕</button>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="social-dashboard-panel" role="tabpanel">
+      <div id="sstab-pane-profile" class="sstab-pane active" role="tabpanel"></div>
+    </div>
+
+    <!-- Main body -->
+    <div id="social-body">
+      <!-- Sidebar: friends list -->
+      <aside id="social-sidebar">
+        <!-- Pending friend requests (hidden until there are some) -->
+        <div id="requests-section" style="display:none;">
+          <div class="ss-section-header" style="color:var(--cyan);">
+            Requests
+            <span id="req-badge" style="background:var(--cyan);color:#000;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:700;margin-left:4px;"></span>
+          </div>
+          <div id="request-list"></div>
+          <div class="ss-divider"></div>
+        </div>
+
+        <div class="ss-section-header">
+          Direct Messages
+          <button class="ss-add-btn" id="open-add-friend" title="Add friend" aria-label="Add friend">＋</button>
+        </div>
+        <div id="friend-list" role="list"></div>
+        <div class="ss-divider"></div>
+        <div class="ss-section-header" style="padding-bottom:12px;">Online — <span id="online-count">0</span></div>
+      </aside>
+
+      <!-- Chat area -->
+      <section id="social-chat">
+        <!-- Empty state -->
+        <div id="chat-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <h3>No conversation selected</h3>
+          <p>Pick a friend from the left, or add someone new to start chatting!</p>
+        </div>
+
+        <!-- Chat header (hidden until friend selected) -->
+        <div id="chat-header" style="display:none;">
+          <div id="chat-friend-avatar"></div>
+          <div>
+            <div id="chat-friend-name"></div>
+            <div id="chat-friend-status"></div>
+          </div>
+          <div id="chat-actions">
+            <button class="chat-action-btn" title="Voice call" aria-label="Voice call">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.38 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </button>
+            <button class="chat-action-btn" title="View profile" aria-label="View profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-messages" style="display:none;" aria-live="polite" aria-label="Chat messages"></div>
+
+        <!-- Emoji picker (outside flex row to avoid positioning issues) -->
+        <div id="emoji-picker" style="display:none;"></div>
+
+        <!-- Hidden file input for images -->
+        <input type="file" id="img-file-input" accept="image/*" style="display:none;">
+
+        <!-- Input -->
+        <div id="chat-input-row" style="display:none;">
+          <button class="chat-icon-btn" id="emoji-toggle-btn" aria-label="Emoji picker" title="Emoji">😊</button>
+          <textarea id="chat-input" rows="1" placeholder="Send a message…" aria-label="Message input"></textarea>
+          <button class="chat-icon-btn" id="img-upload-btn" aria-label="Send image" title="Send photo">🖼️</button>
+          <button class="chat-send-btn" id="chat-send-btn" aria-label="Send message">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Image lightbox -->
+  <div id="img-lightbox">
+    <button id="img-lightbox-close" aria-label="Close">✕</button>
+    <img id="img-lightbox-img" src="" alt="Full size image">
+  </div>
+
+  <!-- Game Invite Toast Notification -->
+  <div id="invite-toast" role="alertdialog" aria-live="assertive">
+    <div class="it-header">
+      <span class="it-header-icon">🎮</span>
+      <span class="it-header-label">Game Invite</span>
+      <span class="it-header-ping"></span>
+    </div>
+    <div class="it-body">
+      <div class="it-title" id="it-title">Someone wants to play!</div>
+      <div class="it-sub" id="it-sub">Tap below to jump in</div>
+      <div class="it-btns">
+        <a class="it-join" id="it-join-btn" href="#" target="_blank">▶&nbsp; Join Game</a>
+        <button class="it-dismiss" id="it-dismiss-btn">Not now</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════════════════════
+     AUTH — all functions are global so onclick attributes and the social IIFE
+     can both reach them without closure/scope issues.
+  ═══════════════════════════════════════════════════════════════════════════ */
+  const _AUTH = {
+    PYTHON_URI: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8424' : 'https://flask.uesl.io',
+    suEmail: '',
+    onSuccess: null,   // set by the social IIFE after it boots
+  };
+
+  function _devMode() { return sessionStorage.getItem('devMode') === 'true'; }
+
+  function _authMsg(id, text, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.style.cssText = 'display:block;padding:8px 12px;border-radius:8px;font-size:.85rem;margin-top:8px;' +
+      (type === 'error'   ? 'background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.3);' :
+       type === 'success' ? 'background:rgba(0,255,136,.1);color:#00ff88;border:1px solid rgba(0,255,136,.25);' :
+                            'background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.25);');
+  }
+  function _authClear(id) { const el=document.getElementById(id); if(el){el.style.display='none';el.textContent='';} }
+
+  // ── Tab switcher ─────────────────────────────────────────────────────────
+  function slmSwitchTab(tab) {
+    const isLogin = tab === 'login';
+    document.getElementById('slm-tab-login').classList.toggle('active', isLogin);
+    document.getElementById('slm-tab-register').classList.toggle('active', !isLogin);
+    document.getElementById('slm-login-flow').style.display    = isLogin ? '' : 'none';
+    document.getElementById('slm-register-flow').style.display = isLogin ? 'none' : '';
+  }
+
+  // ── LOGIN step 1: send OTP ────────────────────────────────────────────────
+  async function slmSendOtp() {
+    const uid = document.getElementById('slm-uid').value.trim();
+    const pw  = document.getElementById('slm-pw').value;
+    if (!uid || !pw) { _authMsg('slm-l1-msg','Enter your User ID and password.','error'); return; }
+    const btn = document.getElementById('slm-send-otp-btn');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    _authClear('slm-l1-msg');
+    try {
+      if (_devMode()) {
+        const r = await fetch(`${_AUTH.PYTHON_URI}/api/authenticate`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({uid,password:pw}) });
+        if (r.ok) { _authMsg('slm-l1-msg','Signed in!','success'); setTimeout(_onAuthSuccess,600); return; }
+        const d = await r.json(); _authMsg('slm-l1-msg',d.message||'Login failed.','error'); btn.disabled=false; btn.textContent='Sign In'; return;
+      }
+      const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/send`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({uid,password:pw}) });
+      const d = await r.json();
+      if (r.ok) {
+        if (d.user) { _authMsg('slm-l1-msg','Signed in!','success'); setTimeout(_onAuthSuccess,600); }
+        else {
+          document.getElementById('slm-l1').style.display = 'none';
+          document.getElementById('slm-l2').style.display = '';
+          if (d.dev_otp) { document.getElementById('slm-dev-otp-code').textContent=d.dev_otp; document.getElementById('slm-dev-otp-box').style.display=''; }
+          _authMsg('slm-l2-msg', d.message||'Code sent to your email.','info');
+        }
+      } else { _authMsg('slm-l1-msg',d.message||'Failed.','error'); btn.disabled=false; btn.textContent='Sign In'; }
+    } catch(e) { _authMsg('slm-l1-msg','Network error — check your connection.','error'); btn.disabled=false; btn.textContent='Sign In'; }
+  }
+
+  // ── LOGIN step 2: verify OTP ──────────────────────────────────────────────
+  async function slmVerifyOtp() {
+    const uid = document.getElementById('slm-uid').value.trim();
+    const otp = document.getElementById('slm-otp').value.trim();
+    if (!otp) { _authMsg('slm-l2-msg','Enter the 6-digit code.','error'); return; }
+    _authMsg('slm-l2-msg','Verifying…','info');
+    try {
+      const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/verify`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({uid,otp}) });
+      const d = await r.json();
+      if (r.ok) { _authMsg('slm-l2-msg','Verified!','success'); setTimeout(_onAuthSuccess,600); }
+      else _authMsg('slm-l2-msg',d.message||'Invalid code.','error');
+    } catch(e) { _authMsg('slm-l2-msg','Network error.','error'); }
+  }
+
+  function slmBackToL1() {
+    document.getElementById('slm-l2').style.display='none';
+    document.getElementById('slm-l1').style.display='';
+    document.getElementById('slm-otp').value='';
+    document.getElementById('slm-dev-otp-box').style.display='none';
+    const btn=document.getElementById('slm-send-otp-btn'); btn.disabled=false; btn.textContent='Sign In';
+    _authClear('slm-l1-msg');
+  }
+
+  // ── REGISTER step 1: send signup OTP ─────────────────────────────────────
+  async function slmSuSendOtp() {
+    const email = document.getElementById('slm-r-email').value.trim();
+    if (!email || !email.includes('@')) { _authMsg('slm-r1-msg','Enter a valid email address.','error'); return; }
+    if (_devMode()) {
+      _AUTH.suEmail = email;
+      _authMsg('slm-r1-msg','[Dev] OTP skipped — fill in your details.','info');
+      setTimeout(() => _slmSuGoToDetails(email), 600);
+      return;
+    }
+    const btn = document.getElementById('slm-r-send-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    _authClear('slm-r1-msg');
+    try {
+      const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/signup/send`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+      const d = await r.json();
+      if (r.ok) {
+        _AUTH.suEmail = email;
+        document.getElementById('slm-r-otp-target').textContent = email;
+        if (d.dev_otp) { document.getElementById('slm-r-dev-otp-code').textContent=d.dev_otp; document.getElementById('slm-r-dev-otp-box').style.display=''; }
+        document.getElementById('slm-r1').style.display = 'none';
+        document.getElementById('slm-r2').style.display = '';
+      } else { _authMsg('slm-r1-msg', d.message||'Failed to send code.','error'); btn.disabled=false; btn.textContent='Send Verification Code'; }
+    } catch(e) { _authMsg('slm-r1-msg','Network error — check your connection.','error'); btn.disabled=false; btn.textContent='Send Verification Code'; }
+  }
+
+  // ── REGISTER step 2: verify signup OTP ───────────────────────────────────
+  async function slmSuVerifyOtp() {
+    const otp = document.getElementById('slm-r-otp').value.trim();
+    if (!otp) { _authMsg('slm-r2-msg','Enter the 6-digit code.','error'); return; }
+    _authMsg('slm-r2-msg','Verifying…','info');
+    try {
+      const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/signup/verify`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:_AUTH.suEmail, otp}) });
+      const d = await r.json();
+      if (r.ok) _slmSuGoToDetails(_AUTH.suEmail);
+      else _authMsg('slm-r2-msg', d.message||'Invalid code.','error');
+    } catch(e) { _authMsg('slm-r2-msg','Network error.','error'); }
+  }
+
+  function slmSuBackTo1() {
+    document.getElementById('slm-r2').style.display='none';
+    document.getElementById('slm-r1').style.display='';
+    document.getElementById('slm-r-otp').value='';
+    document.getElementById('slm-r-dev-otp-box').style.display='none';
+    const btn=document.getElementById('slm-r-send-btn'); btn.disabled=false; btn.textContent='Send Verification Code';
+    _authClear('slm-r1-msg');
+  }
+
+  function _slmSuGoToDetails(email) {
+    document.getElementById('slm-r-verified-email').textContent = email;
+    document.getElementById('slm-r2').style.display = 'none';
+    document.getElementById('slm-r3').style.display = '';
+  }
+
+  // ── REGISTER step 3: create account ──────────────────────────────────────
+  function slmToggleParent() {
+    const age = parseInt(document.getElementById('slm-r-age').value, 10);
+    document.getElementById('slm-r-parent-field').style.display = (!isNaN(age) && age < 18) ? '' : 'none';
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    const ageInput = document.getElementById('slm-r-age');
+    if (ageInput) ageInput.addEventListener('input', slmToggleParent);
+  });
+
+  async function slmSuCreate() {
+    const name   = document.getElementById('slm-r-name').value.trim();
+    const uid    = document.getElementById('slm-r-uid').value.trim();
+    const age    = parseInt(document.getElementById('slm-r-age').value, 10);
+    const parentEl = document.getElementById('slm-r-parent');
+    const parent = parentEl ? parentEl.value.trim() : '';
+    const pw     = document.getElementById('slm-r-pass').value;
+    const pw2    = document.getElementById('slm-r-pass2').value;
+
+    if (!name)       { _authMsg('slm-r3-msg','Full name is required.','error'); return; }
+    if (!uid)        { _authMsg('slm-r3-msg','User ID is required.','error'); return; }
+    if (isNaN(age))  { _authMsg('slm-r3-msg','Age is required.','error'); return; }
+    if (age < 18 && !parent) { _authMsg('slm-r3-msg','Parent / guardian name is required for minors.','error'); return; }
+    if (pw.length < 8) { _authMsg('slm-r3-msg','Password must be at least 8 characters.','error'); return; }
+    if (pw !== pw2)    { _authMsg('slm-r3-msg','Passwords do not match.','error'); return; }
+    if (!_AUTH.suEmail) { _authMsg('slm-r3-msg','Email verification required — go back to step 1.','error'); return; }
+
+    const btn = document.getElementById('slm-r-create-btn');
+    btn.disabled = true;
+    _authMsg('slm-r3-msg','Creating your account…','info');
+
+    try {
+      const r = await fetch(`${_AUTH.PYTHON_URI}/api/user`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, uid, age, parent: age < 18 ? parent : undefined, email: _AUTH.suEmail, password: pw, kasm_server_needed: false, auth_type: 'otp' })
+      });
+      if (r.ok) {
+        _authMsg('slm-r3-msg','Account created! Signing you in…','success');
+        setTimeout(() => {
+          slmSwitchTab('login');
+          document.getElementById('slm-uid').value = uid;
+          _authMsg('slm-l1-msg','Account created! Enter your password to sign in.','success');
+          _resetRegisterFlow();
+          btn.disabled = false;
+        }, 1400);
+      } else {
+        let msg = 'Account creation failed.';
+        try { const d = await r.json(); msg = d.message || msg; } catch(_) {}
+        _authMsg('slm-r3-msg', msg, 'error');
+        btn.disabled = false;
+      }
+    } catch(e) { _authMsg('slm-r3-msg','Network error — check your connection.','error'); btn.disabled=false; }
+  }
+
+  function _resetRegisterFlow() {
+    _AUTH.suEmail = '';
+    document.getElementById('slm-r1').style.display = '';
+    document.getElementById('slm-r2').style.display = 'none';
+    document.getElementById('slm-r3').style.display = 'none';
+    ['slm-r-email','slm-r-otp','slm-r-name','slm-r-uid','slm-r-age','slm-r-parent','slm-r-pass','slm-r-pass2'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('slm-r-parent-field').style.display = 'none';
+    document.getElementById('slm-r-dev-otp-box').style.display = 'none';
+    const btn = document.getElementById('slm-r-send-btn');
+    btn.disabled = false; btn.textContent = 'Send Verification Code';
+    ['slm-r1-msg','slm-r2-msg','slm-r3-msg'].forEach(_authClear);
+  }
+
+  function _onAuthSuccess() {
+    if (typeof _AUTH.onSuccess === 'function') _AUTH.onSuccess();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SOCIAL HUB
+  ═══════════════════════════════════════════════════════════════════════════ */
+  (function () {
+    'use strict';
+
+    // ── Wire auth callback FIRST — before anything else that could throw ──────
+    // _AUTH.onSuccess is called by global slmVerifyOtp / slmSendOtp on success.
+    // Setting it here ensures login always works even if emoji/image setup fails.
+    _AUTH.onSuccess = async function () {
+      _loggedIn = null;
+      await checkLogin();
+      // Persist uid+name to sessionStorage so game-maker can use them for multiplayer
+      if (myUid)  sessionStorage.setItem('uesl_my_uid',  String(myUid));
+      if (myName) sessionStorage.setItem('uesl_my_name', myName);
+      loginModal.classList.add('hidden');
+      renderTopbar();
+      loadFriends();
+      startReqPoll();
+      startInvitePoll();
+    };
+
+    // ── Config ───────────────────────────────────────────────────────────────
+    const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8424'
+      : 'https://flask.uesl.io';
+    const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8585'
+      : 'https://spring.uesl.io';
+    const FETCH_OPTS = { mode: 'cors', cache: 'default', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' } };
+    function getDevMode() { return sessionStorage.getItem('devMode') === 'true'; }
+
+    // ── Per-user friends in localStorage ─────────────────────────────────────
+    // Each account has its own list so two accounts on the same browser don't collide.
+    const friendsKey  = uid => `uesl_friends_v1_${uid}`;
+    const REQUESTS_KEY = 'uesl_social_requests_v1';
+
+    // My friends (uses myUid — only call after login)
+    function lsLoad()           { try { return JSON.parse(localStorage.getItem(friendsKey(myUid))) || []; } catch(e) { return []; } }
+    function lsSave(list)       { localStorage.setItem(friendsKey(myUid), JSON.stringify(list)); }
+    function lsAdd(uid, name)   { const l=lsLoad(); if (!l.find(f=>f.uid===uid)) { l.push({uid,name,status:'offline'}); lsSave(l); } }
+    function lsRemove(uid)      { lsSave(lsLoad().filter(f=>f.uid!==uid)); }
+
+    // Add someone to ANOTHER user's friends list (used when accepting — both sides become friends)
+    function lsAddForUser(targetUid, uid, name) {
+      const key = friendsKey(targetUid);
+      let l = []; try { l = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
+      if (!l.find(f => f.uid === uid)) { l.push({ uid, name, status: 'offline' }); }
+      localStorage.setItem(key, JSON.stringify(l));
+    }
+
+    // ── Friend requests ───────────────────────────────────────────────────────
+    // Stored globally (shared across all users on same browser)
+    function reqLoad()     { try { return JSON.parse(localStorage.getItem(REQUESTS_KEY)) || []; } catch(e) { return []; } }
+    function reqSave(list) { localStorage.setItem(REQUESTS_KEY, JSON.stringify(list)); }
+
+    function reqSend(toUid, toName) {
+      const reqs = reqLoad();
+      if (reqs.find(r => r.from_uid===myUid && r.to_uid===toUid && r.status==='pending')) return; // no duplicates
+      reqs.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2), from_uid: myUid, from_name: myName, to_uid: toUid, to_name: toName, status: 'pending' });
+      reqSave(reqs);
+    }
+
+    function reqGetIncoming() { return reqLoad().filter(r => r.to_uid === String(myUid) && r.status === 'pending'); }
+
+    function reqIsPending(toUid) { return reqLoad().some(r => r.from_uid===String(myUid) && r.to_uid===String(toUid) && r.status==='pending'); }
+
+    function reqAccept(reqId) {
+      const reqs = reqLoad();
+      const req  = reqs.find(r => r.id === reqId);
+      if (!req) return;
+      req.status = 'accepted';
+      reqSave(reqs);
+      lsAdd(req.from_uid, req.from_name);          // add sender to MY friends
+      lsAddForUser(req.from_uid, myUid, myName);   // add ME to sender's friends (mutual)
+    }
+
+    function reqDecline(reqId) {
+      const reqs = reqLoad();
+      const req  = reqs.find(r => r.id === reqId);
+      if (req) { req.status = 'declined'; reqSave(reqs); }
+    }
+
+    // ── People cache (fetched once per session from Java backend) ─────────────
+    let _peopleCache = null;
+    async function getPeople() {
+      if (_peopleCache) return _peopleCache;
+      // Try without credentials first (works when backend allows * origin)
+      // Try with credentials as fallback (works when backend uses specific origin)
+      const attempts = [
+        () => fetch(JAVA_URI + '/api/peopleget'),
+        () => fetch(JAVA_URI + '/api/peopleget', { credentials: 'include' }),
+      ];
+      let lastErr = null;
+      for (const attempt of attempts) {
+        try {
+          const r = await attempt();
+          if (!r.ok) { lastErr = new Error(`HTTP ${r.status}`); continue; }
+          const raw = await r.text();
+          if (!raw || !raw.includes('[')) { lastErr = new Error('Empty response'); continue; }
+          const clean = raw.slice(0, raw.lastIndexOf(']') + 1);
+          const parsed = JSON.parse(clean);
+          if (!Array.isArray(parsed)) { lastErr = new Error('Not an array'); continue; }
+          _peopleCache = parsed;
+          return _peopleCache;
+        } catch(e) { lastErr = e; }
+      }
+      throw new Error(lastErr?.message || 'Could not reach Java backend');
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const COLORS = ['#00d4ff','#7c3aed','#00ff88','#ffd700','#ff6b6b','#ff9f43','#54a0ff','#5f27cd'];
+    function colorFor(str) { let h=0; for(let c of (str||'?')) h=(h*31+c.charCodeAt(0))&0xffff; return COLORS[h % COLORS.length]; }
+    function initials(name) { return (name||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+    function fmtTime(iso) { try { const d=new Date(iso); return d.toDateString()===new Date().toDateString() ? d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString([],{month:'short',day:'numeric'}); } catch(e){ return ''; } }
+    function api(path, opts) { return fetch(PYTHON_URI + path, Object.assign({}, FETCH_OPTS, opts)); }
+    function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    // ── Auth check (mirrors game-maker checkLogin) ───────────────────────────
+    let _loggedIn = null;
+    let myUid = null, myName = '', myUser = null;
+
+    async function checkLogin() {
+      if (_loggedIn !== null) return _loggedIn;
+      // Wait up to 2s for window.user (set by login.js if loaded)
+      await new Promise(res => {
+        let ticks = 0;
+        const id = setInterval(() => { if (window.user !== undefined || ++ticks >= 20) { clearInterval(id); res(); } }, 100);
+      });
+      if (window.user !== undefined) { _loggedIn = !!window.user; if (window.user) { myUser = window.user; myUid = window.user.uid || window.user.id || null; myName = window.user.name || window.user.username || 'You'; if (myUid)  sessionStorage.setItem('uesl_my_uid',  String(myUid)); if (myName) sessionStorage.setItem('uesl_my_name', myName); } return _loggedIn; }
+      // Fallback: ping /api/id directly
+      try {
+        const r = await api('/api/id');
+        if (r.ok) { myUser = await r.json(); myUid = myUser.uid || myUser.id || null; myName = myUser.name || myUser.username || 'You'; _loggedIn = true; if (myUid)  sessionStorage.setItem('uesl_my_uid',  String(myUid)); if (myName) sessionStorage.setItem('uesl_my_name', myName); }
+        else _loggedIn = false;
+      } catch(e) { _loggedIn = false; }
+      return _loggedIn;
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let activeFriend = null;   // { uid, name }
+    let friendsCache = [];     // [{ uid, name, status }]
+    let pollTimer    = null;
+    let reqPollTimer = null;   // polls for incoming friend requests every 5s
+    let lastMsgTs    = '';     // ISO timestamp of newest fetched message
+
+    // ── DOM refs ─────────────────────────────────────────────────────────────
+    const overlay      = $('social-overlay');
+    const loginModal   = $('social-login-modal');
+    const afModal      = $('add-friend-modal');
+    const friendList   = $('friend-list');
+    const chatEmpty    = $('chat-empty');
+    const chatHeader   = $('chat-header');
+    const chatMsgs     = $('chat-messages');
+    const chatInputRow = $('chat-input-row');
+    const chatInput    = $('chat-input');
+
+    // ── Render topbar ────────────────────────────────────────────────────────
+    function renderTopbar() {
+      $('suc-avatar-el').textContent = initials(myName);
+      $('suc-avatar-el').style.background = `linear-gradient(135deg, ${colorFor(myName)}, #7c3aed)`;
+      $('suc-name').textContent = myName;
+    }
+
+    // ── Friend requests UI ────────────────────────────────────────────────────
+    function renderRequests() {
+      const incoming = reqGetIncoming();
+      const section  = $('requests-section');
+      const badge    = $('req-badge');
+      const list     = $('request-list');
+      if (!section) return;
+      if (!incoming.length) { section.style.display = 'none'; badge.textContent = ''; return; }
+      section.style.display = '';
+      badge.textContent = incoming.length;
+      list.innerHTML = '';
+      incoming.forEach(req => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);';
+        item.innerHTML = `
+          <div style="width:34px;height:34px;border-radius:50%;background:${colorFor(req.from_name)};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#000;flex-shrink:0;">${initials(req.from_name)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.86rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(req.from_name)}</div>
+            <div style="font-size:.74rem;color:var(--muted);">wants to be friends</div>
+          </div>
+          <button data-act="accept" style="background:var(--green);color:#000;border:none;border-radius:7px;padding:4px 10px;font-size:.78rem;font-weight:700;cursor:pointer;">✓</button>
+          <button data-act="decline" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:.78rem;cursor:pointer;">✕</button>`;
+        item.querySelector('[data-act="accept"]').addEventListener('click', () => {
+          reqAccept(req.id); loadFriends(); renderRequests();
+        });
+        item.querySelector('[data-act="decline"]').addEventListener('click', () => {
+          reqDecline(req.id); renderRequests();
+        });
+        list.appendChild(item);
+      });
+    }
+
+    // ── Friends list (localStorage — no backend friends API needed) ──────────
+    function loadFriends() {
+      friendsCache = lsLoad();
+      renderFriendList();
+      renderRequests();
+    }
+
+    function renderFriendList() {
+      const online = friendsCache.filter(f => f.status === 'online').length;
+      $('online-count').textContent = online;
+      friendList.innerHTML = '';
+      if (!friendsCache.length) {
+        friendList.innerHTML = '<p style="padding:16px 18px;color:var(--muted);font-size:.85rem;">No friends yet — hit <strong>＋</strong> to add someone!</p>';
+        return;
+      }
+      friendsCache.forEach(friend => {
+        const item = document.createElement('div');
+        item.className = 'friend-item' + (activeFriend?.uid === friend.uid ? ' active' : '');
+        item.setAttribute('role','listitem'); item.setAttribute('tabindex','0');
+        const statusCls = friend.status === 'online' ? 'online' : friend.status === 'away' ? 'away' : 'offline';
+        item.innerHTML = `
+          <div class="fi-avatar" style="background:${colorFor(friend.name)};">
+            ${initials(friend.name)}<span class="fi-status ${statusCls}"></span>
+          </div>
+          <div class="fi-info">
+            <div class="fi-name">${esc(friend.name)}</div>
+            <div class="fi-preview">${statusCls === 'online' ? 'Online' : statusCls === 'away' ? 'Away' : 'Offline'}</div>
+          </div>
+          <button class="fi-remove-btn" title="Remove friend" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:6px;opacity:.5;flex-shrink:0;" onmouseenter="this.style.opacity='1';this.style.color='#ff6b6b'" onmouseleave="this.style.opacity='.5';this.style.color='var(--muted)'">✕</button>`;
+        item.querySelector('.fi-remove-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          lsRemove(friend.uid);
+          if (activeFriend?.uid === friend.uid) {
+            activeFriend = null;
+            stopPoll();
+            chatEmpty.style.display = '';
+            chatHeader.style.display = chatMsgs.style.display = chatInputRow.style.display = 'none';
+            document.getElementById('emoji-picker').style.display = 'none';
+          }
+          loadFriends();
+        });
+        item.addEventListener('click', () => openChat(friend));
+        item.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') openChat(friend); });
+        friendList.appendChild(item);
+      });
+    }
+
+    // ── Open chat ────────────────────────────────────────────────────────────
+    function openChat(friend) {
+      activeFriend = friend;
+      stopPoll();
+      renderFriendList();
+      const avatarEl = $('chat-friend-avatar');
+      avatarEl.textContent = initials(friend.name);
+      avatarEl.style.background = `linear-gradient(135deg, ${colorFor(friend.name)}, #1a2b5e)`;
+      $('chat-friend-name').textContent = esc(friend.name);
+      const sc = friend.status === 'online' ? 'online' : friend.status === 'away' ? 'away' : 'offline';
+      $('chat-friend-status').innerHTML = `<span class="dot ${sc}"></span>${sc.charAt(0).toUpperCase()+sc.slice(1)}`;
+      chatEmpty.style.display = 'none';
+      chatHeader.style.display = 'flex';
+      chatMsgs.style.display = 'flex';
+      chatInputRow.style.display = 'flex';
+      document.getElementById('emoji-picker').style.display = 'none'; // reset picker
+      chatMsgs.innerHTML = '';
+      lastMsgTs = '';
+      fetchMessages(true);
+      startPoll();
+      chatInput.focus();
+    }
+
+    // ── localStorage chat store ───────────────────────────────────────────────
+    // Key is sorted so both users (A→B and B→A) share the exact same slot.
+    function chatKey(uid1, uid2) {
+      return 'uesl_chat_v1__' + [String(uid1), String(uid2)].sort().join('__');
+    }
+    function chatLoadAll(uid1, uid2) {
+      try { return JSON.parse(localStorage.getItem(chatKey(uid1, uid2))) || []; } catch(e) { return []; }
+    }
+    function chatAppendStore(uid1, uid2, msg) {
+      const msgs = chatLoadAll(uid1, uid2);
+      msgs.push(msg);
+      // Keep last 500 messages to avoid ballooning localStorage
+      if (msgs.length > 500) msgs.splice(0, msgs.length - 500);
+      localStorage.setItem(chatKey(uid1, uid2), JSON.stringify(msgs));
+    }
+
+    // ── Messages ─────────────────────────────────────────────────────────────
+    function fetchMessages(initial) {
+      if (!activeFriend) return;
+      const all = chatLoadAll(myUid, activeFriend.uid);
+      if (initial) {
+        chatMsgs.innerHTML = '';
+        if (!all.length) {
+          chatMsgs.innerHTML = '<div class="msg-day-label">Today</div><p style="text-align:center;color:var(--muted);font-size:.85rem;margin-top:12px;">Say hello! 👋</p>';
+          return;
+        }
+        all.forEach(msg => appendMessage(msg));
+        if (all.length) lastMsgTs = all[all.length - 1].created_at;
+        return;
+      }
+      // Poll: only append messages newer than lastMsgTs
+      const newMsgs = lastMsgTs ? all.filter(m => m.created_at > lastMsgTs) : all;
+      newMsgs.forEach(msg => appendMessage(msg));
+      if (newMsgs.length) lastMsgTs = newMsgs[newMsgs.length - 1].created_at;
+    }
+
+    function appendMessage(msg) {
+      // Compare as strings — myUid can be number or string depending on auth path
+      const isMine = String(msg.sender_uid) === String(myUid);
+      const sender  = isMine ? myName : (activeFriend?.name || '?');
+      const text    = msg.text || '';
+      const ts      = msg.created_at || '';
+      const row = document.createElement('div');
+      row.className = 'msg-row' + (isMine ? ' me' : '');
+      let contentHtml;
+      if (msg.type === 'image' && msg.image) {
+        contentHtml = `<img class="msg-img" src="${msg.image}" alt="photo">`;
+      } else if (msg.type === 'game_invite' && msg.room_id) {
+        const gmUrl = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+          ? `http://localhost:4700/game-maker/?room=${msg.room_id}`
+          : `/game-maker/?room=${msg.room_id}`;
+        const isMineInvite = String(msg.sender_uid) === String(myUid);
+        contentHtml = `
+          <div style="background:linear-gradient(135deg,#0a2a1a,#0e0e30);border:1.5px solid #00FF88;border-radius:12px;padding:12px 14px;min-width:200px;">
+            <div style="font-size:1.4rem;margin-bottom:4px;">🎮</div>
+            <div style="font-weight:700;color:#00FF88;font-size:.9rem;margin-bottom:2px;">Game Invite</div>
+            <div style="color:#ddd;font-size:.82rem;margin-bottom:10px;">${esc(msg.game_name || 'A Game')}</div>
+            ${isMineInvite
+              ? `<div style="color:#666;font-size:.75rem;">Waiting for friend to join…</div>`
+              : `<a href="${gmUrl}" target="_blank" style="display:inline-block;padding:7px 16px;background:#00FF88;color:#000;border-radius:20px;font-size:.82rem;font-weight:700;text-decoration:none;">▶ Join Game</a>`
+            }
+          </div>`;
+      } else {
+        contentHtml = `<div class="msg-bubble">${esc(text)}</div>`;
+      }
+      row.innerHTML = `
+        <div class="msg-bubble-avatar" style="background:${colorFor(sender)}">${initials(sender)}</div>
+        <div>
+          ${contentHtml}
+          <div class="msg-time">${fmtTime(ts)}</div>
+        </div>`;
+      // Lightbox on image click
+      if (msg.type === 'image') {
+        row.querySelector('.msg-img').addEventListener('click', () => {
+          document.getElementById('img-lightbox-img').src = msg.image;
+          document.getElementById('img-lightbox').classList.add('open');
+        });
+      }
+      chatMsgs.appendChild(row);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+    }
+
+    function startPoll() { pollTimer = setInterval(() => fetchMessages(false), 2000); }
+    function stopPoll()  { clearInterval(pollTimer); pollTimer = null; }
+
+    // ── Send message ─────────────────────────────────────────────────────────
+    function sendMsg() {
+      const text = chatInput.value.trim();
+      if (!text || !activeFriend) return;
+      chatInput.value = '';
+      chatInput.style.height = '';
+      const msg = {
+        id:         Date.now() + '_' + Math.random().toString(36).slice(2),
+        sender_uid: String(myUid),
+        sender_name: myName,
+        text,
+        created_at: new Date().toISOString()
+      };
+      // Write to the shared localStorage slot — both users read from here
+      chatAppendStore(myUid, activeFriend.uid, msg);
+      // Immediately render on sender's side
+      appendMessage(msg);
+      lastMsgTs = msg.created_at;
+    }
+
+    $('chat-send-btn').addEventListener('click', sendMsg);
+    chatInput.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } });
+    chatInput.addEventListener('input', () => { chatInput.style.height=''; chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px'; });
+
+    // ── Emoji picker ─────────────────────────────────────────────────────────
+    try {
+      const EMOJIS = ['😀','😂','😍','🥰','😎','🤩','😭','😤','🥺','😱',
+                      '👍','👎','❤️','🔥','🎉','✨','💯','🙌','👏','🤝',
+                      '😊','🤣','😅','😇','🙃','😏','😒','😔','😢','😡',
+                      '🫡','💀','👀','🫶','💪','🤔','🥳','😴','🤯','🫠'];
+      const emojiPickerEl  = document.getElementById('emoji-picker');
+      const emojiToggleBtn = document.getElementById('emoji-toggle-btn');
+
+      if (emojiPickerEl && emojiToggleBtn) {
+        EMOJIS.forEach(em => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'emoji-btn';
+          btn.textContent = em;
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (chatInput) { chatInput.value += em; chatInput.dispatchEvent(new Event('input')); chatInput.focus(); }
+            emojiPickerEl.style.display = 'none';
+          });
+          emojiPickerEl.appendChild(btn);
+        });
+
+        emojiToggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isOpen = emojiPickerEl.style.display === 'flex';
+          emojiPickerEl.style.display = isOpen ? 'none' : 'flex';
+          emojiPickerEl.style.flexWrap = 'wrap';
+        });
+
+        document.addEventListener('click', () => { emojiPickerEl.style.display = 'none'; });
+        emojiPickerEl.addEventListener('click', e => e.stopPropagation());
+      }
+    } catch(emojiErr) { console.warn('Emoji picker setup failed:', emojiErr); }
+
+    // ── Image upload ─────────────────────────────────────────────────────────
+    try {
+      const imgUploadBtn = document.getElementById('img-upload-btn');
+      const imgFileInput = document.getElementById('img-file-input');
+
+      if (imgUploadBtn) {
+        imgUploadBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!activeFriend) { alert('Select a friend chat first.'); return; }
+          if (imgFileInput) imgFileInput.click();
+        });
+      }
+
+      if (imgFileInput) {
+        imgFileInput.addEventListener('change', function () {
+          const file = this.files[0];
+          if (!file) return;
+          if (file.size > 1.5 * 1024 * 1024) { alert('Image must be under 1.5 MB.'); this.value = ''; return; }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const original = new Image();
+            original.onload = () => {
+              const MAX = 400;
+              const scale = Math.min(1, MAX / original.width);
+              const canvas = document.createElement('canvas');
+              canvas.width  = Math.round(original.width  * scale);
+              canvas.height = Math.round(original.height * scale);
+              canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
+              const compressed = canvas.toDataURL('image/jpeg', 0.7);
+              const msg = {
+                id: Date.now() + '_' + Math.random().toString(36).slice(2),
+                sender_uid: String(myUid), sender_name: myName,
+                type: 'image', image: compressed, text: '',
+                created_at: new Date().toISOString()
+              };
+              try { chatAppendStore(myUid, activeFriend.uid, msg); }
+              catch(e) { alert('Storage full — try a smaller image.'); return; }
+              appendMessage(msg);
+              lastMsgTs = msg.created_at;
+            };
+            original.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+          this.value = '';
+        });
+      }
+    } catch(imgErr) { console.warn('Image upload setup failed:', imgErr); }
+
+    // ── Lightbox close ───────────────────────────────────────────────────────
+    try {
+      const lightbox      = document.getElementById('img-lightbox');
+      const lightboxClose = document.getElementById('img-lightbox-close');
+      if (lightboxClose) lightboxClose.addEventListener('click', () => { if (lightbox) lightbox.classList.remove('open'); });
+      if (lightbox)      lightbox.addEventListener('click', (e) => { if (e.target === lightbox) lightbox.classList.remove('open'); });
+    } catch(lbErr) { console.warn('Lightbox setup failed:', lbErr); }
+
+    // ── Add friend search ────────────────────────────────────────────────────
+    $('open-add-friend').addEventListener('click', () => { $('afm-input').value=''; $('afm-results').innerHTML=''; afModal.classList.remove('hidden'); $('afm-input').focus(); });
+    $('afm-close-btn').addEventListener('click', () => afModal.classList.add('hidden'));
+    $('afm-search-btn').addEventListener('click', doSearch);
+    $('afm-input').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+
+    function renderPersonRow(container, uid, name, alreadyFriend, isMe) {
+      const isPending = !alreadyFriend && !isMe && reqIsPending(uid);
+      const item = document.createElement('div');
+      item.className = 'afm-result-item';
+      item.innerHTML = `
+        <div class="afm-r-avatar" style="background:${colorFor(name)}">${initials(name)}</div>
+        <div><div class="afm-r-name">${esc(name)}</div><div class="afm-r-tag">@${esc(uid)}</div></div>
+        <button class="afm-add-btn" ${(alreadyFriend||isMe||isPending)?'disabled':''}>
+          ${isMe ? 'You' : alreadyFriend ? 'Friends ✓' : isPending ? 'Sent ✓' : '+ Add'}
+        </button>`;
+      if (!alreadyFriend && !isMe && !isPending) {
+        item.querySelector('.afm-add-btn').addEventListener('click', e => {
+          e.currentTarget.disabled = true;
+          e.currentTarget.textContent = 'Sent ✓';
+          reqSend(uid, name);
+        });
+      }
+      container.appendChild(item);
+    }
+
+    async function doSearch() {
+      const q = $('afm-input').value.trim();
+      const container = $('afm-results');
+      if (!q) { container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Enter a name or UID to search.</p>'; return; }
+      const searchBtn = $('afm-search-btn');
+      searchBtn.disabled = true; searchBtn.textContent = '…';
+      container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Searching…</p>';
+      try {
+        const all = await getPeople();
+        const ql = q.toLowerCase();
+        const matches = all.filter(p => {
+          const name = (p.name || '').toLowerCase();
+          // Java returns integer id; Flask uid is a string
+          const uid  = String(p.uid || p.id || '').toLowerCase();
+          return name.includes(ql) || uid.includes(ql);
+        }).slice(0, 12);
+
+        container.innerHTML = '';
+        if (!matches.length) {
+          container.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No users found matching "' + esc(q) + '".</p>';
+          return;
+        }
+        matches.forEach(p => {
+          // Support both Flask uid (string) and Java id (integer)
+          const uid  = String(p.uid || p.id || '');
+          const name = p.name || uid;
+          // isMe: compare against both string uid and numeric id from myUser
+          const isMe = (myUser && (
+            uid === String(myUser.uid || '') ||
+            uid === String(myUser.id  || '') ||
+            name === myName
+          ));
+          renderPersonRow(container, uid, name, friendsCache.some(f => f.uid === uid), isMe);
+        });
+      } catch(e) {
+        // Java backend unreachable — show error + manual-add fallback
+        _peopleCache = null; // reset so next search retries
+        container.innerHTML = `
+          <p style="color:#ff6b6b;font-size:.82rem;margin-bottom:12px;">
+            ⚠ Could not reach the user directory (${esc(e.message)}).<br>
+            Make sure the Java backend is running on port 8585.
+          </p>
+          <p style="color:var(--muted);font-size:.82rem;margin-bottom:6px;">You can still add someone by entering their exact UID:</p>
+          <div style="display:flex;gap:8px;">
+            <input id="afm-manual-uid" type="text" placeholder="exact_uid"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:.88rem;outline:none;"
+              value="${esc(q)}"/>
+            <button id="afm-manual-add" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:.88rem;">Add</button>
+          </div>`;
+        $('afm-manual-add').addEventListener('click', () => {
+          const uid = $('afm-manual-uid').value.trim();
+          if (!uid) return;
+          reqSend(uid, uid);
+          container.innerHTML = `<p style="color:var(--green);font-size:.85rem;">Friend request sent to @${esc(uid)}. They'll see it when they open the social hub.</p>`;
+        });
+        $('afm-manual-uid').addEventListener('keydown', e => { if (e.key === 'Enter') $('afm-manual-add').click(); });
+      } finally {
+        searchBtn.disabled = false; searchBtn.textContent = 'Search';
+      }
+    }
+
+    // ── Message search (sidebar filter) ─────────────────────────────────────
+    $('social-msg-search').addEventListener('input', function() {
+      const q = this.value.toLowerCase();
+      document.querySelectorAll('.friend-item').forEach(item => {
+        const name = item.querySelector('.fi-name')?.textContent.toLowerCase()||'';
+        item.style.display = (!q || name.includes(q)) ? '' : 'none';
+      });
+    });
+
+    function startReqPoll() {
+      if (reqPollTimer) return;
+      reqPollTimer = setInterval(renderRequests, 5000);
+    }
+    function stopReqPoll() { clearInterval(reqPollTimer); reqPollTimer = null; }
+
+    // ── Game Invite Notifications ─────────────────────────────────────────────
+    let invitePollTimer = null;
+    const _seenInvites = new Set(JSON.parse(localStorage.getItem('uesl_seen_invites') || '[]'));
+    const inviteToast    = document.getElementById('invite-toast');
+    const inviteNavBtn   = document.getElementById('nav-social-btn');
+    let _pendingInvites  = []; // queue of unseen invites
+
+    function _saveSeenInvites() {
+      // keep only last 200 IDs to avoid bloat
+      const arr = [..._seenInvites].slice(-200);
+      localStorage.setItem('uesl_seen_invites', JSON.stringify(arr));
+    }
+
+    function _showNextInvite() {
+      if (!_pendingInvites.length) {
+        inviteToast.classList.remove('show');
+        return;
+      }
+      const inv = _pendingInvites[0];
+      const gmUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? `http://localhost:4700/game-maker/?room=${inv.room_id}`
+        : `/game-maker/?room=${inv.room_id}`;
+      document.getElementById('it-title').textContent = `${inv.sender_name || 'A friend'} wants to play with you!`;
+      document.getElementById('it-sub').innerHTML    = `<strong>${esc(inv.game_name || 'A Game')}</strong> — join now before the invite expires`;
+      document.getElementById('it-join-btn').href    = gmUrl;
+      inviteToast.classList.add('show');
+      // Vibrate on mobile if supported
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    }
+
+    document.getElementById('it-dismiss-btn').addEventListener('click', () => {
+      if (_pendingInvites.length) {
+        const inv = _pendingInvites.shift();
+        _seenInvites.add(inv.id);
+        _saveSeenInvites();
+      }
+      inviteToast.classList.remove('show');
+      setTimeout(() => {
+        if (_pendingInvites.length) _showNextInvite();
+        else inviteNavBtn.classList.remove('has-invite');
+      }, 400);
+    });
+
+    document.getElementById('it-join-btn').addEventListener('click', () => {
+      if (_pendingInvites.length) {
+        const inv = _pendingInvites.shift();
+        _seenInvites.add(inv.id);
+        _saveSeenInvites();
+      }
+      inviteToast.classList.remove('show');
+      if (!_pendingInvites.length) inviteNavBtn.classList.remove('has-invite');
+    });
+
+    function scanInvites() {
+      if (!myUid) return;
+      const friends = (() => { try { return JSON.parse(localStorage.getItem(`uesl_friends_v1_${myUid}`)) || []; } catch(e) { return []; } })();
+      friends.forEach(f => {
+        const msgs = (() => { try { return JSON.parse(localStorage.getItem(chatKey(myUid, f.uid))) || []; } catch(e) { return []; } })();
+        msgs.forEach(m => {
+          if (m.type !== 'game_invite') return;
+          if (String(m.sender_uid) === String(myUid)) return; // sent by me
+          if (_seenInvites.has(m.id)) return; // already seen
+          if (_pendingInvites.find(p => p.id === m.id)) return; // already queued
+          _pendingInvites.push(m);
+        });
+      });
+      if (_pendingInvites.length) {
+        inviteNavBtn.classList.add('has-invite');
+        if (!inviteToast.classList.contains('show')) _showNextInvite();
+      }
+    }
+
+    function startInvitePoll() {
+      if (invitePollTimer) return;
+      scanInvites(); // immediate first scan
+      invitePollTimer = setInterval(scanInvites, 4000);
+    }
+
+    // ── Open / close overlay ─────────────────────────────────────────────────
+    $('nav-social-btn').addEventListener('click', async () => {
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      const groqBtn = document.getElementById('uesl-chat-btn');
+      if (groqBtn) groqBtn.style.display = 'none';
+      const loggedIn = await checkLogin();
+      if (loggedIn) {
+        loginModal.classList.add('hidden');
+        renderTopbar();
+        loadFriends();
+        startReqPoll();
+        startInvitePoll();
+      } else {
+        loginModal.classList.remove('hidden');
+      }
+    });
+
+    // ── Social / Settings view switcher ──────────────────────────────────────
+    const dashPanel   = document.getElementById('social-dashboard-panel');
+    const socialBody  = document.getElementById('social-body');
+    let profileLoaded = false;
+
+    function loadProfileIframe() {
+      if (profileLoaded) return;
+      const pane = document.getElementById('sstab-pane-profile');
+      const fr = document.createElement('iframe');
+      fr.src   = '/profile?embed=1';
+      fr.title = 'UESL Profile';
+      pane.appendChild(fr);
+      profileLoaded = true;
+    }
+
+    document.getElementById('social-view-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.svt-btn');
+      if (!btn) return;
+      const view = btn.dataset.view;
+      document.querySelectorAll('.svt-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-selected', b === btn);
+      });
+      if (view === 'dashboard') {
+        socialBody.style.display  = 'none';
+        dashPanel.classList.add('active');
+        loadProfileIframe();
+        document.getElementById('social-search').style.visibility = 'hidden';
+      } else {
+        dashPanel.classList.remove('active');
+        socialBody.style.display  = '';
+        document.getElementById('social-search').style.visibility = '';
+      }
+    });
+
+    $('social-close-btn').addEventListener('click', closeOverlay);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
+    function closeOverlay() {
+      stopPoll(); stopReqPoll();
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      const groqBtn = document.getElementById('uesl-chat-btn');
+      if (groqBtn) groqBtn.style.display = '';
+    }
+
+    // ── Sign out ─────────────────────────────────────────────────────────────
+    $('social-logout-btn').addEventListener('click', async () => {
+      _loggedIn = null; myUid = null; myName = ''; myUser = null; activeFriend = null;
+      stopPoll(); stopReqPoll();
+      chatEmpty.style.display = '';
+      chatHeader.style.display = chatMsgs.style.display = chatInputRow.style.display = 'none';
+      try { await api('/api/logout', { method: 'POST' }); } catch(e) {}
+      loginModal.classList.remove('hidden');
+      slmSwitchTab('login');
+    });
+
+  })();
+  </script>
+
+</body>
+</html>
