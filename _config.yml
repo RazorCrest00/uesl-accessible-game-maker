@@ -20,7 +20,7 @@ description: "Unified Esports League — Helping people with disabilities grow t
 owner_name: Unified Esports League
 github_username: unified-esports-league
 github_repo: "pages"
-baseurl: "" 
+baseurl: "/MalwareMadness" 
 future: true
 
 # Exclude from Jekyll watch - these are processed by our conversion scripts
