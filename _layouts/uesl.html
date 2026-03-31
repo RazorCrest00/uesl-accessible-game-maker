@@ -1458,7 +1458,8 @@
 
   <script>
   (function () {
-    const BACKEND = 'http://localhost:8424';
+    const BACKEND = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
     const bubble  = document.getElementById('uesl-chat-bubble');
     // Fade in immediately, stay for 6s, then fade out
     setTimeout(() => bubble.classList.add('show'), 200);
@@ -1748,7 +1749,7 @@
   ═══════════════════════════════════════════════════════════════════════════ */
   const _AUTH = {
     PYTHON_URI: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8424' : 'https://flask.uesl.io',
+      ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com',
     suEmail: '',
     onSuccess: null,   // set by the social IIFE after it boots
   };
@@ -1979,7 +1980,7 @@
     // ── Config ───────────────────────────────────────────────────────────────
     const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8424'
-      : 'https://flask.uesl.io';
+      : 'https://uesl.opencodingsociety.com';
     const JAVA_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8585'
       : 'https://spring.uesl.io';
