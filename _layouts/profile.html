@@ -1418,7 +1418,7 @@ active_tab: profile
 
         // import api helpers
         const { putUpdate, postUpdate } = await import("{{site.baseurl}}/assets/js/api/profile.js");
-        const { javaURI, pythonURI } = await import("{{site.baseurl}}/assets/js/api/config.js");
+        const { javaURI, pythonURI, fetchOptions } = await import("{{site.baseurl}}/assets/js/api/config.js");
 
         // track if we need to reload or logout
         let needsReload = false;
@@ -1573,11 +1573,12 @@ active_tab: profile
             try {
                 const birthYear = new Date().getFullYear() - ageVal;
                 const birthdate = `${birthYear}-01-01`;
-                await putUpdate({
-                    URL: pythonURI + "/api/user",
-                    body: { birthdate },
-                    message: 'age-message'
+                const r = await fetch(pythonURI + "/api/user", {
+                    ...fetchOptions,
+                    method: 'PUT',
+                    body: JSON.stringify({ birthdate })
                 });
+                if (!r.ok) throw new Error(await r.text());
                 needsReload = true;
             } catch (e) {
                 console.error("error saving age:", e.message);
