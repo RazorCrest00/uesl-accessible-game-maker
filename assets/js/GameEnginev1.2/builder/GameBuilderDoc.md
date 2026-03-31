@@ -1,7 +1,7 @@
 ---
 layout: post
 title: GameBuilder Doc 
-permalink: /gamebuilderv1-1/doc
+permalink: /gamebuilderv1-2/doc
 breadcrumb: true
 ---
 

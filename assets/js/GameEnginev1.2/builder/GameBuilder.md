@@ -2,7 +2,7 @@
 layout: opencs 
 title: GameBuilder
 description: Helping programmers understand how to create a game
-permalink: /gamebuilderv1-1
+permalink: /gamebuilderv1-2
 ---
 
 <!-- 
@@ -43,12 +43,33 @@ permalink: /gamebuilderv1-1
   max-width: 100% !important;
   padding: 0 !important;
 }
+/* Embed mode: hide nav/header/footer when ?embed=1 is in URL */
+.embed-mode #side-nav,
+.embed-mode header,
+.embed-mode footer,
+.embed-mode #masterFooter,
+.embed-mode .navbar,
+.embed-mode nav,
+.embed-mode .site-header,
+.embed-mode .site-footer,
+.embed-mode .site-nav,
+.embed-mode .gamebuilder-title { display: none !important; }
+.embed-mode body,
+.embed-mode .page-content,
+.embed-mode .page-content .wrapper { padding: 0 !important; margin: 0 !important; }
+.embed-mode .opencs_root { padding: 0 !important; margin: 0 !important; }
 </style>
+
+<script>
+  if (new URLSearchParams(location.search).get('embed')) {
+    document.documentElement.classList.add('embed-mode');
+  }
+</script>
 
 <!-- title banner for the GameBuilder page -->
 <div class="gamebuilder-title">
   {{page.title}}
-  <a href="{{site.baseurl}}/gamebuilderv1-1/doc" target="_blank" rel="noopener noreferrer">📜</a>
+  <a href="{{site.baseurl}}/gamebuilderv1-2/doc" target="_blank" rel="noopener noreferrer">📜</a>
   <a href="{{site.baseurl}}/rpg/game" target="_blank" rel="noopener noreferrer">🕹️</a>
 </div>
 
@@ -57,12 +78,18 @@ permalink: /gamebuilderv1-1
     (function(){
         try {
             const s = document.createElement('script');
-            s.src = "{{ site.baseurl }}/assets/js/GameEnginev1.1/builder/templates.js";
+            s.src = "{{ site.baseurl }}/assets/js/GameEnginev1.2/builder/templates.js";
             s.defer = true;
             document.head.appendChild(s);
         } catch (e) { console.error('GameTemplatesV1_1 loader failed; templates.js must be available', e); }
     })();
 </script>
+
+<!-- MediaPipe + Face Tracker + Socket.IO -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+<script src="{{ site.baseurl }}/assets/js/face-tracker.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <!-- main builder layout: left (assets) + right (code and game) -->
 <div class="creator-layout">
@@ -251,6 +278,36 @@ permalink: /gamebuilderv1-1
                     </div>
                     <div id="walls-container"></div>
                 </div>
+                <!-- ── SETTINGS ─────────────────────────────────────── -->
+                <details id="settings-panel" open style="margin-top:12px;">
+                  <summary style="cursor:pointer;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;padding:6px 0;">⚙ Settings</summary>
+                  <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-slow-mode"> 🐌 Slow Mode
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-high-contrast"> ⚡ High Contrast
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-large-sprites"> 🔍 Large Sprites
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-voice"> 🎤 Voice Commands
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-face"> 📷 Face Tracking
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-coach"> 🧑‍🏫 UESL Coach
+                    </label>
+                    <div id="gb-face-panel" style="display:none;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;margin-top:4px;">
+                      <video id="gb-face-video" style="display:none;"></video>
+                      <canvas id="gb-face-preview" width="120" height="90" style="border-radius:6px;width:100%;"></canvas>
+                      <button id="gb-recalibrate" style="margin-top:6px;width:100%;padding:4px;background:#3730a3;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.78rem;">🔄 Recalibrate</button>
+                    </div>
+                    <div id="gb-voice-status" style="display:none;font-size:.75rem;color:#94a3b8;margin-top:2px;padding:4px 8px;background:rgba(0,0,0,.2);border-radius:6px;">Voice: off</div>
+                  </div>
+                </details>
             </div>
         </div>
     </div>
@@ -283,6 +340,7 @@ permalink: /gamebuilderv1-1
                         <button id="btn-code-play" class="icon-btn" data-tooltip="Run Code">▶</button>
                         <button id="btn-code-stop" class="icon-btn" data-tooltip="Stop Game">■</button>
                         <button id="btn-export" class="icon-btn" data-tooltip="Export Code">⤓</button>
+                        <button id="gb-mp-btn" title="Multiplayer" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.85rem;">👥</button>
                     </div>
                 </div>
                 <div class="editor-container" id="editor-container">
@@ -292,6 +350,26 @@ permalink: /gamebuilderv1-1
             </div>
         </div>
     </div>
+</div>
+
+<!-- Multiplayer Modal -->
+<div id="gb-mp-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#0e1117;border:1px solid #3344aa;border-radius:16px;padding:28px 32px;min-width:320px;max-width:420px;color:#e2e8f0;font-family:sans-serif;">
+    <h3 style="margin:0 0 16px;color:#818cf8;">👥 Multiplayer</h3>
+    <div id="gb-mp-room-info" style="display:none;background:#1e293b;border-radius:8px;padding:12px;margin-bottom:14px;font-size:.9rem;">
+      Room: <strong id="gb-mp-room-code" style="color:#a78bfa;letter-spacing:.1em;"></strong>
+      <br><span style="font-size:.75rem;color:#64748b;">Share this code with a friend</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button id="gb-mp-create" style="padding:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;">🚀 Create Room</button>
+      <div style="display:flex;gap:8px;">
+        <input id="gb-mp-join-code" placeholder="Enter room code" style="flex:1;padding:8px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:.9rem;">
+        <button id="gb-mp-join" style="padding:8px 14px;background:#1e293b;border:1px solid #6366f1;border-radius:8px;color:#818cf8;cursor:pointer;font-weight:600;">Join</button>
+      </div>
+    </div>
+    <div id="gb-mp-status" style="margin-top:12px;font-size:.8rem;color:#64748b;min-height:18px;"></div>
+    <button id="gb-mp-close" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:1.4rem;cursor:pointer;">×</button>
+  </div>
 </div>
 
 <script>
@@ -625,16 +703,62 @@ document.addEventListener('DOMContentLoaded', () => {
         overlayPrevH = rect.height || overlayPrevH;
         ui.drawOverlay.innerHTML = '';
         const frag = document.createDocumentFragment();
-        ui.drawShapes.forEach(shape => {
+        ui.drawShapes.forEach((shape, idx) => {
             const el = document.createElement('div');
             el.className = `draw-rect ${shape.type}`;
             el.style.left = shape.x + 'px';
             el.style.top = shape.y + 'px';
             el.style.width = Math.max(0, shape.width) + 'px';
             el.style.height = Math.max(0, shape.height) + 'px';
+            el.style.background = shape.color || '#4466ff';
+            el.style.opacity = shape.visible === false ? '0.2' : '0.7';
+            el.style.cursor = 'pointer';
+            el.title = `Wall ${idx+1} — click to edit`;
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showDrawnShapeEditor(shape, idx);
+            });
             frag.appendChild(el);
         });
         ui.drawOverlay.appendChild(frag);
+    }
+
+    function showDrawnShapeEditor(shape, idx) {
+        document.getElementById('gb-shape-editor')?.remove();
+        const panel = document.createElement('div');
+        panel.id = 'gb-shape-editor';
+        panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e293b;border:1px solid #6366f1;border-radius:12px;padding:20px 24px;z-index:9999;color:#e2e8f0;font-family:sans-serif;min-width:220px;box-shadow:0 0 24px rgba(99,102,241,.4);';
+        panel.innerHTML = `
+            <div style="font-weight:700;margin-bottom:12px;">✏️ Edit Wall ${idx+1}</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <label style="font-size:.85rem;display:flex;align-items:center;gap:8px;">
+                    Color <input type="color" id="gbe-color" value="${shape.color||'#4466ff'}" style="width:36px;height:24px;border:none;background:none;cursor:pointer;">
+                </label>
+                <label style="font-size:.85rem;display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="gbe-visible" ${shape.visible !== false ? 'checked' : ''}> Visible in game
+                </label>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+                <button id="gbe-save" style="flex:1;padding:7px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;">Apply</button>
+                <button id="gbe-delete" style="padding:7px 12px;background:#7f1d1d;border:none;border-radius:8px;color:#fff;cursor:pointer;">🗑</button>
+                <button id="gbe-cancel" style="padding:7px 12px;background:#334155;border:none;border-radius:8px;color:#94a3b8;cursor:pointer;">✕</button>
+            </div>
+        `;
+        document.body.appendChild(panel);
+        document.getElementById('gbe-save').onclick = () => {
+            shape.color = document.getElementById('gbe-color').value;
+            shape.visible = document.getElementById('gbe-visible').checked;
+            panel.remove();
+            renderDrawShapes();
+            syncFromControlsIfFreestyle();
+        };
+        document.getElementById('gbe-delete').onclick = () => {
+            ui.drawShapes.splice(idx, 1);
+            panel.remove();
+            renderDrawShapes();
+            syncFromControlsIfFreestyle();
+        };
+        document.getElementById('gbe-cancel').onclick = () => panel.remove();
     }
 
     function currentPreviewEl() {
@@ -682,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const height = Math.abs(cy - y);
         removePreview();
         if (width >= 4 && height >= 4) {
-            ui.drawShapes.push({ type: mode, x: Math.round(left), y: Math.round(top), width: Math.round(width), height: Math.round(height) });
+            ui.drawShapes.push({ type: mode, x: Math.round(left), y: Math.round(top), width: Math.round(width), height: Math.round(height), color: '#4466ff', visible: true });
             ui.overlayConfirmed = false;
             renderDrawShapes();
             syncFromControlsIfFreestyle();
@@ -886,6 +1010,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="range" min="10" max="800" value="150" class="wall-w">
             <label>Height</label>
             <input type="range" min="10" max="600" value="20" class="wall-h">
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                <label style="font-size:.8rem;margin:0;">Color</label>
+                <input type="color" value="#4466ff" class="wall-color" style="width:36px;height:24px;border:none;background:none;cursor:pointer;padding:0;">
+                <label style="font-size:.8rem;margin:0;display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="wall-visible" checked> Visible in game
+                </label>
+            </div>
             <div style="margin-top:8px; display:flex; gap:8px;">
                 <button class="btn btn-sm btn-danger wall-delete">Delete</button>
             </div>
@@ -900,6 +1031,8 @@ document.addEventListener('DOMContentLoaded', () => {
         slot.wY = fields.querySelector('.wall-y');
         slot.wW = fields.querySelector('.wall-w');
         slot.wH = fields.querySelector('.wall-h');
+        slot.wColor = fields.querySelector('.wall-color');
+        slot.wVisible = fields.querySelector('.wall-visible');
         slot.deleteBtn = fields.querySelector('.wall-delete');
 
         headerBtn.addEventListener('click', () => {
@@ -926,6 +1059,8 @@ document.addEventListener('DOMContentLoaded', () => {
             slot.wY.addEventListener(evt, () => { state.lastEdited = 'walls'; syncFromControlsIfFreestyle(); });
             slot.wW.addEventListener(evt, () => { state.lastEdited = 'walls'; syncFromControlsIfFreestyle(); });
             slot.wH.addEventListener(evt, () => { state.lastEdited = 'walls'; syncFromControlsIfFreestyle(); });
+            slot.wColor.addEventListener(evt, () => { state.lastEdited = 'walls'; syncFromControlsIfFreestyle(); });
+            slot.wVisible.addEventListener(evt, () => { state.lastEdited = 'walls'; syncFromControlsIfFreestyle(); });
         });
 
         ui.walls.push(slot);
@@ -1298,7 +1433,8 @@ function barrier_extract(source, type, idx, options = {}) {
             y: parseInt(source.wY?.value || 100, 10),
             width: parseInt(source.wW?.value || 150, 10),
             height: parseInt(source.wH?.value || 20, 10),
-            visible: options.visible !== undefined ? !!options.visible : true,
+            visible: source.wVisible ? source.wVisible.checked : true,
+            color: source.wColor?.value || '#4466ff',
             fromOverlay: false
         };
     } else if (type === 'drawn') {
@@ -1311,7 +1447,8 @@ function barrier_extract(source, type, idx, options = {}) {
             y: Math.max(0, Math.round((source.y || 0) * scaleY)),
             width: Math.max(0, Math.round((source.width || 0) * scaleX)),
             height: Math.max(0, Math.round((source.height || 0) * scaleY)),
-            visible: true,
+            visible: source.visible !== undefined ? source.visible : true,
+            color: source.color || '#4466ff',
             fromOverlay: true
         };
     }
@@ -1323,13 +1460,14 @@ function barrier_extract(source, type, idx, options = {}) {
  * @returns {Object} { def: string, classEntry: string } - Barrier definition and class entry
  */
 function barrier_code(barrierData) {
-    const { varName, id, x, y, width, height, visible, fromOverlay } = barrierData;
+    const { varName, id, x, y, width, height, visible, color, fromOverlay } = barrierData;
     const comment = fromOverlay ? ' /* BUILDER_DEFAULT */' : '';
     const overlayPart = fromOverlay ? ',\n            fromOverlay: true' : '';
+    const colorPart = color ? `,\n            color: '${color}'` : '';
 
     const def = `
         const ${varName} = {
-            id: '${id}', x: ${x}, y: ${y}, width: ${width}, height: ${height}, visible: ${visible}${comment},
+            id: '${id}', x: ${x}, y: ${y}, width: ${width}, height: ${height}, visible: ${visible}${comment}${colorPart},
             hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }${overlayPart}
         };`;
 
@@ -1532,10 +1670,10 @@ function gamelevel_code(defs = [], classes = []) {
  * Literals are defined at left edge to comply with Code Generation .
 */
 const importsSection = `
-import GameEnvBackground from '/assets/js/GameEnginev1.1/essentials/GameEnvBackground.js';
-import Player from '/assets/js/GameEnginev1.1/essentials/Player.js';
-import Npc from '/assets/js/GameEnginev1.1/essentials/Npc.js';
-import Barrier from '/assets/js/GameEnginev1.1/essentials/Barrier.js';
+import GameEnvBackground from '/assets/js/GameEnginev1.2/essentials/GameEnvBackground.js';
+import Player from '/assets/js/GameEnginev1.2/essentials/Player.js';
+import Npc from '/assets/js/GameEnginev1.2/essentials/Npc.js';
+import Barrier from '/assets/js/GameEnginev1.2/essentials/Barrier.js';
 `; // end of importSection
 
 const gameLevelStart = `
@@ -2571,6 +2709,14 @@ function generateStepCode(currentStep) {
         const path = '{{ site.baseurl }}';
         const baseUrl = window.location.origin + path;
 
+        // Inject UESL Coach if enabled in settings
+        if (typeof gbSettings !== 'undefined' && gbSettings.coach) {
+            const coachImport = `import UESLCoach from '${baseUrl}/assets/js/GameEnginev1.2/UESLCoach.js';\n`;
+            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', SCALE_FACTOR:6, ANIMATION_RATE:80, pixels:{width:512,height:384}, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:2.5, patrolSpeed:1.2, tauntInterval:4500 } }`;
+            code = coachImport + code;
+            code = code.replace(/this\.classes\s*=\s*\[/, `this.classes = [\n      ${coachEntry},`);
+        }
+
         // Ensure absolute import URLs
         code = code.replace(/from\s+['"](\/?[^'\"]+)['"]/g, (match, importPath) => {
             if (importPath.startsWith('/')) return `from '${baseUrl}${importPath}'`;
@@ -2590,7 +2736,7 @@ function generateStepCode(currentStep) {
             ui.gameContainer.id = 'gameContainer';
         }
 
-        const GameModule = await import(baseUrl + '/assets/js/GameEnginev1.1/essentials/Game.js');
+        const GameModule = await import(baseUrl + '/assets/js/GameEnginev1.2/essentials/Game.js');
         const Game = GameModule.default || GameModule.Core || GameModule;
 
         // Update env dimensions based on container
@@ -2668,10 +2814,18 @@ function generateStepCode(currentStep) {
                 const canvases = Array.from(container ? container.querySelectorAll('canvas') : []);
                 canvases.forEach(c => {
                     const id = c.id || '';
-                    if (/^(wall_|dbarrier_|barrier_)/.test(id)) {
+                    // Match explicit wall IDs or any secondary canvas (not the primary gameCanvas)
+                    if (/^(wall_|dbarrier_|barrier_)/.test(id) || (id && id !== 'gameCanvas' && id !== 'game-canvas-builder')) {
                         c.style.opacity = show ? '1' : '0';
                     }
                 });
+                // Also target the game output builder container's non-primary canvases
+                const outputContainer = document.getElementById('game-output-builder');
+                if (outputContainer) {
+                    Array.from(outputContainer.querySelectorAll('canvas')).forEach(c => {
+                        if (c.id !== 'gameCanvas') c.style.opacity = show ? '1' : '0';
+                    });
+                }
             } catch (_) {}
         });
     }
@@ -2710,7 +2864,7 @@ function generateStepCode(currentStep) {
         code = code.replace(/export\s+const\s+gameLevelClasses\s*=\s*\[\s*GameLevelCustom\s*\];?/g, `export default ${newClassName};`);
 
         // Header with usage instructions reflecting chosen name
-        const header = `// Adventure Game Custom Level\n// Exported from GameBuilder on ${(new Date()).toISOString()}\n// How to use this file:\n// 1) Save as assets/js/adventureGame/${newClassName}.js in your repo.\n// 2) Reference it in your runner or level selector. Examples:\n//    import GameLevelPlanets from '{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelPlanets.js';\n//    import ${newClassName} from '{{site.baseurl}}/assets/js/adventureGame/${newClassName}.js';\n//    export const gameLevelClasses = [GameLevelPlanets, ${newClassName}];\n//    // or pass it directly to your GameControl as the only level.\n// 3) Ensure images exist and paths resolve via 'path' provided by the engine.\n// 4) You can add more objects to this.classes inside the constructor.\n`;
+        const header = `// Adventure Game Custom Level\n// Exported from GameBuilder on ${(new Date()).toISOString()}\n// How to use this file:\n// 1) Save as assets/js/adventureGame/${newClassName}.js in your repo.\n// 2) Reference it in your runner or level selector. Examples:\n//    import GameLevelPlanets from '{{site.baseurl}}/assets/js/GameEnginev1.2/GameLevelPlanets.js';\n//    import ${newClassName} from '{{site.baseurl}}/assets/js/adventureGame/${newClassName}.js';\n//    export const gameLevelClasses = [GameLevelPlanets, ${newClassName}];\n//    // or pass it directly to your GameControl as the only level.\n// 3) Ensure images exist and paths resolve via 'path' provided by the engine.\n// 4) You can add more objects to this.classes inside the constructor.\n`;
         code = header + code;
 
         // Download using the chosen class name
@@ -2758,4 +2912,192 @@ document.querySelector('.game-frame')?.addEventListener('click', () => {
     const canvas = document.getElementById('game-canvas-builder');
     try { canvas?.focus?.(); } catch (_) {}
 });
+
+// ── Settings state ──────────────────────────────────────────────────────────
+const gbSettings = {
+  slowMode: false, highContrast: false, largeSprites: false,
+  voice: false, face: false, coach: false,
+};
+
+document.getElementById('gb-slow-mode')?.addEventListener('change', e => { gbSettings.slowMode = e.target.checked; });
+document.getElementById('gb-high-contrast')?.addEventListener('change', e => {
+  gbSettings.highContrast = e.target.checked;
+  document.body.style.filter = e.target.checked ? 'contrast(1.6) brightness(1.1)' : '';
+});
+document.getElementById('gb-large-sprites')?.addEventListener('change', e => { gbSettings.largeSprites = e.target.checked; });
+
+document.getElementById('gb-voice')?.addEventListener('change', e => {
+  gbSettings.voice = e.target.checked;
+  if (e.target.checked) initVoice(); else stopVoice();
+});
+document.getElementById('gb-face')?.addEventListener('change', e => {
+  gbSettings.face = e.target.checked;
+  document.getElementById('gb-face-panel').style.display = e.target.checked ? 'block' : 'none';
+  if (e.target.checked) initFaceTracking(); else stopFaceTracking();
+});
+document.getElementById('gb-coach')?.addEventListener('change', e => { gbSettings.coach = e.target.checked; });
+document.getElementById('gb-recalibrate')?.addEventListener('click', () => window.FaceTracker?.recalibrate?.());
+
+// ── Face Tracking ────────────────────────────────────────────────────────────
+let _faceInterval = null;
+function initFaceTracking() {
+  if (!window.FaceTracker) { console.warn('FaceTracker not loaded'); return; }
+  const video = document.getElementById('gb-face-video');
+  const preview = document.getElementById('gb-face-preview');
+  FaceTracker.start(video, preview).catch(console.error);
+  _faceInterval = setInterval(() => {
+    if (!gbSettings.face || !window.FaceTracker?.controls) return;
+    const c = FaceTracker.controls;
+    const fire = (key, on) => {
+      const type = on ? 'keydown' : 'keyup';
+      document.dispatchEvent(new KeyboardEvent(type, { key, code: 'Arrow'+key.replace('Arrow',''), bubbles: true }));
+    };
+    fire('ArrowLeft',  !!c.left);
+    fire('ArrowRight', !!c.right);
+    fire('ArrowUp',    !!c.up);
+    fire('ArrowDown',  !!c.down);
+  }, 80);
+}
+function stopFaceTracking() {
+  clearInterval(_faceInterval); _faceInterval = null;
+  window.FaceTracker?.stop?.();
+}
+
+// ── Voice Commands ───────────────────────────────────────────────────────────
+let _voiceRecog = null;
+let _voiceActive = false;
+const WORD_NUMS = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10 };
+
+function parseVoiceCommand(text) {
+  text = text.toLowerCase().trim();
+  if (/\b(stop|halt|freeze|stay|wait)\b/.test(text)) return { dir: null, blocks: 0, stop: true };
+  let dir = null;
+  if (/\b(right|forward)\b/.test(text)) dir = 'ArrowRight';
+  else if (/\b(left|back)\b/.test(text)) dir = 'ArrowLeft';
+  else if (/\b(up|jump)\b/.test(text)) dir = 'ArrowUp';
+  else if (/\b(down)\b/.test(text)) dir = 'ArrowDown';
+  if (!dir) return null;
+  let blocks = 1;
+  const numMatch = text.match(/\b(\d+)\b/);
+  if (numMatch) blocks = parseInt(numMatch[1]);
+  else { for (const [w, n] of Object.entries(WORD_NUMS)) { if (text.includes(w)) { blocks = n; break; } } }
+  return { dir, blocks: Math.min(blocks, 20) };
+}
+
+function showVoiceStatus(msg) {
+  const el = document.getElementById('gb-voice-status');
+  if (el) { el.style.display = 'block'; el.textContent = '🎤 ' + msg; }
+}
+
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showVoiceStatus('Not supported in this browser'); return; }
+  _voiceRecog = new SR();
+  _voiceRecog.continuous = true;
+  _voiceRecog.interimResults = false;
+  _voiceRecog.lang = 'en-US';
+  _voiceRecog.onstart = () => { _voiceActive = true; showVoiceStatus('Listening…'); };
+  _voiceRecog.onend = () => { if (gbSettings.voice) _voiceRecog.start(); };
+  _voiceRecog.onerror = e => showVoiceStatus('Error: ' + e.error);
+  _voiceRecog.onresult = e => {
+    const transcript = e.results[e.results.length - 1][0].transcript;
+    showVoiceStatus('"' + transcript + '"');
+    const cmd = parseVoiceCommand(transcript);
+    if (!cmd) return;
+    if (cmd.stop) {
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft', bubbles: true }));
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true }));
+      return;
+    }
+    // hold key for ~blocks * 180ms
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: cmd.dir, bubbles: true }));
+    setTimeout(() => document.dispatchEvent(new KeyboardEvent('keyup', { key: cmd.dir, bubbles: true })), cmd.blocks * 180);
+  };
+  _voiceRecog.start();
+}
+function stopVoice() {
+  _voiceActive = false;
+  _voiceRecog?.stop(); _voiceRecog = null;
+  showVoiceStatus('off');
+}
+
+// ── Multiplayer ──────────────────────────────────────────────────────────────
+let _socket = null;
+let _mpRoom  = null;
+const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
+
+function generateRoomCode() {
+  return Math.random().toString(36).substr(2, 6).toUpperCase();
+}
+
+function mpStatus(msg) {
+  const el = document.getElementById('gb-mp-status');
+  if (el) el.textContent = msg;
+}
+
+function connectSocket(room) {
+  if (_socket) { _socket.disconnect(); }
+  _socket = io(PYTHON_URI, { transports: ['websocket', 'polling'] });
+  _socket.on('connect', () => {
+    _socket.emit('join_room', { room });
+    mpStatus('✅ Connected to room ' + room);
+  });
+  _socket.on('level_code', data => {
+    if (data.room === room && data.code) {
+      const editor = document.getElementById('code-editor');
+      if (editor) { editor.value = data.code; editor.dispatchEvent(new Event('input')); }
+      mpStatus('📥 Received level from host — running…');
+      setTimeout(() => document.querySelector('[data-event="runInRunner"]')?.click(), 500);
+    }
+  });
+  _socket.on('disconnect', () => mpStatus('Disconnected'));
+  _socket.on('connect_error', () => mpStatus('⚠ Could not connect to server'));
+}
+
+document.getElementById('gb-mp-btn')?.addEventListener('click', () => {
+  document.getElementById('gb-mp-overlay').style.display = 'flex';
+  // Auto-join if ?room= in URL
+  const urlRoom = new URLSearchParams(location.search).get('room');
+  if (urlRoom && !_mpRoom) {
+    _mpRoom = urlRoom;
+    document.getElementById('gb-mp-room-code').textContent = urlRoom;
+    document.getElementById('gb-mp-room-info').style.display = 'block';
+    connectSocket(urlRoom);
+    mpStatus('Joining room ' + urlRoom + '…');
+  }
+});
+document.getElementById('gb-mp-close')?.addEventListener('click', () => {
+  document.getElementById('gb-mp-overlay').style.display = 'none';
+});
+document.getElementById('gb-mp-create')?.addEventListener('click', () => {
+  _mpRoom = generateRoomCode();
+  document.getElementById('gb-mp-room-code').textContent = _mpRoom;
+  document.getElementById('gb-mp-room-info').style.display = 'block';
+  connectSocket(_mpRoom);
+  mpStatus('Room created. Share code: ' + _mpRoom);
+  // Broadcast current level code when someone joins
+  if (_socket) {
+    _socket.on('peer_joined', () => {
+      const code = document.getElementById('code-editor')?.value || '';
+      _socket.emit('send_level', { room: _mpRoom, code });
+      mpStatus('📤 Level sent to new player');
+    });
+  }
+});
+document.getElementById('gb-mp-join')?.addEventListener('click', () => {
+  const code = document.getElementById('gb-mp-join-code')?.value.trim().toUpperCase();
+  if (!code) { mpStatus('Enter a room code first'); return; }
+  _mpRoom = code;
+  document.getElementById('gb-mp-room-code').textContent = code;
+  document.getElementById('gb-mp-room-info').style.display = 'block';
+  connectSocket(code);
+  mpStatus('Joining room ' + code + '…');
+});
+
+// Auto-join room from URL on page load
+(function() {
+  const urlRoom = new URLSearchParams(location.search).get('room');
+  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom); }
+})();
 </script>

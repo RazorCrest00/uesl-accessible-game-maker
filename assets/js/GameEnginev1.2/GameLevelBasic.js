@@ -96,31 +96,23 @@ class GameLevelBasic {
         }
     };
 
-    // UESL Coach — enemy that patrols and chases the player
-    const sprite_src_coach = path + "/images/gamify/historyProf.png";
+    // UESL Coach enemy data
+    const sprite_src_coach = path + "/images/gamify/chillguy.png"; // placeholder — swap for coach sprite
     const sprite_data_coach = {
         id: 'UESLCoach',
         src: sprite_src_coach,
-        SCALE_FACTOR: 5,
-        ANIMATION_RATE: 10,
-        pixels: { height: 263, width: 559 },
-        INIT_POSITION: { x: width * 0.6, y: height - (height / 5) },
-        orientation: { rows: 4, columns: 9 },
-        down:  { row: 3, start: 0, columns: 9 },
-        up:    { row: 3, start: 0, columns: 9 },
-        left:  { row: 3, start: 0, columns: 9 },
-        right: { row: 3, start: 0, columns: 9 },
-        hitbox: { widthPercentage: 0.4, heightPercentage: 0.3 },
-        // AI settings
-        chaseRange:  width * 0.35,   // start chasing when player is within 35% of canvas width
-        chaseSpeed:  2.2,            // pixels per frame while chasing
-        patrolSpeed: 1.2,            // pixels per frame while patrolling
-        walkingArea: {
-            xMin: width * 0.45,
-            xMax: width * 0.95,
-            yMin: 0,
-            yMax: height,
-        },
+        SCALE_FACTOR: 6,
+        ANIMATION_RATE: 80,
+        pixels: { width: 512, height: 384 },
+        INIT_POSITION: { x: width * 0.7, y: height - (height / 6) },
+        orientation: { rows: 3, columns: 4 },
+        down: { row: 0, start: 0, columns: 3 },
+        hitbox: { widthPercentage: 0.4, heightPercentage: 0.4 },
+        chaseRange: 320,
+        chaseSpeed: 2.5,
+        patrolSpeed: 1.2,
+        tauntInterval: 4500,
+        walkingArea: { xMin: width * 0.4, xMax: width - 60 },
     };
 
     // List of objects defnitions for this level

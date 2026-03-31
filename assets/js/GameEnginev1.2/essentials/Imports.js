@@ -5,3 +5,4 @@ export { default as NPC } from './Npc.js';
 export { default as AiNpc } from './AiNpc.js';
 export { default as Leaderboard } from './Leaderboard.js';
 export { default as Scoreboard } from '../Scoreboard.js';
+export { default as UESLCoach } from '../UESLCoach.js';

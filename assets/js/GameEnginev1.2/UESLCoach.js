@@ -66,15 +66,13 @@ class UESLCoach extends Enemy {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist <= this.chaseRange) {
-            // Entered chase range
             if (!this._isChasing) {
                 this._isChasing = true;
                 this._startTaunting();
-                this._triggerTaunt('nearby');   // immediate "I see you" taunt
+                this._triggerTaunt('nearby');
             }
             this._chase(dx, dy, dist);
         } else {
-            // Left chase range
             if (this._isChasing) {
                 this._isChasing = false;
                 this._stopTaunting();
@@ -121,7 +119,6 @@ class UESLCoach extends Enemy {
         this._stopTaunting();
         this._clearBubble();
 
-        // Fetch a "caught" AI taunt, then show the overlay
         this._fetchTaunt('caught').then(taunt => {
             this._showCaughtOverlay(taunt, () => {
                 this.gameEnv.gameControl.currentLevel.restart = true;
@@ -175,20 +172,12 @@ class UESLCoach extends Enemy {
             chasing: [
                 "You can't outrun me!",
                 "This level ends NOW!",
+                "Nowhere left to run!",
                 "Speed won't save you!",
                 "I ALWAYS catch my players!",
-                "Nowhere left to run!",
             ],
-            caught: [
-                "Got you. Game over.",
-                "Did you really think you'd win?",
-                "Back to the start!",
-            ],
-            nearby: [
-                "I see you…",
-                "Oh, you're close.",
-                "Found you.",
-            ],
+            caught:  ["Got you. Game over.", "Did you really think you'd win?", "Back to the start!"],
+            nearby:  ["I see you…", "Oh, you're close.", "Found you."],
         };
         const opts = bank[context] || bank.chasing;
         return opts[Math.floor(Math.random() * opts.length)];
@@ -206,8 +195,6 @@ class UESLCoach extends Enemy {
         this._bubble = bubble;
 
         this._updateBubblePosition();
-
-        // Auto-dismiss after 3.5 s
         this._bubbleTimeout = setTimeout(() => this._clearBubble(), 3500);
     }
 
@@ -215,26 +202,19 @@ class UESLCoach extends Enemy {
         if (!this._bubble || !this.canvas) return;
 
         const rect   = this.canvas.getBoundingClientRect();
-        // Scale coach position to screen coords
         const scaleX = rect.width  / (this.gameEnv.innerWidth  || 1);
         const scaleY = rect.height / (this.gameEnv.innerHeight || 1);
 
         const screenX = rect.left + this.position.x * scaleX + (this.width  * scaleX) / 2;
-        const screenY = rect.top  + this.position.y * scaleY - 14;   // 14px above sprite
+        const screenY = rect.top  + this.position.y * scaleY - 14;
 
         this._bubble.style.left = `${screenX}px`;
         this._bubble.style.top  = `${screenY}px`;
     }
 
     _clearBubble() {
-        if (this._bubbleTimeout) {
-            clearTimeout(this._bubbleTimeout);
-            this._bubbleTimeout = null;
-        }
-        if (this._bubble) {
-            this._bubble.remove();
-            this._bubble = null;
-        }
+        if (this._bubbleTimeout) { clearTimeout(this._bubbleTimeout); this._bubbleTimeout = null; }
+        if (this._bubble)        { this._bubble.remove(); this._bubble = null; }
     }
 
     // ─── caught overlay ────────────────────────────────────────────────────────
@@ -245,32 +225,25 @@ class UESLCoach extends Enemy {
         const overlay = document.createElement('div');
         overlay.id = 'uesl-coach-caught';
         Object.assign(overlay.style, {
-            position:     'fixed',
-            top:          '50%',
-            left:         '50%',
-            transform:    'translate(-50%, -50%)',
-            background:   'rgba(20, 10, 60, 0.96)',
-            border:       '3px solid #6366f1',
-            borderRadius: '16px',
-            padding:      '28px 36px',
-            textAlign:    'center',
-            zIndex:       '10000',
-            fontFamily:   'Arial, sans-serif',
-            color:        '#e2e8f0',
-            boxShadow:    '0 0 48px rgba(99,102,241,0.7)',
-            minWidth:     '320px',
-            animation:    'coachSlideIn 0.4s ease-out',
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(20, 10, 60, 0.96)',
+            border: '3px solid #6366f1', borderRadius: '16px',
+            padding: '28px 36px', textAlign: 'center',
+            zIndex: '10000', fontFamily: 'Arial, sans-serif',
+            color: '#e2e8f0', boxShadow: '0 0 48px rgba(99,102,241,0.7)',
+            minWidth: '320px', animation: 'coachSlideIn 0.4s ease-out',
         });
 
         overlay.innerHTML = `
-            <div style="font-size:3rem; margin-bottom:6px;">🎮</div>
-            <div style="font-size:1.4rem; font-weight:bold; color:#a78bfa; margin-bottom:10px;">
+            <div style="font-size:3rem;margin-bottom:6px;">🎮</div>
+            <div style="font-size:1.4rem;font-weight:bold;color:#a78bfa;margin-bottom:10px;">
                 UESL Coach caught you!
             </div>
-            <div style="font-size:1.1rem; color:#c4b5fd; font-style:italic; margin-bottom:12px;">
+            <div style="font-size:1.1rem;color:#c4b5fd;font-style:italic;margin-bottom:12px;">
                 "${taunt}"
             </div>
-            <div style="font-size:0.82rem; color:#7c3aed;">Restarting level…</div>
+            <div style="font-size:0.82rem;color:#7c3aed;">Restarting level…</div>
         `;
 
         document.body.appendChild(overlay);
@@ -281,43 +254,31 @@ class UESLCoach extends Enemy {
 
     _injectStyles() {
         if (document.getElementById('uesl-coach-styles')) return;
-
         const style = document.createElement('style');
-        style.id    = 'uesl-coach-styles';
+        style.id = 'uesl-coach-styles';
         style.textContent = `
             .uesl-coach-bubble {
-                position: fixed;
-                transform: translateX(-50%);
-                background: rgba(20, 10, 60, 0.92);
-                border: 2px solid #6366f1;
-                border-radius: 12px;
-                padding: 6px 14px;
-                font-family: Arial, sans-serif;
-                font-size: 0.82rem;
-                font-weight: bold;
-                color: #c4b5fd;
-                white-space: nowrap;
-                pointer-events: none;
-                z-index: 9998;
+                position: fixed; transform: translateX(-50%);
+                background: rgba(20,10,60,0.92); border: 2px solid #6366f1;
+                border-radius: 12px; padding: 6px 14px;
+                font-family: Arial, sans-serif; font-size: 0.82rem;
+                font-weight: bold; color: #c4b5fd; white-space: nowrap;
+                pointer-events: none; z-index: 9998;
                 box-shadow: 0 0 12px rgba(99,102,241,0.5);
                 animation: bubblePop 0.25s ease-out;
             }
             .uesl-coach-bubble::after {
-                content: '';
-                position: absolute;
-                bottom: -9px;
-                left: 50%;
-                transform: translateX(-50%);
-                border: 5px solid transparent;
+                content: ''; position: absolute; bottom: -9px; left: 50%;
+                transform: translateX(-50%); border: 5px solid transparent;
                 border-top-color: #6366f1;
             }
             @keyframes bubblePop {
-                from { opacity: 0; transform: translateX(-50%) scale(0.7); }
-                to   { opacity: 1; transform: translateX(-50%) scale(1); }
+                from { opacity:0; transform:translateX(-50%) scale(0.7); }
+                to   { opacity:1; transform:translateX(-50%) scale(1); }
             }
             @keyframes coachSlideIn {
-                from { opacity: 0; transform: translate(-50%, -60%) scale(0.85); }
-                to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                from { opacity:0; transform:translate(-50%,-60%) scale(0.85); }
+                to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
             }
         `;
         document.head.appendChild(style);
@@ -325,7 +286,7 @@ class UESLCoach extends Enemy {
 
     // ─── required by Enemy base ─────────────────────────────────────────────────
 
-    jump() { /* Coach doesn't jump — he walks toward you */ }
+    jump() { /* Coach doesn't jump */ }
 
     // ─── cleanup ───────────────────────────────────────────────────────────────
 
@@ -334,8 +295,6 @@ class UESLCoach extends Enemy {
         this._clearBubble();
         super.destroy();
     }
-
-    // ─── helper ────────────────────────────────────────────────────────────────
 
     _findPlayer() {
         return this.gameEnv.gameObjects.find(obj => obj instanceof Player) ?? null;
