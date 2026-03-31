@@ -1,41 +1,52 @@
-// import the getUserData function
 import { getUserData } from './getUserData.js';
 
-// loads user data and updates the profile form fields
 export async function setUserData() {
     try {
-        // fetch all profile data at once
-        const [name, uid, email, age, totp, pfp, parent] = await getUserData();
+        const [name, uid, email, age, totp, pfp, parent_email, location, role, classes, auth_type] = await getUserData();
 
-        // update the name, uid, and email placeholders
-        const nameInput = document.getElementById("nameChangeInput");    // full name
-        const uidInput = document.getElementById("uidChangeInput");      // github id
-        const emailInput = document.getElementById("emailChangeInput");  // email
-        const ageInput = document.getElementById("ageChangeInput");      // age
-        const totpCheckbox = document.getElementById("totpChangeInput"); // 2FA toggle
-        const parentInput = document.getElementById("parentChangeInput"); // parent/guardian
-        //const sidebar = document.getElementById("sidebarWelcome");       // sidebar welcome message
-        //const sidebarPfp = document.getElementById("sidebarPfp");        // sidebar profile picture
+        const nameInput   = document.getElementById("nameChangeInput");
+        const uidInput    = document.getElementById("uidChangeInput");
+        const emailInput  = document.getElementById("emailChangeInput");
+        const ageInput    = document.getElementById("ageChangeInput");
+        const totpCheckbox = document.getElementById("totpChangeInput");
+        const parentInput = document.getElementById("parentChangeInput");
 
-        nameInput.value = name ? name : "Failed to load name. Are you logged in?";
-        uidInput.value = uid ? uid : "Failed to load UID. Are you logged in?";
-        emailInput.value = email ? email : "Failed to load email. Are you logged in?";
+        nameInput.value  = name  || "Failed to load. Are you logged in?";
+        uidInput.value   = uid   || "Failed to load. Are you logged in?";
+        emailInput.value = email || "Failed to load. Are you logged in?";
         if (ageInput) ageInput.value = age !== null ? age : "";
+
         totpCheckbox.checked = totp;
-        // Sync the toggle dot visual state
         const totpDot = document.querySelector(".dot-totp");
         if (totpDot && totp) totpDot.classList.add("translate-x-3");
 
-        // Show parent field and populate if user is a minor
+        // Show parent field if minor
         if (age !== null && age < 18) {
             const wrapper = document.getElementById("parentFieldWrapper");
             if (wrapper) wrapper.classList.remove("hidden");
-            if (parentInput && parent) parentInput.value = parent;
+            if (parentInput && parent_email) parentInput.value = parent_email;
         }
-        
-        //sidebar.innerHTML = 'Welcome,<br>' + name;
-        //sidebarPfp.src = pfp ? pfp : "{{site.baseurl}}/images/default.png"
+
+        // Populate Account Statistics
+        const statRole     = document.getElementById("stat-role");
+        const statAuth     = document.getElementById("stat-auth");
+        const statLocation = document.getElementById("stat-location");
+        const statClasses  = document.getElementById("stat-classes");
+
+        if (statRole) statRole.textContent = role || 'User';
+        if (statAuth) statAuth.textContent = auth_type || 'otp';
+        if (statLocation) statLocation.textContent = location || 'Unknown';
+        if (statClasses) {
+            if (classes.length > 0) {
+                statClasses.innerHTML = classes.map(c =>
+                    `<span class="stat-chip">${c}</span>`
+                ).join('');
+            } else {
+                statClasses.innerHTML = '<span style="color:#8b949e;font-size:0.85rem;">No classes enrolled</span>';
+            }
+        }
+
     } catch (error) {
-        console.error("error setting placeholders:", error.message);
+        console.error("error setting user data:", error.message);
     }
 }

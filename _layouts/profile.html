@@ -6,38 +6,88 @@ active_tab: profile
 
 <head>
     <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/aesthetihawk/shake.css">
+<style>
+  .profile-card {
+    background: #161b27;
+    border-color: rgba(255,255,255,0.07);
+  }
+  .uesl-input {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: #1e2535;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e6edf3;
+    font-family: inherit;
+    font-size: 0.93rem;
+    transition: border-color 0.2s;
+  }
+  .uesl-input:focus { border-color: #00d4ff; outline: none; }
+  .uesl-label { display: block; font-size: 0.82rem; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.06em; }
+  .uesl-btn {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #00d4ff, #0090b8);
+    color: #000;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .uesl-btn:hover { opacity: 0.88; transform: scale(1.02); }
+  .uesl-btn-disabled {
+    padding: 0.5rem 1.5rem;
+    background: #252d40;
+    color: #8b949e;
+    border: none;
+    cursor: not-allowed;
+  }
+  #saveChangesBtn:not(:disabled) {
+    background: linear-gradient(135deg, #00d4ff, #0090b8) !important;
+    color: #000 !important;
+    cursor: pointer !important;
+  }
+  /* Account stats card */
+  .stat-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2);
+    color: #00d4ff; border-radius: 20px; padding: 4px 12px;
+    font-size: 0.78rem; font-weight: 700;
+  }
+  /* Toggle: active state */
+  input[type=checkbox]:checked ~ .block { background: #00d4ff !important; }
+</style>
 </head>
 
 <form id="profileSettingsForm">
     <!-- Personal Information Section -->
-    <div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
-        <h2 class="text-xl font-semibold mb-6">Personal Information</h2>
+    <div class="rounded-lg p-6 mb-6 border profile-card">
+        <h2 class="text-xl font-semibold text-[#e6edf3] mb-6 text-[#e6edf3]">Personal Information</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Full Name -->
             <div>
-                <label for="nameChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Full
+                <label for="nameChangeInput" class="block text-sm font-medium uesl-label mb-1">Full
                     Name</label>
                 <input type="text" id="nameChangeInput" name="fullName"
-                    class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     value="" onchange="checkForChanges()" autocomplete="off">
             </div>
 
             <!-- User ID -->
             <div>
-                <label for="uidChangeInput" class="block text-sm font-medium text-gray-300 mb-1">User
+                <label for="uidChangeInput" class="block text-sm font-medium uesl-label mb-1">User
                     ID</label>
                 <input type="text" id="uidChangeInput" name="userId"
-                    class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     value="" onchange="checkForChanges()" autocomplete="off">
             </div>
 
             <!-- Email -->
             <div>
-                <label for="emailChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Email
+                <label for="emailChangeInput" class="block text-sm font-medium uesl-label mb-1">Email
                     Address</label>
                 <input type="email" id="emailChangeInput" name="new-email"
-                    class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     value="" onchange="checkForChanges()" autocomplete="off">
             </div>
 
@@ -46,46 +96,46 @@ active_tab: profile
                 <label for="totpChangeInput" class="flex items-center cursor-pointer">
                     <div class="relative">
                         <input type="checkbox" id="totpChangeInput" class="sr-only" onchange="checkForChanges()">
-                        <div class="block bg-neutral-600 w-14 h-8 rounded-full"></div>
+                        <div class="block bg-[#252d40] w-14 h-8 rounded-full"></div>
                         <div class="dot-totp absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform">
                         </div>
                     </div>
                     <div class="ml-3">
-                        <div class="text-sm font-medium text-gray-300">Two-Factor Authentication (2FA)</div>
-                        <div class="text-xs text-gray-500">Require a verification code on login</div>
+                        <div class="text-sm font-medium text-[#e6edf3]">Two-Factor Authentication (2FA)</div>
+                        <div class="text-xs text-[#8b949e]">Require a verification code on login</div>
                     </div>
                 </label>
             </div>
 
             <!-- Password Change -->
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-300 mb-1">New
+                <label for="password" class="block text-sm font-medium uesl-label mb-1">New
                     Password</label>
                 <input type="password" id="password" name="password"
-                    class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     placeholder="Enter new password" onchange="checkForChanges()" autocomplete="new-password">
             </div>
         </div>
     </div>
 
     <!-- Age / Parent Section -->
-    <div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
-        <h2 class="text-xl font-semibold mb-6">Personal Information</h2>
+    <div class="rounded-lg p-6 mb-6 border profile-card">
+        <h2 class="text-xl font-semibold text-[#e6edf3] mb-6 text-[#e6edf3]">Personal Information</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Age -->
             <div>
-                <label for="ageChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Age</label>
+                <label for="ageChangeInput" class="block text-sm font-medium uesl-label mb-1">Age</label>
                 <input type="number" id="ageChangeInput" name="age" min="1" max="120"
-                    class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     value="" onchange="checkForChanges(); toggleParentField();" autocomplete="off">
             </div>
 
             <!-- Parent / Guardian (shown only if minor) -->
             <div id="parentFieldWrapper" class="hidden">
-                <label for="parentChangeInput" class="block text-sm font-medium text-gray-300 mb-1">Parent / Guardian Name</label>
+                <label for="parentChangeInput" class="block text-sm font-medium uesl-label mb-1">Parent / Guardian Name</label>
                 <input type="text" id="parentChangeInput" name="parent"
-                    class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     value="" onchange="checkForChanges()" autocomplete="off">
             </div>
         </div>
@@ -104,63 +154,63 @@ active_tab: profile
     </script>
 
     <!-- Classes Section -->
-    <div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
+    <div class="rounded-lg p-6 mb-6 border profile-card">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Classes</h2>
+            <h2 class="text-xl font-semibold text-[#e6edf3]">Classes</h2>
             <button type="button" id="addClassBtn"
-                class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 focus:outline-none">
+                class="px-4 py-2 uesl-btn rounded-lg focus:outline-none">
                 Add Class
             </button>
         </div>
     
         <div id="classesContainer">
             <!-- Classes will be loaded here dynamically -->
-            <p class="text-gray-400 text-center py-4">Loading classes...</p>
+            <p class="text-[#8b949e] text-center py-4">Loading classes...</p>
         </div>
     </div>
 
-<div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
-    <h2 class="text-xl font-semibold mb-6">Group Information</h2>
+<div class="rounded-lg p-6 mb-6 border profile-card">
+    <h2 class="text-xl font-semibold text-[#e6edf3] mb-6 text-[#e6edf3]">Group Information</h2>
 
     <div id="springGroupInfo" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="col-span-1 md:col-span-2 text-center text-gray-400">
+        <div class="col-span-1 md:col-span-2 text-center text-[#8b949e]">
             Loading group information...
         </div>
     </div>
 </div>
 
-<div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
+<div class="rounded-lg p-6 mb-6 border profile-card">
     <div class="flex items-start justify-between gap-4 mb-4">
         <div>
-            <h2 class="text-xl font-semibold">Join a Group</h2>
+            <h2 class="text-xl font-semibold text-[#e6edf3]">Join a Group</h2>
         </div>
-        <div id="joinGroupStatus" class="text-sm text-gray-300"></div>
+        <div id="joinGroupStatus" class="text-sm text-[#e6edf3]"></div>
     </div>
 
     <div class="grid grid-cols-1 gap-4">
         <div>
-            <label for="groupSearchInput" class="block text-sm font-medium text-gray-300 mb-1">Search
+            <label for="groupSearchInput" class="block text-sm font-medium uesl-label mb-1">Search
                 Groups</label>
             <div class="flex gap-2">
                 <input id="groupSearchInput" type="text" placeholder="Enter a group name"
-                    class="flex-1 px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="flex-1 px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
                     autocomplete="off">
                 <button id="groupSearchBtn" type="button"
-                    class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 focus:outline-none">
+                    class="px-4 py-2 uesl-btn rounded-lg focus:outline-none">
                     Search
                 </button>
             </div>
         </div>
-        <div id="groupResultsList" class="bg-neutral-700 border border-gray-600 rounded-lg max-h-64 overflow-y-auto hidden">
+        <div id="groupResultsList" class="bg-[#1e2535] border border-[rgba(255,255,255,0.1)] rounded-lg max-h-64 overflow-y-auto hidden">
         </div>
     </div>
 </div>
 
-<div class="bg-neutral-800 rounded-lg shadow-md p-6 mb-6 border-neutral-700 border">
-    <h2 class="text-xl font-semibold mb-6">Select Your Persona</h2>
+<div class="rounded-lg p-6 mb-6 border profile-card">
+    <h2 class="text-xl font-semibold text-[#e6edf3] mb-6 text-[#e6edf3]">Select Your Persona</h2>
     
     <div id="personaSelectionContainer">
-        <p class="text-gray-400 text-center py-4">Loading personas...</p>
+        <p class="text-[#8b949e] text-center py-4">Loading personas...</p>
     </div>
 </div>
 
@@ -169,18 +219,18 @@ active_tab: profile
 
 <!-- Email Change OTP Modal -->
 <div id="emailOtpModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
-    <div class="bg-neutral-800 rounded-xl p-8 w-full max-w-sm border border-neutral-600 shadow-xl">
-        <h3 class="text-lg font-semibold text-gray-100 mb-2">Verify New Email</h3>
-        <p class="text-sm text-gray-400 mb-4">A verification code was sent to <span id="otpTargetEmail" class="text-indigo-400 font-medium"></span></p>
+    <div class="rounded-xl p-8 profile-card w-full max-w-sm border shadow-xl">
+        <h3 class="text-lg font-semibold text-[#e6edf3] mb-2">Verify New Email</h3>
+        <p class="text-sm text-[#8b949e] mb-4">A verification code was sent to <span id="otpTargetEmail" class="text-[#00d4ff] font-medium"></span></p>
         <input type="text" id="emailOtpInput" placeholder="6-digit code"
-            class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3 text-center text-xl tracking-widest"
+            class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e2535] text-[#e6edf3] focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3 text-center text-xl tracking-widest"
             maxlength="6" autocomplete="one-time-code">
-        <p id="emailOtpError" class="text-red-400 text-sm mb-3 hidden"></p>
+        <p id="emailOtpError" class="text-[#ff6b6b] text-sm mb-3 hidden"></p>
         <div class="flex gap-3">
             <button type="button" onclick="confirmEmailOtp()"
-                class="flex-1 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">Verify</button>
+                class="flex-1 px-4 py-2 uesl-btn rounded-lg transition-colors">Verify</button>
             <button type="button" onclick="cancelEmailOtp()"
-                class="flex-1 px-4 py-2 bg-neutral-600 text-gray-300 rounded-lg hover:bg-neutral-500 transition-colors">Cancel</button>
+                class="flex-1 px-4 py-2 bg-[#252d40] text-[#e6edf3] rounded-lg hover:bg-neutral-500 transition-colors">Cancel</button>
         </div>
     </div>
 </div>
@@ -223,7 +273,7 @@ active_tab: profile
             .then(response => {
                 // Handle authentication errors
                 if (response.status === 401) {
-                    springGroupInfo.innerHTML = `<p class="text-gray-400 col-span-2 text-center">Please sign in to view group information.</p>`;
+                    springGroupInfo.innerHTML = `<p class="text-[#8b949e] col-span-2 text-center">Please sign in to view group information.</p>`;
                     groupSearchInput.disabled = true;
                     return null; // Stop the chain
                 }
@@ -240,7 +290,7 @@ active_tab: profile
                 currentUid = personData.uid;
 
                 if (!currentPersonId || !currentUid) {
-                    springGroupInfo.innerHTML = `<p class="text-gray-400 col-span-2 text-center">Unable to verify user identity for group data.</p>`;
+                    springGroupInfo.innerHTML = `<p class="text-[#8b949e] col-span-2 text-center">Unable to verify user identity for group data.</p>`;
                     return null;
                 }
 
@@ -282,31 +332,31 @@ active_tab: profile
                 if (groups.length > 0) {
                     springGroupInfo.innerHTML = groups.map(group => `
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Group Name</label>
+                        <label class="block text-sm font-medium uesl-label mb-1">Group Name</label>
                         <input type="text" readonly
-                            class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 text-gray-300 focus:outline-none cursor-default"
+                            class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e2535] text-[#e6edf3] focus:outline-none cursor-default"
                             value="${group.name}">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Period</label>
+                        <label class="block text-sm font-medium uesl-label mb-1">Period</label>
                         <input type="text" readonly
-                            class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 text-gray-300 focus:outline-none cursor-default"
+                            class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e2535] text-[#e6edf3] focus:outline-none cursor-default"
                             value="${group.period}">
                     </div>
                     <div class="col-span-1 md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Members & GitHub IDs</label>
-                        <div class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 text-gray-300">
+                        <label class="block text-sm font-medium uesl-label mb-1">Members & GitHub IDs</label>
+                        <div class="w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e2535] text-[#e6edf3]">
                             ${group.members.map(member => `${member.name} (${member.uid})`).join(', ')}
                         </div>
                     </div>
                     <div class="col-span-1 md:col-span-2">
-                        <button type="button" class="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-600 transition-colors" onclick="leaveGroup('${group.id}', ${currentPersonId})">
+                        <button type="button" class="px-4 py-2 bg-[rgba(255,107,107,0.2)] text-[#ff6b6b] border border-[#ff6b6b] rounded-lg hover:bg-[rgba(255,107,107,0.35)] transition-colors" onclick="leaveGroup('${group.id}', ${currentPersonId})">
                             Leave Group
                         </button>
                     </div>
                     `).join('');
                 } else {
-                    springGroupInfo.innerHTML = `<p class="text-gray-400 col-span-2 text-center">No group assignments found.</p>`;
+                    springGroupInfo.innerHTML = `<p class="text-[#8b949e] col-span-2 text-center">No group assignments found.</p>`;
                 }
 
                 // Set up search functionality (uses cached personId)
@@ -314,7 +364,7 @@ active_tab: profile
             })
             .catch(error => {
                 console.error("Error in API chain:", error);
-                springGroupInfo.innerHTML = `<p class="text-red-400 col-span-2 text-center">Error loading group information.</p>`;
+                springGroupInfo.innerHTML = `<p class="text-[#ff6b6b] col-span-2 text-center">Error loading group information.</p>`;
                 groupSearchInput.disabled = true;
             });
 
@@ -339,7 +389,7 @@ active_tab: profile
                     const filtered = await searchResp.json();
 
                     if (filtered.length === 0) {
-                        groupResultsList.innerHTML = `<div class="px-4 py-3 text-gray-400 text-sm">No matching groups</div>`;
+                        groupResultsList.innerHTML = `<div class="px-4 py-3 text-[#8b949e] text-sm">No matching groups</div>`;
                         groupResultsList.classList.remove('hidden');
                         return;
                     }
@@ -347,23 +397,23 @@ active_tab: profile
                     groupResultsList.innerHTML = filtered.map(group => {
                         const label = `${group.name || 'Unnamed'} (Period ${group.period || 'N/A'})`;
                         const isAlreadyMember = userGroupIds.has(group.id);
-                        const disabledClass = isAlreadyMember ? 'opacity-50 cursor-not-allowed' : 'hover:bg-neutral-600 cursor-pointer';
+                        const disabledClass = isAlreadyMember ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252d40] cursor-pointer';
                         const membersText = group.members?.length > 0 
                             ? group.members.map(m => m.name).join(', ')
                             : 'No members';
                         return `
-                            <div data-group-id="${group.id}" class="px-4 py-3 border-b border-gray-600 last:border-b-0 text-gray-300 ${disabledClass} transition-colors"
+                            <div data-group-id="${group.id}" class="px-4 py-3 border-b border-[rgba(255,255,255,0.1)] last:border-b-0 text-[#e6edf3] ${disabledClass} transition-colors"
                                 onclick="joinGroupFromList('${group.id}', '${label}', ${isAlreadyMember})">
                                 <div class="font-medium">${label}</div>
-                                <div class="text-xs text-gray-500 mt-1">${membersText}</div>
-                                ${isAlreadyMember ? '<div class="text-xs text-gray-400 mt-1">Already a member</div>' : ''}
+                                <div class="text-xs text-[#8b949e] mt-1">${membersText}</div>
+                                ${isAlreadyMember ? '<div class="text-xs text-[#8b949e] mt-1">Already a member</div>' : ''}
                             </div>
                         `;
                     }).join('');
                     groupResultsList.classList.remove('hidden');
                 } catch (error) {
                     console.error('Search error:', error);
-                    groupResultsList.innerHTML = `<div class="px-4 py-3 text-red-400 text-sm">Search failed</div>`;
+                    groupResultsList.innerHTML = `<div class="px-4 py-3 text-[#ff6b6b] text-sm">Search failed</div>`;
                     groupResultsList.classList.remove('hidden');
                 }
             };
@@ -418,7 +468,7 @@ active_tab: profile
 
 <div class="flex justify-between items-center mb-8">
     <button id="saveChangesBtn" disabled
-        class="px-6 py-2 bg-neutral-300 text-gray-500 cursor-not-allowed rounded-lg transition-all duration-300"
+        class="px-6 py-2 uesl-btn-disabled rounded-lg transition-all duration-300"
         onclick="saveChanges()">
         Save Changes
     </button>
@@ -498,8 +548,8 @@ active_tab: profile
         } catch (error) {
             console.error('❌ Error loading personas:', error);
             container.innerHTML = `
-                <p class="text-red-400 text-center py-4">Error loading personas. Please try again later.</p>
-                <p class="text-gray-500 text-center text-sm">${error.message}</p>
+                <p class="text-[#ff6b6b] text-center py-4">Error loading personas. Please try again later.</p>
+                <p class="text-[#8b949e] text-center text-sm">${error.message}</p>
             `;
         }
     }
@@ -522,7 +572,7 @@ active_tab: profile
         
         if (allPersonas.length === 0) {
             container.innerHTML = `
-                <p class="text-gray-400 text-center py-4">No personas available.</p>
+                <p class="text-[#8b949e] text-center py-4">No personas available.</p>
             `;
             return;
         }
@@ -556,11 +606,11 @@ active_tab: profile
         
         container.innerHTML = `
             <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-100 mb-2">Build Your Persona Profile</h2>
-                <p class="text-gray-400">Select one persona from each category (${totalSelected}/4 selected)</p>
+                <h2 class="text-3xl font-bold text-[#e6edf3] mb-2">Build Your Persona Profile</h2>
+                <p class="text-[#8b949e]">Select one persona from each category (${totalSelected}/4 selected)</p>
                 <div class="mt-4 flex justify-center gap-2">
                     ${categoryOrder.map(cat => `
-                        <div class="w-3 h-3 rounded-full ${selectedPersonas[cat] ? 'bg-indigo-500' : 'bg-gray-700'}"></div>
+                        <div class="w-3 h-3 rounded-full ${selectedPersonas[cat] ? 'bg-[#00d4ff]' : 'bg-[#252d40]'}"></div>
                     `).join('')}
                 </div>
             </div>
@@ -583,11 +633,11 @@ active_tab: profile
                         <div class="mb-8" id="category-${category}">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
-                                    <h3 class="text-xl font-semibold text-gray-300 flex items-center gap-2">
+                                    <h3 class="text-xl font-semibold text-[#e6edf3] text-[#e6edf3] flex items-center gap-2">
                                         ${selectedInCategory ? '✓' : '○'} ${categoryLabels[category]}
                                         ${selectedInCategory ? '<span class="text-sm text-green-400 ml-2">(Currently selected)</span>' : ''}
                                     </h3>
-                                    <p class="text-sm text-gray-500">${categoryDescriptions[category]}</p>
+                                    <p class="text-sm text-[#8b949e]">${categoryDescriptions[category]}</p>
                                 </div>
                             </div>
                             
@@ -600,25 +650,25 @@ active_tab: profile
                                     return `
                                         <div 
                                             id="persona-card-${persona.id}"
-                                            class="flex flex-col p-4 ${isCurrentlySelected ? 'bg-indigo-900 border-indigo-400' : 'bg-neutral-800 hover:bg-neutral-700'} border ${isCurrentlySelected ? 'border-indigo-400' : 'border-gray-700 hover:border-indigo-500'} rounded-lg cursor-pointer transition-all group h-full relative"
+                                            class="flex flex-col p-4 ${isCurrentlySelected ? 'bg-indigo-900 border-[#00d4ff]' : 'bg-neutral-800 hover:bg-[#1e2535]'} border ${isCurrentlySelected ? 'border-[#00d4ff]' : 'border-[rgba(255,255,255,0.08)] hover:border-[#00d4ff]'} rounded-lg cursor-pointer transition-all group h-full relative"
                                             onclick="selectPersona(${persona.id}, '${category}')">
                                             
                                             <div class="loading-overlay hidden absolute inset-0 bg-black/70 rounded-lg flex items-center justify-center z-10">
-                                                <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <svg class="animate-spin h-8 w-8 text-[#00d4ff]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
                                             </div>
                                             
-                                            ${isCurrentlySelected ? '<div class="absolute top-2 right-2 bg-indigo-500 text-white rounded-full p-1"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>' : ''}
+                                            ${isCurrentlySelected ? '<div class="absolute top-2 right-2 bg-[#00d4ff] text-white rounded-full p-1"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>' : ''}
                                             
-                                            <h4 class="font-semibold ${isCurrentlySelected ? 'text-indigo-200' : 'text-gray-200 group-hover:text-indigo-300'} mb-2">
+                                            <h4 class="font-semibold ${isCurrentlySelected ? 'text-[#a5f3fc]' : 'text-[#e6edf3] group-hover:text-[#67e8f9]'} mb-2">
                                                 ${title}
                                             </h4>
-                                            <p class="text-sm text-gray-400 flex-1 line-clamp-3">${description}</p>
+                                            <p class="text-sm text-[#8b949e] flex-1 line-clamp-3">${description}</p>
                                             
                                             <div class="mt-3 flex justify-end">
-                                                <svg class="w-6 h-6 text-gray-600 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-6 h-6 text-gray-600 group-hover:text-[#00d4ff] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                                 </svg>
                                             </div>
@@ -656,12 +706,12 @@ active_tab: profile
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-8">
                     <div>
-                        <h2 class="text-3xl font-bold text-gray-100 mb-2">Your Persona Profile</h2>
-                        <p class="text-gray-400">These personas represent your personality and preferences</p>
+                        <h2 class="text-3xl font-bold text-[#e6edf3] mb-2">Your Persona Profile</h2>
+                        <p class="text-[#8b949e]">These personas represent your personality and preferences</p>
                     </div>
                     <button 
                         onclick="editProfile()"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition flex items-center gap-2">
+                        class="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg transition flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
@@ -683,7 +733,7 @@ active_tab: profile
                         const empathyMap = persona.empathy_map || {};
                         
                         return `
-                            <div class="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-2 border-indigo-500/50 rounded-xl p-6 hover:border-indigo-500 transition">
+                            <div class="bg-gradient-to-br from-[rgba(0,212,255,0.08)] to-[rgba(124,58,237,0.12)] border-2 border-[#00d4ff]/50 rounded-xl p-6 hover:border-[#00d4ff] transition">
                                 
                                 <div class="flex items-start gap-4 mb-4">
                                     <div class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
@@ -691,39 +741,39 @@ active_tab: profile
                                     </div>
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2 mb-1">
-                                            <span class="text-xs font-medium text-indigo-400 uppercase">${categoryLabels[category]}</span>
+                                            <span class="text-xs font-medium text-[#00d4ff] uppercase">${categoryLabels[category]}</span>
                                         </div>
-                                        <h3 class="text-xl font-bold text-gray-100">${title}</h3>
+                                        <h3 class="text-xl font-bold text-[#e6edf3]">${title}</h3>
                                     </div>
                                 </div>
                                 
-                                <p class="text-gray-300 text-sm leading-relaxed mb-4">${description}</p>
+                                <p class="text-[#e6edf3] text-sm leading-relaxed mb-4">${description}</p>
                                 
                                 ${empathyMap.says?.length || empathyMap.thinks?.length ? `
-                                    <div class="border-t border-gray-700 pt-4">
+                                    <div class="border-t border-[rgba(255,255,255,0.08)] pt-4">
                                         <div class="space-y-3">
                                             ${empathyMap.says?.[0] ? `
                                                 <div class="flex items-start gap-2">
                                                     <span class="text-blue-400 text-xs font-medium mt-0.5">💬</span>
-                                                    <p class="text-gray-400 text-xs italic flex-1">"${empathyMap.says[0]}"</p>
+                                                    <p class="text-[#8b949e] text-xs italic flex-1">"${empathyMap.says[0]}"</p>
                                                 </div>
                                             ` : ''}
                                             ${empathyMap.thinks?.[0] ? `
                                                 <div class="flex items-start gap-2">
                                                     <span class="text-purple-400 text-xs font-medium mt-0.5">💭</span>
-                                                    <p class="text-gray-400 text-xs flex-1">${empathyMap.thinks[0]}</p>
+                                                    <p class="text-[#8b949e] text-xs flex-1">${empathyMap.thinks[0]}</p>
                                                 </div>
                                             ` : ''}
                                             ${empathyMap.does?.[0] ? `
                                                 <div class="flex items-start gap-2">
                                                     <span class="text-green-400 text-xs font-medium mt-0.5">✋</span>
-                                                    <p class="text-gray-400 text-xs flex-1">${empathyMap.does[0]}</p>
+                                                    <p class="text-[#8b949e] text-xs flex-1">${empathyMap.does[0]}</p>
                                                 </div>
                                             ` : ''}
                                             ${empathyMap.feels?.[0] ? `
                                                 <div class="flex items-start gap-2">
                                                     <span class="text-pink-400 text-xs font-medium mt-0.5">❤️</span>
-                                                    <p class="text-gray-400 text-xs flex-1">${empathyMap.feels[0]}</p>
+                                                    <p class="text-[#8b949e] text-xs flex-1">${empathyMap.feels[0]}</p>
                                                 </div>
                                             ` : ''}
                                         </div>
@@ -819,16 +869,16 @@ active_tab: profile
                 if (existingError) existingError.remove();
                 
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message bg-red-900/30 border border-red-500 rounded-lg p-4 mb-4 flex items-start gap-3';
+                errorDiv.className = 'error-message bg-[rgba(255,107,107,0.1)] border border-[#ff6b6b] rounded-lg p-4 mb-4 flex items-start gap-3';
                 errorDiv.innerHTML = `
-                    <svg class="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-6 h-6 text-[#ff6b6b] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                     </svg>
                     <div class="flex-1">
-                        <h4 class="text-red-400 font-semibold mb-1">Selection Failed</h4>
-                        <p class="text-red-300 text-sm">${error.message}</p>
+                        <h4 class="text-[#ff6b6b] font-semibold mb-1">Selection Failed</h4>
+                        <p class="text-[rgba(255,150,150,1)] text-sm">${error.message}</p>
                     </div>
-                    <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300">
+                    <button onclick="this.parentElement.remove()" class="text-[#ff6b6b] hover:text-[rgba(255,150,150,1)]">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                         </svg>
@@ -1116,7 +1166,7 @@ active_tab: profile
     }
 
     // Check if form values have changed
-    function checkForChanges() {
+    window.checkForChanges = function checkForChanges() {
         const form = document.getElementById('profileSettingsForm');
         const inputs = form.querySelectorAll('input, select');
         const saveButton = document.getElementById('saveChangesBtn');
@@ -1149,11 +1199,11 @@ active_tab: profile
         if (formChanged) {
             saveButton.disabled = false;
             saveButton.classList.remove('bg-neutral-300', 'text-neutral-500', 'cursor-not-allowed');
-            saveButton.classList.add('bg-indigo-500', 'text-white', 'hover:bg-indigo-600');
+            saveButton.classList.add('bg-[#00d4ff]', 'text-white', 'hover:bg-[#0090b8]');
         } else {
             saveButton.disabled = true;
             saveButton.classList.add('bg-neutral-300', 'text-neutral-500', 'cursor-not-allowed');
-            saveButton.classList.remove('bg-indigo-500', 'text-white', 'hover:bg-indigo-600');
+            saveButton.classList.remove('bg-[#00d4ff]', 'text-white', 'hover:bg-[#0090b8]');
         }
     }
     
@@ -1181,7 +1231,7 @@ active_tab: profile
 
         if (!classes || classes.length === 0) {
             container.innerHTML = `
-                <p class="text-gray-400 text-center py-4">No classes added yet. Click "Add Class" to get started.</p>
+                <p class="text-[#8b949e] text-center py-4">No classes added yet. Click "Add Class" to get started.</p>
             `;
             return;
         }
@@ -1190,8 +1240,8 @@ active_tab: profile
             <div class="class-entry mb-4 p-4 border rounded-lg border-neutral-700" data-index="${index}">
                 <div class="flex flex-col md:flex-row md:space-x-4 mb-2">
                     <div class="flex-grow mb-2 md:mb-0">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Class Name</label>
-                        <select class="class-name w-full px-4 py-2 rounded-lg border border-gray-600 bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="updateClassInAPI(${index}, this.value)">
+                        <label class="block text-sm font-medium uesl-label mb-1">Class Name</label>
+                        <select class="class-name w-full px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] uesl-input focus:outline-none focus:ring-2 focus:ring-[#00d4ff]" onchange="updateClassInAPI(${index}, this.value)">
                             <option value="CSSE" ${classAbbr === 'CSSE' ? 'selected' : ''}>Computer Science and Software Engineering</option>
                             <option value="CSP" ${classAbbr === 'CSP' ? 'selected' : ''}>Computer Science Principles</option>
                             <option value="CSA" ${classAbbr === 'CSA' ? 'selected' : ''}>Computer Science A</option>
@@ -1526,7 +1576,7 @@ active_tab: profile
         const saveButton = document.getElementById('saveChangesBtn');
         saveButton.disabled = true;
         saveButton.classList.add('bg-neutral-300', 'text-neutral-500', 'cursor-not-allowed');
-        saveButton.classList.remove('bg-indigo-500', 'text-white', 'hover:bg-indigo-600');
+        saveButton.classList.remove('bg-[#00d4ff]', 'text-white', 'hover:bg-[#0090b8]');
 
         // show success message
         const originalButtonText = saveButton.innerHTML;
