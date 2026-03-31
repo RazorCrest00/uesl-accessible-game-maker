@@ -2628,7 +2628,7 @@
       if (profileLoaded) return;
       const pane = document.getElementById('sstab-pane-profile');
       const fr = document.createElement('iframe');
-      fr.src   = '/profile?embed=1';
+      fr.src   = '{{ site.baseurl }}/profile?embed=1';
       fr.title = 'UESL Profile';
       pane.appendChild(fr);
       profileLoaded = true;
