@@ -273,8 +273,8 @@ permalink: /gamebuilderv1-2
                     </div>
                     <div class="draw-toolbar">
                         <button id="toggle-walls-game" class="draw-btn">Show Walls (Game)</button>
-                        <button id="draw-barrier" class="draw-btn" onclick="if(window._gbSetDrawMode){window._gbSetDrawMode('barrier')}">Draw Collision Wall</button>
-                        <button id="draw-clear" class="draw-btn" onclick="if(window._gbClearWalls){window._gbClearWalls()}">Clear All Walls</button>
+                        <button id="draw-barrier" class="draw-btn">Draw Collision Wall</button>
+                        <button id="draw-clear" class="draw-btn">Clear All Walls</button>
                     </div>
                     <div id="drawn-barriers-list" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
                     <div id="walls-container"></div>
