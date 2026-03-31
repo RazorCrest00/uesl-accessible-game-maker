@@ -2270,8 +2270,8 @@
         contentHtml = `<img class="msg-img" src="${msg.image}" alt="photo">`;
       } else if (msg.type === 'game_invite' && msg.room_id) {
         const gmUrl = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
-          ? `http://localhost:4700/game-maker/?room=${msg.room_id}`
-          : `/game-maker/?room=${msg.room_id}`;
+          ? `http://localhost:4700/gamebuilderv1-2?room=${msg.room_id}&embed=0`
+          : `/gamebuilderv1-2?room=${msg.room_id}&embed=0`;
         const isMineInvite = String(msg.sender_uid) === String(myUid);
         contentHtml = `
           <div style="background:linear-gradient(135deg,#0a2a1a,#0e0e30);border:1.5px solid #00FF88;border-radius:12px;padding:12px 14px;min-width:200px;">
@@ -2543,8 +2543,8 @@
       }
       const inv = _pendingInvites[0];
       const gmUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? `http://localhost:4700/game-maker/?room=${inv.room_id}`
-        : `/game-maker/?room=${inv.room_id}`;
+        ? `http://localhost:4700/gamebuilderv1-2?room=${inv.room_id}&embed=0`
+        : `/gamebuilderv1-2?room=${inv.room_id}&embed=0`;
       document.getElementById('it-title').textContent = `${inv.sender_name || 'A friend'} wants to play with you!`;
       document.getElementById('it-sub').innerHTML    = `<strong>${esc(inv.game_name || 'A Game')}</strong> — join now before the invite expires`;
       document.getElementById('it-join-btn').href    = gmUrl;

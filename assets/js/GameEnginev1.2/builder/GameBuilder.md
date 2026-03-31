@@ -273,9 +273,10 @@ permalink: /gamebuilderv1-2
                     </div>
                     <div class="draw-toolbar">
                         <button id="toggle-walls-game" class="draw-btn">Show Walls (Game)</button>
-                        <button id="draw-barrier" class="draw-btn">Draw Collision Wall</button>
-                        <button id="draw-clear" class="draw-btn">Clear All Walls</button>
+                        <button id="draw-barrier" class="draw-btn" onclick="if(window._gbSetDrawMode){window._gbSetDrawMode('barrier')}">Draw Collision Wall</button>
+                        <button id="draw-clear" class="draw-btn" onclick="if(window._gbClearWalls){window._gbClearWalls()}">Clear All Walls</button>
                     </div>
+                    <div id="drawn-barriers-list" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
                     <div id="walls-container"></div>
                 </div>
                 <!-- ── SETTINGS ─────────────────────────────────────── -->
@@ -353,13 +354,24 @@ permalink: /gamebuilderv1-2
 </div>
 
 <!-- Multiplayer Modal -->
-<div id="gb-mp-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#0e1117;border:1px solid #3344aa;border-radius:16px;padding:28px 32px;min-width:320px;max-width:420px;color:#e2e8f0;font-family:sans-serif;">
-    <h3 style="margin:0 0 16px;color:#818cf8;">👥 Multiplayer</h3>
-    <div id="gb-mp-room-info" style="display:none;background:#1e293b;border-radius:8px;padding:12px;margin-bottom:14px;font-size:.9rem;">
+<div id="gb-mp-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;">
+  <div style="position:relative;background:#0e1117;border:1px solid #3344aa;border-radius:16px;padding:28px 32px;min-width:340px;max-width:440px;width:90%;color:#e2e8f0;font-family:sans-serif;">
+    <h3 style="margin:0 0 4px;color:#818cf8;">👥 Multiplayer</h3>
+    <p id="gb-mp-login-note" style="font-size:.78rem;color:#f59e0b;margin:0 0 12px;display:none;">⚠ Log in on the UESL hub to invite friends directly.</p>
+
+    <!-- Active room banner -->
+    <div id="gb-mp-room-info" style="display:none;background:#1e293b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.9rem;">
       Room: <strong id="gb-mp-room-code" style="color:#a78bfa;letter-spacing:.1em;"></strong>
-      <br><span style="font-size:.75rem;color:#64748b;">Share this code with a friend</span>
+      <br><span style="font-size:.75rem;color:#64748b;">Share this code with a friend — or invite below</span>
     </div>
+
+    <!-- Invite a friend (only shown when logged in) -->
+    <div id="gb-mp-friends-section" style="display:none;margin-bottom:14px;">
+      <div style="font-size:.8rem;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Invite a Friend</div>
+      <div id="gb-mp-friends-list" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;"></div>
+      <p id="gb-mp-no-friends" style="display:none;font-size:.8rem;color:#64748b;margin:6px 0 0;">No friends found. Add friends on the UESL hub first.</p>
+    </div>
+
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button id="gb-mp-create" style="padding:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;">🚀 Create Room</button>
       <div style="display:flex;gap:8px;">
@@ -701,6 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         overlayPrevW = rect.width || overlayPrevW;
         overlayPrevH = rect.height || overlayPrevH;
+
+        // Render overlay rects
         ui.drawOverlay.innerHTML = '';
         const frag = document.createDocumentFragment();
         ui.drawShapes.forEach((shape, idx) => {
@@ -712,15 +726,53 @@ document.addEventListener('DOMContentLoaded', () => {
             el.style.height = Math.max(0, shape.height) + 'px';
             el.style.background = shape.color || '#4466ff';
             el.style.opacity = shape.visible === false ? '0.2' : '0.7';
-            el.style.cursor = 'pointer';
-            el.title = `Wall ${idx+1} — click to edit`;
+            el.style.cursor = ui.drawState.mode ? 'crosshair' : 'pointer';
+            el.title = ui.drawState.mode ? '' : `Wall ${idx+1} — click to edit`;
             el.addEventListener('click', (e) => {
+                if (ui.drawState.mode) return; // don't open editor while drawing
                 e.stopPropagation();
                 showDrawnShapeEditor(shape, idx);
             });
             frag.appendChild(el);
         });
         ui.drawOverlay.appendChild(frag);
+
+        // Render sidebar barriers list
+        const listEl = document.getElementById('drawn-barriers-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        if (ui.drawShapes.length === 0) return;
+        ui.drawShapes.forEach((shape, idx) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 6px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:.78rem;';
+            row.innerHTML = `
+                <input type="color" value="${shape.color || '#4466ff'}" title="Change color" style="width:24px;height:20px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0;">
+                <span style="flex:1;color:#cbd5e1;">Wall ${idx+1}</span>
+                <label style="display:flex;align-items:center;gap:3px;color:#94a3b8;cursor:pointer;white-space:nowrap;">
+                    <input type="checkbox" ${shape.visible !== false ? 'checked' : ''} title="Visible in game"> Visible
+                </label>
+                <button title="Delete this wall" style="background:#7f1d1d;border:none;border-radius:5px;color:#fff;padding:2px 7px;cursor:pointer;font-size:.8rem;">🗑</button>
+            `;
+            const colorInput = row.querySelector('input[type=color]');
+            const visibleInput = row.querySelector('input[type=checkbox]');
+            const deleteBtn = row.querySelector('button');
+            colorInput.addEventListener('input', () => {
+                shape.color = colorInput.value;
+                renderDrawShapes();
+                syncFromControlsIfFreestyle();
+            });
+            visibleInput.addEventListener('change', () => {
+                shape.visible = visibleInput.checked;
+                renderDrawShapes();
+                syncFromControlsIfFreestyle();
+            });
+            deleteBtn.addEventListener('click', () => {
+                ui.drawShapes.splice(idx, 1);
+                renderDrawShapes();
+                syncFromControlsIfFreestyle();
+            });
+            listEl.appendChild(row);
+        });
     }
 
     function showDrawnShapeEditor(shape, idx) {
@@ -1127,9 +1179,9 @@ document.addEventListener('DOMContentLoaded', () => {
         [ui.bg, ui.pSprite, ui.pX, ui.pY, ui.pName, mv].forEach(el => { if (el) el.disabled = true; });
         if (ui.addWallBtn) ui.addWallBtn.disabled = true;
 
-        // Disable draw buttons by default (only enable in freestyle)
-        if (ui.drawBarrierBtn) ui.drawBarrierBtn.disabled = true;
-        if (ui.drawClearBtn) ui.drawClearBtn.disabled = true;
+        // Draw buttons always enabled — overlay drawing works at any step
+        if (ui.drawBarrierBtn) ui.drawBarrierBtn.disabled = false;
+        if (ui.drawClearBtn) ui.drawClearBtn.disabled = false;
 
         ui.walls.forEach(slot => {
             const fields = [slot.wX, slot.wY, slot.wW, slot.wH, slot.deleteBtn];
@@ -1195,10 +1247,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 [slot.wX, slot.wY, slot.wW, slot.wH].forEach(el => unlockField(el));
                 if (slot.deleteBtn) { slot.deleteBtn.disabled = false; slot.deleteBtn.style.display = ''; }
             });
-
-            // Enable draw buttons in freestyle mode
-            if (ui.drawBarrierBtn) ui.drawBarrierBtn.disabled = false;
-            if (ui.drawClearBtn) ui.drawClearBtn.disabled = false;
 
         }
 
@@ -2894,6 +2942,10 @@ function generateStepCode(currentStep) {
     setIndicator();
     updateStepUI();
     renderOverlay();
+
+    // Expose draw controls globally so onclick in HTML always works
+    window._gbSetDrawMode = setDrawMode;
+    window._gbClearWalls = () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); };
 });
 </script>
 
@@ -3030,12 +3082,29 @@ const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '
 function generateRoomCode() {
   return Math.random().toString(36).substr(2, 6).toUpperCase();
 }
-
 function mpStatus(msg) {
   const el = document.getElementById('gb-mp-status');
   if (el) el.textContent = msg;
 }
 
+// ── localStorage helpers (mirrors UESL hub) ─────────────────────────────────
+function _chatKey(uid1, uid2) {
+  return 'uesl_chat_v1__' + [String(uid1), String(uid2)].sort().join('__');
+}
+function _chatAppend(uid1, uid2, msg) {
+  try {
+    const key = _chatKey(uid1, uid2);
+    const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+    msgs.push(msg);
+    if (msgs.length > 500) msgs.splice(0, msgs.length - 500);
+    localStorage.setItem(key, JSON.stringify(msgs));
+  } catch (_) {}
+}
+function _friendsList(uid) {
+  try { return JSON.parse(localStorage.getItem('uesl_friends_v1_' + uid) || '[]'); } catch(_) { return []; }
+}
+
+// ── Socket connection ────────────────────────────────────────────────────────
 function connectSocket(room) {
   if (_socket) { _socket.disconnect(); }
   _socket = io(PYTHON_URI, { transports: ['websocket', 'polling'] });
@@ -3047,16 +3116,83 @@ function connectSocket(room) {
     if (data.room === room && data.code) {
       const editor = document.getElementById('code-editor');
       if (editor) { editor.value = data.code; editor.dispatchEvent(new Event('input')); }
-      mpStatus('📥 Received level from host — running…');
-      setTimeout(() => document.querySelector('[data-event="runInRunner"]')?.click(), 500);
+      mpStatus('📥 Received level from host — loading…');
+      setTimeout(() => document.getElementById('btn-code-play')?.click(), 600);
     }
+  });
+  _socket.on('peer_joined', () => {
+    const code = document.getElementById('code-editor')?.value || '';
+    _socket.emit('send_level', { room, code });
+    mpStatus('📤 Level sent to new player');
   });
   _socket.on('disconnect', () => mpStatus('Disconnected'));
   _socket.on('connect_error', () => mpStatus('⚠ Could not connect to server'));
 }
 
+// ── Create room & send invite via UESL localStorage chat ────────────────────
+function _createRoomAndInviteFriend(friendUid, friendName) {
+  const myUid  = sessionStorage.getItem('uesl_my_uid');
+  const myName = sessionStorage.getItem('uesl_my_name') || 'A friend';
+  if (!myUid) { mpStatus('⚠ Not logged in — log in on the UESL hub first'); return; }
+  _mpRoom = generateRoomCode();
+  document.getElementById('gb-mp-room-code').textContent = _mpRoom;
+  document.getElementById('gb-mp-room-info').style.display = 'block';
+  connectSocket(_mpRoom);
+  mpStatus('Room ' + _mpRoom + ' created — inviting ' + friendName + '…');
+  // Write game_invite message into shared localStorage chat slot
+  const invite = {
+    id: Date.now() + '_' + Math.random().toString(36).slice(2),
+    sender_uid:  String(myUid),
+    sender_name: myName,
+    type:        'game_invite',
+    room_id:     _mpRoom,
+    game_name:   'UESL Game Builder',
+    created_at:  new Date().toISOString()
+  };
+  _chatAppend(myUid, friendUid, invite);
+  mpStatus('✅ Invite sent to ' + friendName + ' — room: ' + _mpRoom);
+}
+
+// ── Populate friends list in modal ──────────────────────────────────────────
+function _renderFriendsList() {
+  const myUid = sessionStorage.getItem('uesl_my_uid');
+  const loginNote = document.getElementById('gb-mp-login-note');
+  const friendsSection = document.getElementById('gb-mp-friends-section');
+  const listEl = document.getElementById('gb-mp-friends-list');
+  const noFriendsEl = document.getElementById('gb-mp-no-friends');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  if (!myUid) {
+    if (loginNote) loginNote.style.display = 'block';
+    if (friendsSection) friendsSection.style.display = 'none';
+    return;
+  }
+  if (loginNote) loginNote.style.display = 'none';
+  if (friendsSection) friendsSection.style.display = 'block';
+  const friends = _friendsList(myUid);
+  if (!friends.length) {
+    if (noFriendsEl) noFriendsEl.style.display = 'block';
+    return;
+  }
+  if (noFriendsEl) noFriendsEl.style.display = 'none';
+  friends.forEach(f => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#1e293b;border-radius:8px;font-size:.85rem;';
+    row.innerHTML = `
+      <span style="color:#e2e8f0;">${f.name || f.uid}</span>
+      <button style="padding:4px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;">🎮 Invite</button>
+    `;
+    row.querySelector('button').addEventListener('click', () => {
+      _createRoomAndInviteFriend(f.uid, f.name || f.uid);
+    });
+    listEl.appendChild(row);
+  });
+}
+
+// ── Modal open/close ────────────────────────────────────────────────────────
 document.getElementById('gb-mp-btn')?.addEventListener('click', () => {
   document.getElementById('gb-mp-overlay').style.display = 'flex';
+  _renderFriendsList();
   // Auto-join if ?room= in URL
   const urlRoom = new URLSearchParams(location.search).get('room');
   if (urlRoom && !_mpRoom) {
@@ -3075,15 +3211,7 @@ document.getElementById('gb-mp-create')?.addEventListener('click', () => {
   document.getElementById('gb-mp-room-code').textContent = _mpRoom;
   document.getElementById('gb-mp-room-info').style.display = 'block';
   connectSocket(_mpRoom);
-  mpStatus('Room created. Share code: ' + _mpRoom);
-  // Broadcast current level code when someone joins
-  if (_socket) {
-    _socket.on('peer_joined', () => {
-      const code = document.getElementById('code-editor')?.value || '';
-      _socket.emit('send_level', { room: _mpRoom, code });
-      mpStatus('📤 Level sent to new player');
-    });
-  }
+  mpStatus('Room created — share code: ' + _mpRoom);
 });
 document.getElementById('gb-mp-join')?.addEventListener('click', () => {
   const code = document.getElementById('gb-mp-join-code')?.value.trim().toUpperCase();
