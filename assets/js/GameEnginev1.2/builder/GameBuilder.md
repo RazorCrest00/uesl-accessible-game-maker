@@ -344,6 +344,11 @@ permalink: /gamebuilderv1-2
                         <button id="gb-mp-btn" title="Multiplayer" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.85rem;">👥</button>
                     </div>
                 </div>
+                <!-- Multiplayer mode notice — shown when in a room -->
+                <div id="gb-mp-edit-banner" style="display:none;background:linear-gradient(90deg,#1e1b4b,#312e81);border:1px solid #4f46e5;border-radius:8px;padding:8px 14px;margin-bottom:6px;font-size:.82rem;color:#a5b4fc;align-items:center;gap:10px;">
+                  <span style="font-size:1rem;">🎮</span>
+                  <span>You are in <strong style="color:#c4b5fd;">multiplayer mode</strong>. Editing is disabled while playing. <a id="gb-mp-exit-edit" href="#" style="color:#818cf8;text-decoration:underline;">Exit multiplayer</a> to make changes.</span>
+                </div>
                 <div class="editor-container" id="editor-container">
                     <div id="highlight-layer" class="highlight-layer"></div>
                     <textarea id="code-editor" class="code-layer" spellcheck="false"></textarea>
@@ -1738,6 +1743,25 @@ function builder_code() {
                 }
             });
         } catch (_) {}
+        // Multiplayer: broadcast this player's position to partner every 50ms
+        try {
+            const _mpPosInterval = setInterval(() => {
+                const _s = window.__mpSocket, _r = window.__mpRoom;
+                if (!_s || !_r || !_s.connected) return;
+                const objs = Array.isArray(gameEnv?.gameObjects) ? gameEnv.gameObjects : [];
+                const player = objs.find(o => o?.constructor?.name === 'Player');
+                if (!player) return;
+                _s.emit('player_update', {
+                    room: _r,
+                    x: Math.round(player.position?.x || 0),
+                    y: Math.round(player.position?.y || 0),
+                    width: Math.round(player.width || 32),
+                    height: Math.round(player.height || 32),
+                });
+            }, 50);
+            window.__mpPosIntervals = window.__mpPosIntervals || [];
+            window.__mpPosIntervals.push(_mpPosInterval);
+        } catch (_) {}
         /* BUILDER_ONLY_END */`;
 }
 
@@ -2731,6 +2755,13 @@ function generateStepCode(currentStep) {
 
     /* SECTION: Runtime */
     function safeCodeToRun() {
+        // Multiplayer: if a level was received via socket, use it directly and bypass
+        // all staged/editor logic so syncControlsFromEditor can't interfere
+        if (typeof window.__mpInjectedCode === 'string' && window.__mpInjectedCode.length) {
+            const code = window.__mpInjectedCode;
+            window.__mpInjectedCode = null; // consume it
+            return /export\s+const\s+gameLevelClasses/.test(code) ? code : generateBaselineCode();
+        }
         const preferStaged = (typeof stagedStep !== 'undefined' && !['npc','walls'].includes(stagedStep));
         const preferred = (preferStaged && typeof stagedCode === 'string' && stagedCode.length) ? stagedCode : (ui.editor.value || '');
         const hasLevels = /export\s+const\s+gameLevelClasses/.test(preferred);
@@ -2781,6 +2812,10 @@ function generateStepCode(currentStep) {
             document.removeEventListener('keydown', runnerEscapeKeyHandler);
             runnerEscapeKeyHandler = null;
         }
+        // Clean up multiplayer overlay and position broadcast intervals
+        document.getElementById('gb-mp-remote-overlay')?.remove();
+        (window.__mpPosIntervals || []).forEach(id => clearInterval(id));
+        window.__mpPosIntervals = [];
     }
 
     async function runInRunner() {
@@ -2861,6 +2896,10 @@ function generateStepCode(currentStep) {
 
             runnerGameInstance = Game.main ? Game.main(environment) : Game(environment);
             runnerGameControl = runnerGameInstance?.gameControl || runnerGameInstance;
+            // If in a multiplayer room, create the remote player overlay
+            if (_mpRoom && _socket) {
+                _createRemoteOverlay();
+            }
         } finally {
             URL.revokeObjectURL(blobUrl);
         }
@@ -2880,6 +2919,10 @@ function generateStepCode(currentStep) {
             if (topRun) topRun.classList.remove('staged');
         } catch (_) {}
     }
+
+    // Expose runner globally so the multiplayer level_code handler can call it directly
+    window.__runInRunner = runInRunner;
+    window.__stopRunner  = stopRunner;
 
     if (ui.codePlayBtn) ui.codePlayBtn.addEventListener('click', runInRunner);
     if (ui.codeStopBtn) ui.codeStopBtn.addEventListener('click', stopRunner);
@@ -3124,6 +3167,60 @@ function stopVoice() {
   showVoiceStatus('off');
 }
 
+// ── Multiplayer editing lock ─────────────────────────────────────────────────
+function _enableMpMode() {
+  document.getElementById('gb-mp-edit-banner').style.display = 'flex';
+  const editor = document.getElementById('code-editor');
+  if (editor) { editor.readOnly = true; editor.style.opacity = '0.45'; editor.style.pointerEvents = 'none'; }
+  ['btn-code-apply', 'btn-export', 'btn-run'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = true; el.style.opacity = '0.35'; el.style.pointerEvents = 'none'; }
+  });
+}
+function _disableMpMode() {
+  document.getElementById('gb-mp-edit-banner').style.display = 'none';
+  const editor = document.getElementById('code-editor');
+  if (editor) { editor.readOnly = false; editor.style.opacity = ''; editor.style.pointerEvents = ''; }
+  ['btn-code-apply', 'btn-export', 'btn-run'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = false; el.style.opacity = ''; el.style.pointerEvents = ''; }
+  });
+}
+
+// ── Remote player overlay ────────────────────────────────────────────────────
+function _createRemoteOverlay() {
+  document.getElementById('gb-mp-remote-overlay')?.remove();
+  const gc = document.getElementById('game-container-builder');
+  if (!gc) return;
+  const overlay = document.createElement('canvas');
+  overlay.id = 'gb-mp-remote-overlay';
+  overlay.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:200;';
+  overlay.width = gc.offsetWidth || 800;
+  overlay.height = gc.offsetHeight || 580;
+  if (getComputedStyle(gc).position === 'static') gc.style.position = 'relative';
+  gc.appendChild(overlay);
+  const ctx = overlay.getContext('2d');
+  function _renderLoop() {
+    if (!document.getElementById('gb-mp-remote-overlay')) return;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    const pos = window.__mpPartnerPos;
+    if (pos) {
+      const w = pos.width || 32, h = pos.height || 32;
+      ctx.fillStyle = 'rgba(99,102,241,0.5)';
+      ctx.fillRect(pos.x, pos.y, w, h);
+      ctx.strokeStyle = '#818cf8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pos.x, pos.y, w, h);
+      ctx.fillStyle = '#c4b5fd';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Player 2', pos.x + w / 2, pos.y - 5);
+    }
+    requestAnimationFrame(_renderLoop);
+  }
+  _renderLoop();
+}
+
 // ── Multiplayer ──────────────────────────────────────────────────────────────
 let _socket = null;
 let _mpRoom  = null;
@@ -3205,6 +3302,13 @@ function connectSocket(room) {
   mpConnDot('Connecting…', '#f59e0b');
   mpStatus('Connecting to server…');
   _socket = io(PYTHON_URI, { transports: ['websocket', 'polling'] });
+  window.__mpSocket = _socket;
+  window.__mpRoom = room;
+
+  // Real-time partner position for the overlay renderer
+  _socket.on('partner_update', data => {
+    window.__mpPartnerPos = data;
+  });
 
   _socket.on('connect', () => {
     _socket.emit('join_room', { room });
@@ -3212,28 +3316,49 @@ function connectSocket(room) {
     mpStatus('✅ Connected — room ' + room);
   });
 
+  // room_info fires for the socket that just joined and tells them the player count
   _socket.on('room_info', data => {
-    mpRenderPlayers(data.count || 1);
-    if (data.count > 1) {
-      mpStatus('👋 Partner is here! You can play together now.', '#4ade80');
+    const count = data.count || 1;
+    mpRenderPlayers(count);
+    if (count > 1) {
+      // JOINER PATH: we are the second player — pull the level from the host
+      mpStatus('🔄 Partner found! Requesting level…', '#4ade80');
+      _socket.emit('request_level', { room });
     }
   });
 
+  // peer_joined fires for existing members when someone new joins (HOST receives this)
   _socket.on('peer_joined', data => {
-    const count = data.count || 2;
-    mpRenderPlayers(count);
-    mpStatus('🎮 A player joined! Sending level…', '#4ade80');
-    // Host auto-sends current level code to new player
-    const code = document.getElementById('code-editor')?.value || '';
-    _socket.emit('send_level', { room, code });
+    mpRenderPlayers(data.count || 2);
+    mpStatus('🎮 A player joined the room!', '#4ade80');
   });
 
+  // send_your_level fires on host when the joiner calls request_level
+  _socket.on('send_your_level', () => {
+    const code = document.getElementById('code-editor')?.value || '';
+    if (!code.trim()) { mpStatus('⚠ No level code to share yet — build something first!'); return; }
+    _socket.emit('send_level', { room, code });
+    mpStatus('📤 Level sent to partner!', '#4ade80');
+  });
+
+  // level_code fires on the joiner — bypass the editor input pipeline entirely
   _socket.on('level_code', data => {
-    if (data.room === room && data.code) {
-      const editor = document.getElementById('code-editor');
-      if (editor) { editor.value = data.code; editor.dispatchEvent(new Event('input')); }
+    if (data.code) {
       mpStatus('📥 Level received — launching…', '#a5f3fc');
-      setTimeout(() => document.getElementById('btn-code-play')?.click(), 700);
+      // Store the code for safeCodeToRun() to consume directly
+      window.__mpInjectedCode = data.code;
+      // Also set editor value so it's visible if the user looks at it
+      const editor = document.getElementById('code-editor');
+      if (editor) editor.value = data.code;
+      // Call the runner directly (exposed globally from DOMContentLoaded scope)
+      setTimeout(() => {
+        if (typeof window.__runInRunner === 'function') {
+          window.__runInRunner();
+        } else {
+          document.getElementById('btn-code-play')?.click();
+        }
+        mpStatus('🎮 Playing with partner — have fun!', '#4ade80');
+      }, 500);
     }
   });
 
@@ -3251,16 +3376,23 @@ function connectSocket(room) {
 
   _socket.on('connect_error', () => {
     mpConnDot('Connection failed', '#ef4444');
-    mpStatus('⚠ Could not reach server — check your connection');
+    mpStatus('⚠ Could not reach server — is the socket server running on port 8424?');
   });
 }
 
 function disconnectSocket() {
   if (_socket) { _socket.disconnect(); _socket = null; }
   _mpRoom = null;
+  window.__mpSocket = null;
+  window.__mpRoom = null;
+  window.__mpPartnerPos = null;
+  (window.__mpPosIntervals || []).forEach(id => clearInterval(id));
+  window.__mpPosIntervals = [];
+  document.getElementById('gb-mp-remote-overlay')?.remove();
   mpHideRoom();
   mpConnDot('Not connected', '#64748b');
   mpStatus('');
+  _disableMpMode();
 }
 
 // ── Create room & send invite via UESL localStorage chat ────────────────────
@@ -3342,6 +3474,7 @@ document.getElementById('gb-mp-create')?.addEventListener('click', () => {
   connectSocket(_mpRoom);
   mpShowRoom(_mpRoom);
   mpStatus('Room created — share the code with a friend!');
+  _enableMpMode();
 });
 
 document.getElementById('gb-mp-join')?.addEventListener('click', () => {
@@ -3351,6 +3484,7 @@ document.getElementById('gb-mp-join')?.addEventListener('click', () => {
   connectSocket(code);
   mpShowRoom(code);
   mpStatus('Joining room ' + code + '…');
+  _enableMpMode();
 });
 
 document.getElementById('gb-mp-copy-btn')?.addEventListener('click', () => {
@@ -3377,9 +3511,16 @@ document.getElementById('gb-mp-leave')?.addEventListener('click', () => {
   document.getElementById('gb-mp-overlay').style.display = 'none';
 });
 
+// "Exit multiplayer" link inside the editing-lock banner
+document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  disconnectSocket();
+  document.getElementById('gb-mp-overlay').style.display = 'none';
+});
+
 // Auto-join room from URL on page load
 (function() {
   const urlRoom = new URLSearchParams(location.search).get('room');
-  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom); mpShowRoom(urlRoom); }
+  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom); mpShowRoom(urlRoom); _enableMpMode(); }
 })();
 </script>
