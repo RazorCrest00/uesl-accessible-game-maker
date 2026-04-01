@@ -3071,7 +3071,7 @@ function generateStepCode(currentStep) {
         } catch (_) {}
     }
 
-    // Expose runner globally so the multiplayer level_code handler can call it directly
+    // Expose runner globally so the multiplayer game_data handler can call it directly
     window.__runInRunner = runInRunner;
     window.__stopRunner  = stopRunner;
 
@@ -3448,13 +3448,17 @@ function _friendsList(uid) {
 }
 
 // ── Socket connection ────────────────────────────────────────────────────────
-function connectSocket(room) {
+// isHost=true  → host path: emits create_room, waits for partner_joined
+// isHost=false → guest path: emits join_room_event, receives game_data
+function connectSocket(room, isHost, gameData, gameName) {
   if (_socket) { _socket.disconnect(); }
   mpConnDot('Connecting…', '#f59e0b');
   mpStatus('Connecting to server…');
   _socket = io(PYTHON_URI, { transports: ['websocket', 'polling'] });
   window.__mpSocket = _socket;
   window.__mpRoom = room;
+  const myUid  = sessionStorage.getItem('uesl_my_uid')  || '';
+  const myName = sessionStorage.getItem('uesl_my_name') || (isHost ? 'Host' : 'Player 2');
 
   // Real-time partner position for the overlay renderer
   _socket.on('partner_update', data => {
@@ -3462,62 +3466,62 @@ function connectSocket(room) {
   });
 
   _socket.on('connect', () => {
-    _socket.emit('join_room', { room });
     mpConnDot('In room ' + room, '#22c55e');
-    mpStatus('✅ Connected — room ' + room);
-  });
-
-  // room_info fires for the socket that just joined and tells them the player count
-  _socket.on('room_info', data => {
-    const count = data.count || 1;
-    mpRenderPlayers(count);
-    if (count > 1) {
-      // JOINER PATH: we are the second player — pull the level from the host
-      mpStatus('🔄 Partner found! Requesting level…', '#4ade80');
-      _socket.emit('request_level', { room });
+    if (isHost) {
+      // HOST: create the room and attach current level code
+      const code = gameData || document.getElementById('code-editor')?.value || '';
+      _socket.emit('create_room', {
+        room_id:   room,
+        uid:       myUid,
+        name:      myName,
+        game_data: code,
+        game_name: gameName || 'UESL Game Builder',
+      });
+    } else {
+      // GUEST: join the existing room by code
+      _socket.emit('join_room_event', { room_id: room, uid: myUid, name: myName });
     }
   });
 
-  // peer_joined fires for existing members when someone new joins (HOST receives this)
-  _socket.on('peer_joined', data => {
-    mpRenderPlayers(data.count || 2);
-    mpStatus('🎮 A player joined the room!', '#4ade80');
+  // HOST: room confirmed by server
+  _socket.on('room_created', ({ room_id }) => {
+    mpStatus('✅ Room ' + room_id + ' ready — share the code with a friend!', '#4ade80');
+    mpRenderPlayers(1);
   });
 
-  // send_your_level fires on host when the joiner calls request_level
-  _socket.on('send_your_level', () => {
-    const code = document.getElementById('code-editor')?.value || '';
-    if (!code.trim()) { mpStatus('⚠ No level code to share yet — build something first!'); return; }
-    _socket.emit('send_level', { room, code });
-    mpStatus('📤 Level sent to partner!', '#4ade80');
+  // HOST: a guest joined
+  _socket.on('partner_joined', ({ name }) => {
+    mpStatus('🎮 ' + (name || 'A player') + ' joined the room!', '#4ade80');
+    mpRenderPlayers(2);
   });
 
-  // level_code fires on the joiner — bypass the editor input pipeline entirely
-  _socket.on('level_code', data => {
-    if (data.code) {
-      mpStatus('📥 Level received — launching…', '#a5f3fc');
-      // Store the code for safeCodeToRun() to consume directly
-      window.__mpInjectedCode = data.code;
-      // Also set editor value so it's visible if the user looks at it
+  // GUEST: receive host's game data and launch it
+  _socket.on('game_data', ({ game_data, game_name, host_name }) => {
+    if (game_data) {
+      mpStatus('📥 Level received from ' + (host_name || 'host') + ' — launching…', '#a5f3fc');
+      window.__mpInjectedCode = game_data;
       const editor = document.getElementById('code-editor');
-      if (editor) editor.value = data.code;
-      // Call the runner directly (exposed globally from DOMContentLoaded scope)
+      if (editor) editor.value = game_data;
       setTimeout(() => {
         if (typeof window.__runInRunner === 'function') {
           window.__runInRunner();
         } else {
           document.getElementById('btn-code-play')?.click();
         }
-        mpStatus('🎮 Playing with partner — have fun!', '#4ade80');
+        mpStatus('🎮 Playing "' + (game_name || 'Game') + '" — have fun!', '#4ade80');
       }, 500);
     }
   });
 
-  _socket.on('peer_left', data => {
-    const count = data.count || 1;
-    mpRenderPlayers(count);
-    mpStatus('⚠ A player left the room.', '#f59e0b');
-    mpConnDot('In room ' + room + ' (' + count + ' player' + (count !== 1 ? 's' : '') + ')', '#22c55e');
+  _socket.on('join_error', ({ msg }) => {
+    mpStatus('⚠ ' + msg, '#ef4444');
+    mpConnDot('Error', '#ef4444');
+  });
+
+  _socket.on('partner_left', () => {
+    mpRenderPlayers(1);
+    mpStatus('⚠ Your partner left the room.', '#f59e0b');
+    mpConnDot('In room ' + room + ' (1 player)', '#22c55e');
   });
 
   _socket.on('disconnect', () => {
@@ -3552,7 +3556,8 @@ function _createRoomAndInviteFriend(friendUid, friendName) {
   const myName = sessionStorage.getItem('uesl_my_name') || 'A friend';
   if (!myUid) { mpStatus('⚠ Not logged in — log in on the UESL hub first'); return; }
   _mpRoom = generateRoomCode();
-  connectSocket(_mpRoom);
+  const code = document.getElementById('code-editor')?.value || '';
+  connectSocket(_mpRoom, true, code, 'UESL Game Builder');
   mpShowRoom(_mpRoom);
   mpStatus('Room ' + _mpRoom + ' created — inviting ' + friendName + '…');
   const invite = {
@@ -3606,11 +3611,11 @@ function _renderFriendsList() {
 document.getElementById('gb-mp-btn')?.addEventListener('click', () => {
   document.getElementById('gb-mp-overlay').style.display = 'flex';
   if (!_mpRoom) _renderFriendsList();
-  // Auto-join if ?room= in URL
+  // Auto-join if ?room= in URL (guest path)
   const urlRoom = new URLSearchParams(location.search).get('room');
   if (urlRoom && !_mpRoom) {
     _mpRoom = urlRoom;
-    connectSocket(urlRoom);
+    connectSocket(urlRoom, false);
     mpShowRoom(urlRoom);
     mpStatus('Joining room ' + urlRoom + '…');
   }
@@ -3622,7 +3627,8 @@ document.getElementById('gb-mp-close')?.addEventListener('click', () => {
 
 document.getElementById('gb-mp-create')?.addEventListener('click', () => {
   _mpRoom = generateRoomCode();
-  connectSocket(_mpRoom);
+  const code = document.getElementById('code-editor')?.value || '';
+  connectSocket(_mpRoom, true, code, 'UESL Game Builder');
   mpShowRoom(_mpRoom);
   mpStatus('Room created — share the code with a friend!');
   _enableMpMode();
@@ -3632,7 +3638,7 @@ document.getElementById('gb-mp-join')?.addEventListener('click', () => {
   const code = document.getElementById('gb-mp-join-code')?.value.trim().toUpperCase();
   if (!code || code.length < 4) { mpStatus('⚠ Enter a valid room code'); return; }
   _mpRoom = code;
-  connectSocket(code);
+  connectSocket(code, false);
   mpShowRoom(code);
   mpStatus('Joining room ' + code + '…');
   _enableMpMode();
@@ -3651,10 +3657,11 @@ document.getElementById('gb-mp-copy-btn')?.addEventListener('click', () => {
 });
 
 document.getElementById('gb-mp-send-level')?.addEventListener('click', () => {
-  if (!_socket || !_mpRoom) { mpStatus('⚠ Not connected to a room'); return; }
+  if (!_mpRoom) { mpStatus('⚠ Not connected to a room'); return; }
+  // Re-create the room with updated code so the guest receives the latest level
   const code = document.getElementById('code-editor')?.value || '';
-  _socket.emit('send_level', { room: _mpRoom, code });
-  mpStatus('📤 Level sent to all players in room!', '#4ade80');
+  connectSocket(_mpRoom, true, code, 'UESL Game Builder');
+  mpStatus('📤 Updating level for partner…', '#4ade80');
 });
 
 document.getElementById('gb-mp-leave')?.addEventListener('click', () => {
@@ -3669,9 +3676,9 @@ document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
   document.getElementById('gb-mp-overlay').style.display = 'none';
 });
 
-// Auto-join room from URL on page load
+// Auto-join room from URL on page load (guest path)
 (function() {
   const urlRoom = new URLSearchParams(location.search).get('room');
-  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom); mpShowRoom(urlRoom); _enableMpMode(); }
+  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom, false); mpShowRoom(urlRoom); _enableMpMode(); }
 })();
 </script>
