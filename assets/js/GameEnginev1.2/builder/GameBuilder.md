@@ -3061,14 +3061,24 @@ function initVoice() {
     showVoiceStatus('"' + transcript + '"');
     const cmd = parseVoiceCommand(transcript);
     if (!cmd) return;
+    // Map arrow key names to both arrow keyCodes and WASD keyCodes
+    const KEY_MAP = {
+      ArrowLeft:  [{ key: 'ArrowLeft', keyCode: 37 }, { key: 'a', keyCode: 65 }],
+      ArrowRight: [{ key: 'ArrowRight', keyCode: 39 }, { key: 'd', keyCode: 68 }],
+      ArrowUp:    [{ key: 'ArrowUp', keyCode: 38 }, { key: 'w', keyCode: 87 }],
+      ArrowDown:  [{ key: 'ArrowDown', keyCode: 40 }, { key: 's', keyCode: 83 }],
+    };
+    const fireKey = (type, keyInfo) => {
+      document.dispatchEvent(new KeyboardEvent(type, { key: keyInfo.key, keyCode: keyInfo.keyCode, which: keyInfo.keyCode, bubbles: true, cancelable: true }));
+    };
     if (cmd.stop) {
-      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft', bubbles: true }));
-      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true }));
+      Object.values(KEY_MAP).flat().forEach(k => fireKey('keyup', k));
       return;
     }
-    // hold key for ~blocks * 180ms
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: cmd.dir, bubbles: true }));
-    setTimeout(() => document.dispatchEvent(new KeyboardEvent('keyup', { key: cmd.dir, bubbles: true })), cmd.blocks * 180);
+    // hold key for ~blocks * 180ms, firing both Arrow and WASD keyCodes
+    const keys = KEY_MAP[cmd.dir] || [];
+    keys.forEach(k => fireKey('keydown', k));
+    setTimeout(() => keys.forEach(k => fireKey('keyup', k)), cmd.blocks * 180);
   };
   _voiceRecog.start();
 }
