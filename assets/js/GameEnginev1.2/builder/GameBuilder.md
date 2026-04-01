@@ -433,7 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bg: {
             desert: { src: "/images/gamify/desert.png", h: 580, w: 1038 },
             alien: { src: "/images/gamebuilder/bg/alien_planet.jpg", h: 600, w: 1000 },
-            skykingdom: { src: "/images/gamebuilder/bg/clouds.jpg", h: 720, w: 1280 }
+            skykingdom: { src: "/images/gamebuilder/bg/clouds.jpg", h: 720, w: 1280 },
+            maze: { type: 'maze', h: 600, w: 900 }
         },
         sprites: {
             tux: { src: "/images/gamify/tux.png", h:256, w:352, rows:8, cols:11 },
@@ -559,6 +560,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const opt = document.createElement('option'); opt.value = key; opt.textContent = name; ui.bg.appendChild(opt);
                 }
             }
+        }
+
+        // Add procedural backgrounds (not image-file based) after server scan
+        if (ui.bg && !Array.from(ui.bg.options).some(o => o.value === 'maze')) {
+            const mazeOpt = document.createElement('option');
+            mazeOpt.value = 'maze'; mazeOpt.textContent = 'Maze';
+            ui.bg.appendChild(mazeOpt);
         }
 
         dedupSelectOptions(ui.bg);
@@ -1566,12 +1574,155 @@ function barrier_code(barrierData) {
 }
 
 /**
+ * Generate a maze using recursive-backtracker DFS, render it to a canvas data URL,
+ * and return barrier objects that match each wall segment.
+ *
+ * @param {number} canvasW - Canvas pixel width
+ * @param {number} canvasH - Canvas pixel height
+ * @returns {Object} { dataURL: string, barriers: Array<{x,y,width,height}> }
+ */
+function maze_generate(canvasW = 900, canvasH = 600) {
+    // 9×6 grid → ~40 barriers (vs 18×12 → ~190), wide corridors, fast code generation
+    const COLS = 9;
+    const ROWS = 6;
+    const cellW = canvasW / COLS;   // 100px per cell
+    const cellH = canvasH / ROWS;   // 100px per cell
+    const WALL = 10;                // wall thickness in px
+
+    const visited = Array.from({ length: ROWS }, () => new Array(COLS).fill(false));
+    const walls   = Array.from({ length: ROWS }, () =>
+        Array.from({ length: COLS }, () => ({ N: true, E: true, S: true, W: true }))
+    );
+
+    // Iterative backtracker (avoids call-stack issues on any grid size)
+    const stack = [[0, 0]];
+    visited[0][0] = true;
+    const DIRS = [
+        { dr: -1, dc: 0, to: 'N', from: 'S' },
+        { dr:  0, dc: 1, to: 'E', from: 'W' },
+        { dr:  1, dc: 0, to: 'S', from: 'N' },
+        { dr:  0, dc:-1, to: 'W', from: 'E' },
+    ];
+    while (stack.length) {
+        const [r, c] = stack[stack.length - 1];
+        const unvisited = DIRS
+            .map(d => ({ ...d, nr: r + d.dr, nc: c + d.dc }))
+            .filter(d => d.nr >= 0 && d.nr < ROWS && d.nc >= 0 && d.nc < COLS && !visited[d.nr][d.nc]);
+        if (!unvisited.length) { stack.pop(); continue; }
+        const { to, from, nr, nc } = unvisited[Math.floor(Math.random() * unvisited.length)];
+        walls[r][c][to] = false;
+        walls[nr][nc][from] = false;
+        visited[nr][nc] = true;
+        stack.push([nr, nc]);
+    }
+
+    // --- Render maze ---
+    const oc = document.createElement('canvas');
+    oc.width = canvasW; oc.height = canvasH;
+    const ctx = oc.getContext('2d');
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    ctx.fillStyle = '#e8d5b0';
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            // Cell interior
+            ctx.fillRect(c * cellW + WALL, r * cellH + WALL, cellW - WALL, cellH - WALL);
+            // Open east passage
+            if (!walls[r][c].E && c + 1 < COLS)
+                ctx.fillRect(c * cellW + cellW - WALL, r * cellH + WALL, WALL * 2, cellH - WALL);
+            // Open south passage
+            if (!walls[r][c].S && r + 1 < ROWS)
+                ctx.fillRect(c * cellW + WALL, r * cellH + cellH - WALL, cellW - WALL, WALL * 2);
+        }
+    }
+    ctx.strokeStyle = '#8b6914';
+    ctx.lineWidth = WALL;
+    ctx.strokeRect(WALL / 2, WALL / 2, canvasW - WALL, canvasH - WALL);
+
+    const dataURL = oc.toDataURL('image/png');
+
+    // --- Barriers: merge collinear runs to minimise barrier count ---
+    const barriers = [];
+    let bIdx = 0;
+    function addBarrier(px, py, pw, ph) {
+        barriers.push({
+            varName: `mw${bIdx}`,
+            id: `mw-${bIdx++}`,
+            x: px / canvasW,
+            y: py / canvasH,
+            width:  pw / canvasW,
+            height: ph / canvasH,
+            visible: false,
+        });
+    }
+
+    // 4 outer edges
+    addBarrier(0, 0, canvasW, WALL);
+    addBarrier(0, canvasH - WALL, canvasW, WALL);
+    addBarrier(0, 0, WALL, canvasH);
+    addBarrier(canvasW - WALL, 0, WALL, canvasH);
+
+    // Horizontal interior walls — merge consecutive south-wall segments per row
+    for (let r = 0; r < ROWS - 1; r++) {
+        let start = -1;
+        for (let c = 0; c <= COLS; c++) {
+            const hasWall = c < COLS && walls[r][c].S;
+            if (hasWall && start === -1) { start = c; }
+            else if (!hasWall && start !== -1) {
+                addBarrier(start * cellW, (r + 1) * cellH - WALL / 2, (c - start) * cellW, WALL);
+                start = -1;
+            }
+        }
+    }
+
+    // Vertical interior walls — merge consecutive east-wall segments per column
+    for (let c = 0; c < COLS - 1; c++) {
+        let start = -1;
+        for (let r = 0; r <= ROWS; r++) {
+            const hasWall = r < ROWS && walls[r][c].E;
+            if (hasWall && start === -1) { start = r; }
+            else if (!hasWall && start !== -1) {
+                addBarrier((c + 1) * cellW - WALL / 2, start * cellH, WALL, (r - start) * cellH);
+                start = -1;
+            }
+        }
+    }
+
+    return { dataURL, barriers };
+}
+
+/**
  * Generate background code with defs and classes
  * @param {Object} bg - Background asset object
  * @returns {Object} { defs: array, classes: array }
  */
 function background_generate(bg) {
     if (!bg) return { defs: [], classes: [] };
+
+    // Special case: procedural maze background
+    if (bg.type === 'maze') {
+        const canvasW = parseInt(bg.w) || 900;
+        const canvasH = parseInt(bg.h) || 600;
+        const { dataURL, barriers } = maze_generate(canvasW, canvasH);
+
+        // Re-use existing bg_extract/bg_code pipeline — it already handles data: URLs
+        // correctly by wrapping them in single-quoted string literals.
+        const mazeBg = { src: dataURL, h: canvasH, w: canvasW };
+        const bgx = bg_extract(mazeBg, 'maze_bg');
+        const bgCode = bg_code(bgx, 'mazeData');
+        const defs = [bgCode.def];
+        const classes = [bgCode.classEntry];
+
+        for (const b of barriers) {
+            const bc = barrier_code(b);
+            defs.push(bc.def);
+            classes.push(bc.classEntry);
+        }
+
+        return { defs, classes };
+    }
 
     const bgx = bg_extract(bg);
     const bgCode = bg_code(bgx);
