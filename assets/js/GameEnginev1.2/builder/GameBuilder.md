@@ -354,33 +354,69 @@ permalink: /gamebuilderv1-2
 </div>
 
 <!-- Multiplayer Modal -->
-<div id="gb-mp-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;">
-  <div style="position:relative;background:#0e1117;border:1px solid #3344aa;border-radius:16px;padding:28px 32px;min-width:340px;max-width:440px;width:90%;color:#e2e8f0;font-family:sans-serif;">
-    <h3 style="margin:0 0 4px;color:#818cf8;">👥 Multiplayer</h3>
-    <p id="gb-mp-login-note" style="font-size:.78rem;color:#f59e0b;margin:0 0 12px;display:none;">⚠ Log in on the UESL hub to invite friends directly.</p>
+<div id="gb-mp-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="position:relative;background:linear-gradient(160deg,#0f1729 0%,#0e1117 100%);border:1px solid #3344aa;border-radius:18px;padding:28px 28px 24px;min-width:340px;max-width:420px;width:90%;color:#e2e8f0;font-family:sans-serif;box-shadow:0 24px 60px rgba(0,0,0,.7);">
+    <button id="gb-mp-close" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,.07);border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;">×</button>
 
-    <!-- Active room banner -->
-    <div id="gb-mp-room-info" style="display:none;background:#1e293b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.9rem;">
-      Room: <strong id="gb-mp-room-code" style="color:#a78bfa;letter-spacing:.1em;"></strong>
-      <br><span style="font-size:.75rem;color:#64748b;">Share this code with a friend — or invite below</span>
-    </div>
-
-    <!-- Invite a friend (only shown when logged in) -->
-    <div id="gb-mp-friends-section" style="display:none;margin-bottom:14px;">
-      <div style="font-size:.8rem;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Invite a Friend</div>
-      <div id="gb-mp-friends-list" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;"></div>
-      <p id="gb-mp-no-friends" style="display:none;font-size:.8rem;color:#64748b;margin:6px 0 0;">No friends found. Add friends on the UESL hub first.</p>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="gb-mp-create" style="padding:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;">🚀 Create Room</button>
-      <div style="display:flex;gap:8px;">
-        <input id="gb-mp-join-code" placeholder="Enter room code" style="flex:1;padding:8px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:.9rem;">
-        <button id="gb-mp-join" style="padding:8px 14px;background:#1e293b;border:1px solid #6366f1;border-radius:8px;color:#818cf8;cursor:pointer;font-weight:600;">Join</button>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+      <div style="width:38px;height:38px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">👥</div>
+      <div>
+        <h3 style="margin:0;color:#c4b5fd;font-size:1.05rem;">Multiplayer</h3>
+        <div id="gb-mp-conn-dot" style="font-size:.72rem;color:#64748b;">● Not connected</div>
       </div>
     </div>
-    <div id="gb-mp-status" style="margin-top:12px;font-size:.8rem;color:#64748b;min-height:18px;"></div>
-    <button id="gb-mp-close" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:1.4rem;cursor:pointer;">×</button>
+
+    <!-- Setup panel (shown when not in a room) -->
+    <div id="gb-mp-setup">
+      <button id="gb-mp-create" style="width:100%;padding:11px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;letter-spacing:.02em;transition:opacity .15s;">🚀 Create Room</button>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <div style="flex:1;height:1px;background:#1e293b;"></div>
+        <span style="font-size:.75rem;color:#475569;">or join with a code</span>
+        <div style="flex:1;height:1px;background:#1e293b;"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="gb-mp-join-code" placeholder="Room code (e.g. AB12CD)" style="flex:1;padding:9px 12px;background:#1a2035;border:1px solid #2d3a55;border-radius:9px;color:#e2e8f0;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase;outline:none;">
+        <button id="gb-mp-join" style="padding:9px 16px;background:#1a2035;border:1px solid #6366f1;border-radius:9px;color:#818cf8;cursor:pointer;font-weight:700;white-space:nowrap;">Join →</button>
+      </div>
+    </div>
+
+    <!-- Active room panel (shown when in a room) -->
+    <div id="gb-mp-room-active" style="display:none;">
+      <!-- Room code card -->
+      <div style="background:#1a2035;border:1px solid #2d3a55;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Room Code</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span id="gb-mp-room-code" style="font-size:1.4rem;font-weight:800;color:#a78bfa;letter-spacing:.18em;font-family:monospace;"></span>
+          <button id="gb-mp-copy-btn" style="padding:5px 12px;background:#312e81;border:1px solid #4f46e5;border-radius:7px;color:#a5b4fc;font-size:.78rem;cursor:pointer;">📋 Copy</button>
+        </div>
+        <div style="font-size:.73rem;color:#475569;margin-top:5px;">Share this code — your partner enters it to join</div>
+      </div>
+
+      <!-- Players in room -->
+      <div style="background:#1a2035;border:1px solid #2d3a55;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Players in Room</div>
+        <div id="gb-mp-player-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;">
+        <button id="gb-mp-send-level" style="flex:1;padding:9px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:9px;color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;">📤 Share Level</button>
+        <button id="gb-mp-leave" style="padding:9px 14px;background:#1a2035;border:1px solid #ef4444;border-radius:9px;color:#f87171;font-size:.85rem;cursor:pointer;font-weight:600;">Leave</button>
+      </div>
+
+      <!-- Invite friends (logged-in only) -->
+      <div id="gb-mp-friends-section" style="display:none;margin-top:12px;">
+        <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Invite a Friend</div>
+        <div id="gb-mp-friends-list" style="display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;"></div>
+        <p id="gb-mp-no-friends" style="display:none;font-size:.78rem;color:#475569;margin:4px 0 0;">No friends found. Add friends on the UESL hub first.</p>
+      </div>
+
+      <p id="gb-mp-login-note" style="font-size:.75rem;color:#f59e0b;margin:8px 0 0;display:none;">⚠ Log in on the UESL hub to invite friends directly.</p>
+    </div>
+
+    <!-- Status bar -->
+    <div id="gb-mp-status" style="margin-top:12px;font-size:.8rem;color:#64748b;min-height:18px;padding:6px 0 0;border-top:1px solid #1e293b;"></div>
   </div>
 </div>
 
@@ -3091,15 +3127,59 @@ function stopVoice() {
 // ── Multiplayer ──────────────────────────────────────────────────────────────
 let _socket = null;
 let _mpRoom  = null;
+let _mpPlayerCount = 1;
 const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
 
 function generateRoomCode() {
-  return Math.random().toString(36).substr(2, 6).toUpperCase();
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
-function mpStatus(msg) {
+
+function mpStatus(msg, color) {
   const el = document.getElementById('gb-mp-status');
-  if (el) el.textContent = msg;
+  if (el) { el.textContent = msg; if (color) el.style.color = color; }
+}
+
+function mpConnDot(msg, color) {
+  const el = document.getElementById('gb-mp-conn-dot');
+  if (el) { el.textContent = '● ' + msg; el.style.color = color || '#64748b'; }
+}
+
+function mpRenderPlayers(count) {
+  _mpPlayerCount = count;
+  const list = document.getElementById('gb-mp-player-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (let i = 0; i < Math.max(2, count); i++) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:.82rem;';
+    const dot = i < count ? '🟢' : '⭕';
+    const label = i === 0 ? 'You (Host)' : (i < count ? 'Player ' + (i + 1) + ' — Connected!' : 'Waiting for player ' + (i + 1) + '…');
+    const color = i < count ? '#a5f3fc' : '#475569';
+    row.innerHTML = `<span>${dot}</span><span style="color:${color}">${label}</span>`;
+    list.appendChild(row);
+  }
+}
+
+function mpShowRoom(code) {
+  document.getElementById('gb-mp-setup').style.display = 'none';
+  document.getElementById('gb-mp-room-active').style.display = 'block';
+  document.getElementById('gb-mp-room-code').textContent = code;
+  // Update the toolbar button
+  const btn = document.getElementById('gb-mp-btn');
+  if (btn) { btn.style.borderColor = '#22c55e'; btn.style.color = '#4ade80'; btn.title = 'Multiplayer — In Room: ' + code; }
+  mpRenderPlayers(1);
+  _renderFriendsList();
+}
+
+function mpHideRoom() {
+  document.getElementById('gb-mp-setup').style.display = 'block';
+  document.getElementById('gb-mp-room-active').style.display = 'none';
+  const btn = document.getElementById('gb-mp-btn');
+  if (btn) { btn.style.borderColor = '#334155'; btn.style.color = '#94a3b8'; btn.title = 'Multiplayer'; }
 }
 
 // ── localStorage helpers (mirrors UESL hub) ─────────────────────────────────
@@ -3122,26 +3202,65 @@ function _friendsList(uid) {
 // ── Socket connection ────────────────────────────────────────────────────────
 function connectSocket(room) {
   if (_socket) { _socket.disconnect(); }
+  mpConnDot('Connecting…', '#f59e0b');
+  mpStatus('Connecting to server…');
   _socket = io(PYTHON_URI, { transports: ['websocket', 'polling'] });
+
   _socket.on('connect', () => {
     _socket.emit('join_room', { room });
-    mpStatus('✅ Connected to room ' + room);
+    mpConnDot('In room ' + room, '#22c55e');
+    mpStatus('✅ Connected — room ' + room);
   });
+
+  _socket.on('room_info', data => {
+    mpRenderPlayers(data.count || 1);
+    if (data.count > 1) {
+      mpStatus('👋 Partner is here! You can play together now.', '#4ade80');
+    }
+  });
+
+  _socket.on('peer_joined', data => {
+    const count = data.count || 2;
+    mpRenderPlayers(count);
+    mpStatus('🎮 A player joined! Sending level…', '#4ade80');
+    // Host auto-sends current level code to new player
+    const code = document.getElementById('code-editor')?.value || '';
+    _socket.emit('send_level', { room, code });
+  });
+
   _socket.on('level_code', data => {
     if (data.room === room && data.code) {
       const editor = document.getElementById('code-editor');
       if (editor) { editor.value = data.code; editor.dispatchEvent(new Event('input')); }
-      mpStatus('📥 Received level from host — loading…');
-      setTimeout(() => document.getElementById('btn-code-play')?.click(), 600);
+      mpStatus('📥 Level received — launching…', '#a5f3fc');
+      setTimeout(() => document.getElementById('btn-code-play')?.click(), 700);
     }
   });
-  _socket.on('peer_joined', () => {
-    const code = document.getElementById('code-editor')?.value || '';
-    _socket.emit('send_level', { room, code });
-    mpStatus('📤 Level sent to new player');
+
+  _socket.on('peer_left', data => {
+    const count = data.count || 1;
+    mpRenderPlayers(count);
+    mpStatus('⚠ A player left the room.', '#f59e0b');
+    mpConnDot('In room ' + room + ' (' + count + ' player' + (count !== 1 ? 's' : '') + ')', '#22c55e');
   });
-  _socket.on('disconnect', () => mpStatus('Disconnected'));
-  _socket.on('connect_error', () => mpStatus('⚠ Could not connect to server'));
+
+  _socket.on('disconnect', () => {
+    mpConnDot('Disconnected', '#ef4444');
+    mpStatus('Disconnected from server');
+  });
+
+  _socket.on('connect_error', () => {
+    mpConnDot('Connection failed', '#ef4444');
+    mpStatus('⚠ Could not reach server — check your connection');
+  });
+}
+
+function disconnectSocket() {
+  if (_socket) { _socket.disconnect(); _socket = null; }
+  _mpRoom = null;
+  mpHideRoom();
+  mpConnDot('Not connected', '#64748b');
+  mpStatus('');
 }
 
 // ── Create room & send invite via UESL localStorage chat ────────────────────
@@ -3150,11 +3269,9 @@ function _createRoomAndInviteFriend(friendUid, friendName) {
   const myName = sessionStorage.getItem('uesl_my_name') || 'A friend';
   if (!myUid) { mpStatus('⚠ Not logged in — log in on the UESL hub first'); return; }
   _mpRoom = generateRoomCode();
-  document.getElementById('gb-mp-room-code').textContent = _mpRoom;
-  document.getElementById('gb-mp-room-info').style.display = 'block';
   connectSocket(_mpRoom);
+  mpShowRoom(_mpRoom);
   mpStatus('Room ' + _mpRoom + ' created — inviting ' + friendName + '…');
-  // Write game_invite message into shared localStorage chat slot
   const invite = {
     id: Date.now() + '_' + Math.random().toString(36).slice(2),
     sender_uid:  String(myUid),
@@ -3192,55 +3309,77 @@ function _renderFriendsList() {
   if (noFriendsEl) noFriendsEl.style.display = 'none';
   friends.forEach(f => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#1e293b;border-radius:8px;font-size:.85rem;';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#0f1729;border-radius:7px;font-size:.82rem;';
     row.innerHTML = `
       <span style="color:#e2e8f0;">${f.name || f.uid}</span>
-      <button style="padding:4px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;">🎮 Invite</button>
+      <button style="padding:3px 10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;">🎮 Invite</button>
     `;
-    row.querySelector('button').addEventListener('click', () => {
-      _createRoomAndInviteFriend(f.uid, f.name || f.uid);
-    });
+    row.querySelector('button').addEventListener('click', () => _createRoomAndInviteFriend(f.uid, f.name || f.uid));
     listEl.appendChild(row);
   });
 }
 
-// ── Modal open/close ────────────────────────────────────────────────────────
+// ── Button wiring ────────────────────────────────────────────────────────────
 document.getElementById('gb-mp-btn')?.addEventListener('click', () => {
   document.getElementById('gb-mp-overlay').style.display = 'flex';
-  _renderFriendsList();
+  if (!_mpRoom) _renderFriendsList();
   // Auto-join if ?room= in URL
   const urlRoom = new URLSearchParams(location.search).get('room');
   if (urlRoom && !_mpRoom) {
     _mpRoom = urlRoom;
-    document.getElementById('gb-mp-room-code').textContent = urlRoom;
-    document.getElementById('gb-mp-room-info').style.display = 'block';
     connectSocket(urlRoom);
+    mpShowRoom(urlRoom);
     mpStatus('Joining room ' + urlRoom + '…');
   }
 });
+
 document.getElementById('gb-mp-close')?.addEventListener('click', () => {
   document.getElementById('gb-mp-overlay').style.display = 'none';
 });
+
 document.getElementById('gb-mp-create')?.addEventListener('click', () => {
   _mpRoom = generateRoomCode();
-  document.getElementById('gb-mp-room-code').textContent = _mpRoom;
-  document.getElementById('gb-mp-room-info').style.display = 'block';
   connectSocket(_mpRoom);
-  mpStatus('Room created — share code: ' + _mpRoom);
+  mpShowRoom(_mpRoom);
+  mpStatus('Room created — share the code with a friend!');
 });
+
 document.getElementById('gb-mp-join')?.addEventListener('click', () => {
   const code = document.getElementById('gb-mp-join-code')?.value.trim().toUpperCase();
-  if (!code) { mpStatus('Enter a room code first'); return; }
+  if (!code || code.length < 4) { mpStatus('⚠ Enter a valid room code'); return; }
   _mpRoom = code;
-  document.getElementById('gb-mp-room-code').textContent = code;
-  document.getElementById('gb-mp-room-info').style.display = 'block';
   connectSocket(code);
+  mpShowRoom(code);
   mpStatus('Joining room ' + code + '…');
+});
+
+document.getElementById('gb-mp-copy-btn')?.addEventListener('click', () => {
+  const code = document.getElementById('gb-mp-room-code')?.textContent;
+  if (code) {
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.getElementById('gb-mp-copy-btn');
+      if (btn) { btn.textContent = '✅ Copied!'; setTimeout(() => { btn.textContent = '📋 Copy'; }, 1800); }
+    }).catch(() => {
+      mpStatus('Code: ' + code + ' — copy it manually');
+    });
+  }
+});
+
+document.getElementById('gb-mp-send-level')?.addEventListener('click', () => {
+  if (!_socket || !_mpRoom) { mpStatus('⚠ Not connected to a room'); return; }
+  const code = document.getElementById('code-editor')?.value || '';
+  _socket.emit('send_level', { room: _mpRoom, code });
+  mpStatus('📤 Level sent to all players in room!', '#4ade80');
+});
+
+document.getElementById('gb-mp-leave')?.addEventListener('click', () => {
+  disconnectSocket();
+  document.getElementById('gb-mp-overlay').style.display = 'none';
 });
 
 // Auto-join room from URL on page load
 (function() {
   const urlRoom = new URLSearchParams(location.search).get('room');
-  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom); }
+  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom); mpShowRoom(urlRoom); }
 })();
 </script>
