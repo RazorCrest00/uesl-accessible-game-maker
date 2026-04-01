@@ -332,8 +332,9 @@ permalink: /gamebuilderv1-2
                     </div>
                     <div class="draw-toolbar">
                         <button id="toggle-walls-game" class="draw-btn">Show Walls (Game)</button>
-                        <button id="draw-barrier" class="draw-btn">Draw Collision Wall</button>
-                        <button id="draw-clear" class="draw-btn">Clear All Walls</button>
+                        <button id="draw-barrier" class="draw-btn" onclick="if(window._gbSetDrawMode){window._gbSetDrawMode('barrier')}">Draw Collision Wall</button>
+                        <button id="draw-star" class="draw-btn" onclick="if(window._gbSetDrawMode){window._gbSetDrawMode('star')}">⭐ Place Stars</button>
+                        <button id="draw-clear" class="draw-btn" onclick="if(window._gbClearWalls){window._gbClearWalls()}">Clear All Walls</button>
                     </div>
                     <div id="drawn-barriers-list" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
                     <div id="walls-container"></div>
@@ -360,6 +361,13 @@ permalink: /gamebuilderv1-2
                     <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
                       <input type="checkbox" id="gb-coach"> 🧑‍🏫 UESL Coach
                     </label>
+                    <div id="gb-coach-speed-panel" style="display:none;padding:2px 0 4px 22px;">
+                      <label style="font-size:.78rem;color:#94a3b8;display:flex;align-items:center;gap:6px;">
+                        Speed:
+                        <input type="range" id="gb-coach-speed" min="0.5" max="8" step="0.5" value="2.5" style="width:80px;accent-color:#6366f1;">
+                        <span id="gb-coach-speed-val" style="min-width:24px;color:#a5b4fc;">2.5</span>
+                      </label>
+                    </div>
                     <div id="gb-face-panel" style="display:none;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;margin-top:4px;">
                       <video id="gb-face-video" style="display:none;"></video>
                       <canvas id="gb-face-preview" width="120" height="90" style="border-radius:6px;width:100%;"></canvas>
@@ -715,6 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
         walls: [],
         drawOverlay: document.getElementById('draw-overlay'),
         drawBarrierBtn: document.getElementById('draw-barrier'),
+        drawStarBtn: document.getElementById('draw-star'),
         drawClearBtn: document.getElementById('draw-clear'),
         drawState: { mode: null, isDrawing: false, startX: 0, startY: 0, activeBarrier: null },
         drawShapes: [],
@@ -791,9 +800,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Toggle crosshair cursor on the game-frame (always interactable, no pointer-events issues)
         const gf = document.querySelector('.game-frame');
         if (gf) gf.classList.toggle('drawing-active', !!mode);
+        if (ui.drawStarBtn)    ui.drawStarBtn.classList.toggle('active', mode === 'star');
+        if (ui.drawOverlay) {
+            ui.drawOverlay.classList.toggle('active', !!mode);
+            ui.drawOverlay.classList.toggle('mode-barrier', mode === 'barrier');
+            ui.drawOverlay.classList.toggle('mode-star', mode === 'star');
+        }
         if (!mode) removePreview();
     }
     if (ui.drawBarrierBtn) ui.drawBarrierBtn.addEventListener('click', () => { state.lastEdited = 'walls'; setDrawMode('barrier'); });
+    if (ui.drawStarBtn)    ui.drawStarBtn.addEventListener('click', () => { state.lastEdited = 'walls'; setDrawMode('star'); });
     if (ui.drawClearBtn) ui.drawClearBtn.addEventListener('click', () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); });
 
     // show/hide overlay per game walls visibility
@@ -831,8 +847,17 @@ document.addEventListener('DOMContentLoaded', () => {
             el.style.top = shape.y + 'px';
             el.style.width = Math.max(0, shape.width) + 'px';
             el.style.height = Math.max(0, shape.height) + 'px';
-            el.style.background = shape.color || '#4466ff';
-            el.style.opacity = shape.visible === false ? '0.2' : '0.7';
+            el.style.background = shape.type === 'star' ? 'transparent' : (shape.color || '#4466ff');
+            el.style.opacity = shape.visible === false ? '0.2' : (shape.type === 'star' ? '1' : '0.7');
+            if (shape.type === 'star') {
+                el.textContent = '⭐';
+                el.style.fontSize = '20px';
+                el.style.display = 'flex';
+                el.style.alignItems = 'center';
+                el.style.justifyContent = 'center';
+                el.style.border = 'none';
+                el.style.filter = 'drop-shadow(0 0 4px #FFD700)';
+            }
             el.style.cursor = ui.drawState.mode ? 'crosshair' : 'pointer';
             el.title = ui.drawState.mode ? '' : `Wall ${idx+1} — click to edit`;
             el.addEventListener('click', (e) => {
@@ -959,11 +984,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let y = Math.min(Math.max(0, ui.drawState.startY), bounds.height);
         let cx = Math.min(Math.max(0, clientX - bounds.left), bounds.width);
         let cy = Math.min(Math.max(0, clientY - bounds.top), bounds.height);
+        removePreview();
+
+        // Stars: single-click placement (no drag required)
+        if (mode === 'star') {
+            const sx = Math.max(0, Math.round(x - 12));
+            const sy = Math.max(0, Math.round(y - 12));
+            ui.drawShapes.push({ type: 'star', x: sx, y: sy, width: 24, height: 24, color: '#FFD700', visible: true });
+            ui.overlayConfirmed = false;
+            renderDrawShapes();
+            syncFromControlsIfFreestyle();
+            return; // stay in star mode for continuous placement
+        }
+
         const left = Math.min(x, cx);
         const top = Math.min(y, cy);
         const width = Math.abs(cx - x);
         const height = Math.abs(cy - y);
-        removePreview();
         if (width >= 4 && height >= 4) {
             ui.drawShapes.push({ type: mode, x: Math.round(left), y: Math.round(top), width: Math.round(width), height: Math.round(height), color: '#4466ff', visible: true });
             ui.overlayConfirmed = false;
@@ -1911,6 +1948,51 @@ function barriers_generate(walls, drawShapes, options = {}) {
     return { defs, classes };
 }
 
+/**
+ * Generate code for a single star placed on the draw overlay.
+ * @param {Object} starData - { varName, id, x, y, width, height, overlayW, overlayH }
+ * @returns {{ def: string, classEntry: string }}
+ */
+function star_code(starData) {
+    const { varName, id, x, y, width, height, overlayW, overlayH } = starData;
+    // Convert pixel overlay coords to fractional position (0–1) matching INIT_POSITION
+    const fx = overlayW ? ((x + width  / 2) / overlayW).toFixed(4) : '0.5';
+    const fy = overlayH ? ((y + height / 2) / overlayH).toFixed(4) : '0.5';
+
+    const def = `
+        const ${varName} = {
+            id: '${id}',
+            INIT_POSITION: { x: ${fx}, y: ${fy} },
+            SCALE_FACTOR: 16,
+            color: '#FFD700',
+            zIndex: 50,
+        };`;
+
+    const classEntry = `{ class: Star, data: ${varName} }`;
+    return { def, classEntry };
+}
+
+/**
+ * Generate Star class entries from drawn star shapes.
+ * @param {Array}  drawShapes - ui.drawShapes array (filters type === 'star')
+ * @param {number} overlayW   - overlay pixel width (for coordinate conversion)
+ * @param {number} overlayH   - overlay pixel height
+ * @returns {{ defs: string[], classes: string[] }}
+ */
+function stars_generate(drawShapes, overlayW, overlayH) {
+    const defs    = [];
+    const classes = [];
+    const starShapes = (drawShapes || []).filter(s => s.type === 'star');
+    starShapes.forEach((s, idx) => {
+        const varName = `starData${idx + 1}`;
+        const id      = `star_${idx + 1}`;
+        const { def, classEntry } = star_code({ varName, id, x: s.x, y: s.y, width: s.width || 24, height: s.height || 24, overlayW, overlayH });
+        defs.push(def);
+        classes.push(classEntry);
+    });
+    return { defs, classes };
+}
+
 /* SECTION: Game Level Template Code Generation */
 
 /**
@@ -2094,6 +2176,7 @@ function step_generate(currentStep = 'background') {
     const hasNPCs = ui.npcs && ui.npcs.length > 0;
     const hasWalls = (ui.walls && ui.walls.length > 0) ||
                      (ui.drawShapes && ui.drawShapes.some(s => s.type === 'barrier'));
+    const hasStars = ui.drawShapes && ui.drawShapes.some(s => s.type === 'star');
 
     // Generate code for ALL configured elements (compositional approach)
     // Button controls should determine when it's appropriate to call this function
@@ -2131,13 +2214,28 @@ function step_generate(currentStep = 'background') {
         classes.push(...barriersGen.classes);
     }
 
+    // Add stars if placed
+    if (hasStars) {
+        const overlayRect = ui.drawOverlay ? ui.drawOverlay.getBoundingClientRect() : { width: 900, height: 600 };
+        const starsGen = stars_generate(ui.drawShapes, overlayRect.width || 900, overlayRect.height || 600);
+        defs.push(...starsGen.defs);
+        classes.push(...starsGen.classes);
+    }
+
     // If nothing configured, return baseline template
     if (defs.length === 0) {
         return base_generate();
     }
 
     // Builds Level Code using composition of defs and classes
-    return gamelevel_code(defs, classes);
+    let levelCode = gamelevel_code(defs, classes);
+
+    // Prepend Star import if stars were added (not already present in template imports)
+    if (hasStars && !/import\s+Star\s+from/.test(levelCode)) {
+        levelCode = `import Star from '/assets/js/GameEnginev1.2/Star.js';\n` + levelCode;
+    }
+
+    return levelCode;
 }
 
 /**
@@ -3075,10 +3173,20 @@ function generateStepCode(currentStep) {
         const path = '{{ site.baseurl }}';
         const baseUrl = window.location.origin + path;
 
+        // Inject Star.js import when stars have been placed in the builder
+        const hasBuilderStars = ui.drawShapes && ui.drawShapes.some(s => s.type === 'star');
+        if (hasBuilderStars || /\bclass\s+Star\b/.test(code)) {
+            if (!/import\s+Star\s+from/.test(code)) {
+                code = `import Star from '${baseUrl}/assets/js/GameEnginev1.2/Star.js';\n` + code;
+            }
+        }
+
         // Inject UESL Coach if enabled in settings
         if (typeof gbSettings !== 'undefined' && gbSettings.coach) {
             const coachImport = `import UESLCoach from '${baseUrl}/assets/js/GameEnginev1.2/UESLCoach.js';\n`;
-            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', SCALE_FACTOR:6, ANIMATION_RATE:80, pixels:{width:512,height:384}, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:2.5, patrolSpeed:1.2, tauntInterval:4500 } }`;
+            const chaseSpeed  = gbSettings.coachChaseSpeed  ?? 2.5;
+            const patrolSpeed = gbSettings.coachPatrolSpeed ?? 1.2;
+            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', SCALE_FACTOR:6, ANIMATION_RATE:80, pixels:{width:512,height:384}, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:${chaseSpeed}, patrolSpeed:${patrolSpeed}, tauntInterval:4500 } }`;
             code = coachImport + code;
             code = code.replace(/this\.classes\s*=\s*\[/, `this.classes = [\n      ${coachEntry},`);
         }
@@ -3294,7 +3402,7 @@ document.querySelector('.game-frame')?.addEventListener('click', () => {
 // ── Settings state ──────────────────────────────────────────────────────────
 const gbSettings = {
   slowMode: false, highContrast: false, largeSprites: false,
-  voice: false, face: false, coach: false,
+  voice: false, face: false, coach: false, coachChaseSpeed: 2.5, coachPatrolSpeed: 1.2,
 };
 
 document.getElementById('gb-slow-mode')?.addEventListener('change', e => { gbSettings.slowMode = e.target.checked; });
@@ -3313,7 +3421,16 @@ document.getElementById('gb-face')?.addEventListener('change', e => {
   document.getElementById('gb-face-panel').style.display = e.target.checked ? 'block' : 'none';
   if (e.target.checked) initFaceTracking(); else stopFaceTracking();
 });
-document.getElementById('gb-coach')?.addEventListener('change', e => { gbSettings.coach = e.target.checked; });
+document.getElementById('gb-coach')?.addEventListener('change', e => {
+  gbSettings.coach = e.target.checked;
+  document.getElementById('gb-coach-speed-panel').style.display = e.target.checked ? 'block' : 'none';
+});
+document.getElementById('gb-coach-speed')?.addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  gbSettings.coachChaseSpeed  = v;
+  gbSettings.coachPatrolSpeed = Math.max(0.3, v * 0.48);
+  document.getElementById('gb-coach-speed-val').textContent = v.toFixed(1);
+});
 document.getElementById('gb-recalibrate')?.addEventListener('click', () => window.FaceTracker?.recalibrate?.());
 
 // ── Face Tracking ────────────────────────────────────────────────────────────

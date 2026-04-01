@@ -42,7 +42,34 @@ class UESLCoach extends Enemy {
     // ─── game loop ─────────────────────────────────────────────────────────────
 
     update() {
+        const prevX = this.position.x;
+        const prevY = this.position.y;
+
         this._updateAI();
+        const newX = this.position.x;
+        const newY = this.position.y;
+
+        // Barrier collision — test new position, then try axis-by-axis sliding
+        this._syncPos();
+        if (this._isBlockedByBarrier()) {
+            // Try X-only slide (move X but keep Y)
+            this.position.x = newX;
+            this.position.y = prevY;
+            this._syncPos();
+            if (this._isBlockedByBarrier()) {
+                // Try Y-only slide (keep X but move Y)
+                this.position.x = prevX;
+                this.position.y = newY;
+                this._syncPos();
+                if (this._isBlockedByBarrier()) {
+                    // Fully blocked — revert and flip patrol direction
+                    this.position.x = prevX;
+                    this.position.y = prevY;
+                    this._patrolDir *= -1;
+                }
+            }
+        }
+
         this.draw();
 
         if (!this._caughtHandled && this.collisionChecks()) {
@@ -51,6 +78,26 @@ class UESLCoach extends Enemy {
 
         this.stayWithinCanvas();
         this._updateBubblePosition();
+    }
+
+    /** Lightweight canvas position sync (no redraw) used during barrier probing. */
+    _syncPos() {
+        if (this.canvas) {
+            this.canvas.style.left = `${this.position.x}px`;
+            this.canvas.style.top  = `${(this.gameEnv?.top || 0) + this.position.y}px`;
+        }
+    }
+
+    /** Returns true if the coach's current canvas rect overlaps any Barrier object. */
+    _isBlockedByBarrier() {
+        for (const obj of (this.gameEnv?.gameObjects ?? [])) {
+            if (obj === this || !obj.canvas) continue;
+            if (obj.constructor?.name === 'Barrier') {
+                this.isCollision(obj);
+                if (this.collisionData.hit) return true;
+            }
+        }
+        return false;
     }
 
     // ─── AI movement ───────────────────────────────────────────────────────────
