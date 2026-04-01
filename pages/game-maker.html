@@ -4491,14 +4491,13 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
 
   async function getPeople() {
     if (peopleCache) return peopleCache;
-    // Try without credentials first (as other pages do), fall back with credentials
     let raw;
     try {
-      const r = await fetch(JAVA_URI + '/api/peopleget');
+      const r = await fetch(PYTHON_URI + '/api/user');
       if (r.ok) { raw = await r.text(); }
     } catch(e) {}
     if (!raw) {
-      const r = await fetch(JAVA_URI + '/api/peopleget', { credentials: 'include' });
+      const r = await fetch(PYTHON_URI + '/api/user', { credentials: 'include' });
       if (!r.ok) throw new Error('peopleget ' + r.status);
       raw = await r.text();
     }

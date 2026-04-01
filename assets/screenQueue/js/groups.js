@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Set API URI based on environment
-import {javaURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
+import {pythonURI, javaURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
 
 // Global variables
 let allPeople = [];
@@ -54,7 +54,7 @@ function initializeData() {
 // Fetch people from API
 function fetchPeople() {
     return new Promise((resolve, reject) => {
-        fetch(`${javaURI}/api/peopleget`)
+        fetch(`${pythonURI}/api/user`, { credentials: 'include' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');

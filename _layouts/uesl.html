@@ -2038,15 +2038,13 @@
       if (req) { req.status = 'declined'; reqSave(reqs); }
     }
 
-    // ── People cache (fetched once per session from Java backend) ─────────────
+    // ── People cache (fetched once per session from Python backend) ─────────────
     let _peopleCache = null;
     async function getPeople() {
       if (_peopleCache) return _peopleCache;
-      // Try without credentials first (works when backend allows * origin)
-      // Try with credentials as fallback (works when backend uses specific origin)
       const attempts = [
-        () => fetch(JAVA_URI + '/api/peopleget'),
-        () => fetch(JAVA_URI + '/api/peopleget', { credentials: 'include' }),
+        () => fetch(PYTHON_URI + '/api/user'),
+        () => fetch(PYTHON_URI + '/api/user', { credentials: 'include' }),
       ];
       let lastErr = null;
       for (const attempt of attempts) {
@@ -2062,7 +2060,7 @@
           return _peopleCache;
         } catch(e) { lastErr = e; }
       }
-      throw new Error(lastErr?.message || 'Could not reach Java backend');
+      throw new Error(lastErr?.message || 'Could not reach Python backend');
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
