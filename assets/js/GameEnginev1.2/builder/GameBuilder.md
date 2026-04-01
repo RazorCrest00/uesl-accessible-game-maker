@@ -1535,15 +1535,15 @@ function barrier_extract(source, type, idx, options = {}) {
             fromOverlay: false
         };
     } else if (type === 'drawn') {
-        const scaleX = options.scaleX || 1;
-        const scaleY = options.scaleY || 1;
+        const overlayW = options.overlayW || 900;
+        const overlayH = options.overlayH || 600;
         return {
             id: `dbarrier_${idx+1}`,
             varName: `dbarrier_${idx+1}`,
-            x: Math.max(0, Math.round((source.x || 0) * scaleX)),
-            y: Math.max(0, Math.round((source.y || 0) * scaleY)),
-            width: Math.max(0, Math.round((source.width || 0) * scaleX)),
-            height: Math.max(0, Math.round((source.height || 0) * scaleY)),
+            x: Math.max(0, (source.x || 0) / overlayW),
+            y: Math.max(0, (source.y || 0) / overlayH),
+            width: Math.max(0, (source.width || 0) / overlayW),
+            height: Math.max(0, (source.height || 0) / overlayH),
             visible: source.visible !== undefined ? source.visible : true,
             color: source.color || '#4466ff',
             fromOverlay: true
@@ -1671,7 +1671,7 @@ function maze_generate(canvasW = 900, canvasH = 600) {
             const hasWall = c < COLS && walls[r][c].S;
             if (hasWall && start === -1) { start = c; }
             else if (!hasWall && start !== -1) {
-                addBarrier(start * cellW, (r + 1) * cellH - WALL / 2, (c - start) * cellW, WALL);
+                addBarrier(start * cellW, (r + 1) * cellH, (c - start) * cellW, WALL);
                 start = -1;
             }
         }
@@ -1684,7 +1684,7 @@ function maze_generate(canvasW = 900, canvasH = 600) {
             const hasWall = r < ROWS && walls[r][c].E;
             if (hasWall && start === -1) { start = r; }
             else if (!hasWall && start !== -1) {
-                addBarrier((c + 1) * cellW - WALL / 2, start * cellH, WALL, (r - start) * cellH);
+                addBarrier((c + 1) * cellW, start * cellH, WALL, (r - start) * cellH);
                 start = -1;
             }
         }
@@ -1794,8 +1794,8 @@ function barriers_generate(walls, drawShapes, options = {}) {
     const defs = [];
     const classes = [];
     const visible = options.visible !== undefined ? options.visible : true;
-    const scaleX = options.scaleX || 1;
-    const scaleY = options.scaleY || 1;
+    const overlayW = options.overlayW || 900;
+    const overlayH = options.overlayH || 600;
 
     // Process walls (manual panel entries)
     walls.forEach((w, idx) => {
@@ -1808,7 +1808,7 @@ function barriers_generate(walls, drawShapes, options = {}) {
     // Process drawn barriers (from Draw Collision Wall button)
     const drawnBarriers = (drawShapes || []).filter(s => s.type === 'barrier');
     drawnBarriers.forEach((b, bIdx) => {
-        const bData = barrier_extract(b, 'drawn', bIdx, { scaleX: scaleX, scaleY: scaleY });
+        const bData = barrier_extract(b, 'drawn', bIdx, { overlayW: overlayW, overlayH: overlayH });
         const barrierCode = barrier_code(bData);
         defs.push(barrierCode.def);
         classes.push(barrierCode.classEntry);
@@ -2031,7 +2031,8 @@ function step_generate(currentStep = 'background') {
 
     // Add barriers/walls code if configured
     if (hasWalls) {
-        const barriersGen = barriers_generate(ui.walls.slice(), ui.drawShapes, { visible: true });
+        const _or = ui.drawOverlay?.getBoundingClientRect() || {};
+        const barriersGen = barriers_generate(ui.walls.slice(), ui.drawShapes, { visible: true, overlayW: _or.width || 900, overlayH: _or.height || 600 });
         defs.push(...barriersGen.defs);
         classes.push(...barriersGen.classes);
     }
@@ -2360,7 +2361,8 @@ function generateStepCode(currentStep) {
      * @returns {Object} { defs: string, classes: array } - Barrier definitions and class entries
      */
     function buildBarrierInsertText() {
-        const generated = barriers_generate(ui.walls, ui.drawShapes, { visible: true });
+        const _or = ui.drawOverlay?.getBoundingClientRect() || {};
+        const generated = barriers_generate(ui.walls, ui.drawShapes, { visible: true, overlayW: _or.width || 900, overlayH: _or.height || 600 });
         return { defs: generated.defs.join('\n'), classes: generated.classes };
     }
 
