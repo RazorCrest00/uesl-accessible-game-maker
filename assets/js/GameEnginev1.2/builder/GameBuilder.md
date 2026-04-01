@@ -2998,16 +2998,21 @@ function initFaceTracking() {
   const preview = document.getElementById('gb-face-preview');
   FaceTracker.start(video, preview).catch(console.error);
   _faceInterval = setInterval(() => {
-    if (!gbSettings.face || !window.FaceTracker?.controls) return;
+    if (!gbSettings.face || !window.FaceTracker?.active) return;
     const c = FaceTracker.controls;
-    const fire = (key, on) => {
+    // Fire both Arrow keys AND WASD keys so face tracking works regardless of player key setting
+    const fire = (key, keyCode, on) => {
       const type = on ? 'keydown' : 'keyup';
-      document.dispatchEvent(new KeyboardEvent(type, { key, code: 'Arrow'+key.replace('Arrow',''), bubbles: true }));
+      document.dispatchEvent(new KeyboardEvent(type, { key, code: key, keyCode, which: keyCode, bubbles: true, cancelable: true }));
     };
-    fire('ArrowLeft',  !!c.left);
-    fire('ArrowRight', !!c.right);
-    fire('ArrowUp',    !!c.up);
-    fire('ArrowDown',  !!c.down);
+    fire('ArrowLeft',  37, !!c.left);
+    fire('ArrowRight', 39, !!c.right);
+    fire('ArrowUp',    38, !!c.up);
+    fire('ArrowDown',  40, !!c.down);
+    fire('a',          65, !!c.left);
+    fire('d',          68, !!c.right);
+    fire('w',          87, !!c.up);
+    fire('s',          83, !!c.down);
   }, 80);
 }
 function stopFaceTracking() {

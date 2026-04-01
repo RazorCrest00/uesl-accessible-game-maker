@@ -32,6 +32,8 @@ window.FaceTracker = (() => {
   let _centerX      = 0.5;    // calibrated neutral X
   let _centerY      = 0.5;    // calibrated neutral Y
   let _calibrated   = false;
+  let _previewCanvas = null;  // optional canvas for live video preview
+  let _previewCtx    = null;
 
   // MediaPipe landmark indices
   const IDX_NOSE_TIP    = 1;    // nose tip — best for X/Y head position
@@ -107,8 +109,13 @@ window.FaceTracker = (() => {
   }
 
   // ── start() — request webcam + boot MediaPipe ────────────────────────────
-  async function start(videoElement) {
+  async function start(videoElement, canvasElement) {
     if (_active) return;
+
+    if (canvasElement) {
+      _previewCanvas = canvasElement;
+      _previewCtx    = canvasElement.getContext('2d');
+    }
 
     _setStatus('Requesting webcam...');
 
@@ -146,7 +153,11 @@ window.FaceTracker = (() => {
 
     _camera = new Camera(videoElement, {
       onFrame: async () => {
-        if (_active) await _faceMesh.send({ image: videoElement });
+        if (!_active) return;
+        await _faceMesh.send({ image: videoElement });
+        if (_previewCtx && _previewCanvas) {
+          _previewCtx.drawImage(videoElement, 0, 0, _previewCanvas.width, _previewCanvas.height);
+        }
       },
       width: 320,
       height: 240
@@ -163,6 +174,11 @@ window.FaceTracker = (() => {
     if (_camera)  { try { _camera.stop(); } catch(_) {} _camera = null; }
     if (_stream)  { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
     if (_faceMesh){ try { _faceMesh.close(); } catch(_) {} _faceMesh = null; }
+    if (_previewCtx && _previewCanvas) {
+      _previewCtx.clearRect(0, 0, _previewCanvas.width, _previewCanvas.height);
+    }
+    _previewCanvas = null;
+    _previewCtx    = null;
 
     controls.left = controls.right = controls.up = controls.down = false;
     faceData.detected   = false;
