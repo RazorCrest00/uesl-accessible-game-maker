@@ -3173,6 +3173,7 @@ function generateStepCode(currentStep) {
         stopRunner();
 
         let code = safeCodeToRun();
+        stagedCode = null; stagedStep = null;
         if (!code || !code.trim()) return;
 
         const path = '{{ site.baseurl }}';
