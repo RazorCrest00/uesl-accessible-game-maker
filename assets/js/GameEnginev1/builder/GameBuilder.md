@@ -1,5 +1,5 @@
 ---
-layout: opencs 
+layout: uesl-app 
 title: GameBuilder
 description: Helping programmers understand how to create a game
 permalink: /gamebuilder
