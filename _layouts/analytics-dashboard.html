@@ -12,12 +12,6 @@ active_tab: analytics
         <div class="text-sm font-medium text-center border-b text-neutral-400 border-neutral-700 relative">
             <ul class="flex flex-wrap -mb-px relative" id="tab-bar">
                 <li class="me-2">
-                    <a href="#" id="tab-ocs-analytics"
-                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:border-neutral-300 hover:text-neutral-300 active text-blue-500 border-blue-500" aria-current="page">
-                        OCS Analytics
-                    </a>
-                </li>
-                <li class="me-2">
                     <a href="#" id="tab-github"
                         class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:border-neutral-300 hover:text-neutral-300">
                         GitHub Analytics
@@ -39,16 +33,6 @@ active_tab: analytics
         <!-- tab content container -->
         <div id="tab-content-container" class="relative min-h-[400px]">
             
-            <!-- OCS Analytics tab content -->
-            <div id="tab-content-ocs-analytics" class="tab-content block px-6 py-4 text-neutral-200">
-                <div class="flex items-center justify-center min-h-[400px]">
-                    <div class="text-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                        <p class="text-neutral-300">Loading OCS analytics...</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- GitHub Analytics tab content -->
             <div id="tab-content-github" class="tab-content hidden px-6 py-4 text-neutral-200">
                 <!-- Grid -->
@@ -286,8 +270,6 @@ score += gists * 0.5
 <!-- Analytics JS -->
 <script type="module">
     import { pythonURI, javaURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js';
-    import { initOCSAnalyticsDashboard } from '{{ site.baseurl }}/assets/js/ocs-analytics-dashboard.js';
-
     const profileLinksUrl = `${pythonURI}/api/analytics/github/user/profile_links`;
     const userProfileUrl = `${pythonURI}/api/analytics/github/user`;
     const commitsUrl = `${pythonURI}/api/analytics/github/user/commits`;
@@ -297,11 +279,6 @@ score += gists * 0.5
     let springUserId = null;
     let hasExistingStudentEval = false;
     
-    // Initialize OCS Analytics Dashboard
-    initOCSAnalyticsDashboard(pythonURI, javaURI, fetchOptions).catch(e => {
-        console.warn('OCS Analytics dashboard failed to initialize:', e);
-    });
-
     async function getUserIdSpring() {
         if (springUserId) return springUserId;
         try {
@@ -608,11 +585,6 @@ score += gists * 0.5
             tab.classList.add("active", "text-blue-500", "border-blue-500");
             setUnderline(tab);
 
-            if (targetId === "tab-content-ocs-analytics") {
-                if (window.OCSAnalytics && window.OCSAnalytics.loadAnalyticsSummary) {
-                    await window.OCSAnalytics.loadAnalyticsSummary();
-                }
-            }
         });
     });
 
@@ -624,10 +596,6 @@ score += gists * 0.5
         await fetchData();
         await loadStudentEvaluation();
         
-        // Load OCS Analytics if it's the active tab
-        if (window.OCSAnalytics && window.OCSAnalytics.loadAnalyticsSummary) {
-            await window.OCSAnalytics.loadAnalyticsSummary();
-        }
     };
 </script>
 
