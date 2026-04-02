@@ -70,11 +70,25 @@ class Character extends GameObject {
         this.frame = 0;
         
         // Initialize the object's properties 
+        this.visible = data?.visible !== undefined ? data.visible : true;
         this.scale = { width: this.gameEnv.innerWidth, height: this.gameEnv.innerHeight };
         this.scaleFactor = data.SCALE_FACTOR || SCALE_FACTOR;
         this.stepFactor = data.STEP_FACTOR || STEP_FACTOR;
         this.animationRate = data.ANIMATION_RATE || ANIMATION_RATE;
-        this.position = data.INIT_POSITION || INIT_POSITION;
+        
+        // Handle INIT_POSITION with percentage support (0.0-1.0 decimal)
+        const initPos = data.INIT_POSITION || INIT_POSITION;
+        // If values are between 0-1, treat as percentages; otherwise use as pixels
+        if (initPos.x >= 0 && initPos.x <= 1 && initPos.y >= 0 && initPos.y <= 1) {
+            // Convert decimal percentages to pixel positions
+            this.position = {
+                x: initPos.x * this.gameEnv.innerWidth,
+                y: initPos.y * this.gameEnv.innerHeight
+            };
+        } else {
+            // Use as pixel values (backward compatibility)
+            this.position = { ...initPos };
+        }
         
         // Always set spriteData, even if there's no sprite sheet
         this.spriteData = data;
@@ -155,9 +169,11 @@ class Character extends GameObject {
             return;
         }
 
+        // Match v1 update order so collision checks use current rendered bounds.
         this.draw();
         this.collisionChecks();
         this.move();
+
     }
 
 
@@ -213,9 +229,9 @@ class Character extends GameObject {
         const frameY = (directionData.row || 0) * frameHeight;
 
         // Set the canvas dimensions based on the frame size
-    // Set the canvas dimensions based on the frame size (integers)
-    this.canvas.width = frameWidth;
-    this.canvas.height = frameHeight;
+        // Set the canvas dimensions based on the frame size (integers)
+        this.canvas.width = frameWidth;
+        this.canvas.height = frameHeight;
 
         // Apply transformations (rotation, mirroring, spinning)
         this.applyTransformations(directionData);
@@ -224,6 +240,7 @@ class Character extends GameObject {
         this.applyFilters(directionData);
 
         // Draw the sprite sheet frame
+        if (!this.visible) return; // Skip drawing if not visible
         this.ctx.drawImage(
             this.spriteSheet,
             frameX, frameY, frameWidth, frameHeight, // Source rectangle
@@ -250,6 +267,7 @@ class Character extends GameObject {
      * Draws a default red square on the canvas.
      */
     drawDefaultSquare() {
+        if (!this.visible) return; // Skip drawing if not visible
         this.ctx.fillStyle = this.data?.fillStyle || 'red';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
@@ -272,9 +290,26 @@ class Character extends GameObject {
      * Applies transformations like rotation, mirroring, and spinning.
      */
     applyTransformations(directionData) {
-        if (directionData.rotate || directionData.mirror || directionData.spin) {
+        if (directionData.rotate || directionData.mirror || directionData.spin || directionData.wiggle) {
             // Translate to the center of the sprite
             this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+
+            // Apply wiggle (oscillate ±angle if enabled)
+            if (directionData.wiggle) {
+                // Default values
+                let maxAngle = Math.PI / 18; // 10 degrees in radians
+                let speed = 0.15;
+                // Allow wiggle to be an object: {angle, speed}
+                if (typeof directionData.wiggle === 'object') {
+                    if (typeof directionData.wiggle.angle === 'number') maxAngle = directionData.wiggle.angle;
+                    if (typeof directionData.wiggle.speed === 'number') speed = directionData.wiggle.speed;
+                } else if (typeof directionData.wiggle === 'number') {
+                    speed = directionData.wiggle;
+                }
+                // If wiggle is true, use defaults
+                const angle = Math.sin((this.frameCounter || 0) * speed) * maxAngle;
+                this.ctx.rotate(angle);
+            }
 
             // Apply rotation
             if (directionData.rotate) {
@@ -381,6 +416,21 @@ class Character extends GameObject {
         // Set the object's width and height to the new size (object is a square)
         this.width = this.size;
         this.height = this.size;
+
+        // Ensure the object stays fully on screen after resize
+        // Clamp position to keep character visible
+        if (this.position.x + this.width > this.gameEnv.innerWidth) {
+            this.position.x = this.gameEnv.innerWidth - this.width;
+        }
+        if (this.position.y + this.height > this.gameEnv.innerHeight) {
+            this.position.y = this.gameEnv.innerHeight - this.height;
+        }
+        if (this.position.x < 0) {
+            this.position.x = 0;
+        }
+        if (this.position.y < 0) {
+            this.position.y = 0;
+        }
     }
     
 
