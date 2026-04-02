@@ -23,7 +23,7 @@ class Star extends Npc {
             pixels: { width: 100, height: 100 },
             orientation: { rows: 1, columns: 1 },
             down: { row: 0, start: 0, columns: 1 },
-            hitbox: data?.hitbox || { widthPercentage: 0.15, heightPercentage: 0.15 },
+            hitbox: data?.hitbox || { widthPercentage: 0.8, heightPercentage: 0.8 },
             ...data,
         };
 

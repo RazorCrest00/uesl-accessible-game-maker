@@ -809,7 +809,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!mode) removePreview();
     }
     if (ui.drawBarrierBtn) ui.drawBarrierBtn.addEventListener('click', () => { state.lastEdited = 'walls'; setDrawMode('barrier'); });
-    if (ui.drawStarBtn)    ui.drawStarBtn.addEventListener('click', () => { state.lastEdited = 'walls'; setDrawMode('star'); });
+    if (ui.drawStarBtn)    ui.drawStarBtn.addEventListener('click', () => { state.lastEdited = 'background'; setDrawMode('star'); });
     if (ui.drawClearBtn) ui.drawClearBtn.addEventListener('click', () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); });
 
     // show/hide overlay per game walls visibility
@@ -993,6 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.drawShapes.push({ type: 'star', x: sx, y: sy, width: 24, height: 24, color: '#FFD700', visible: true });
             ui.overlayConfirmed = false;
             renderDrawShapes();
+            state.lastEdited = 'background';
             syncFromControlsIfFreestyle();
             return; // stay in star mode for continuous placement
         }
@@ -1625,13 +1626,15 @@ function npc_code(nx, index, includeAlert = false) {
  */
 function barrier_extract(source, type, idx, options = {}) {
     if (type === 'wall') {
+        const overlayW = options.overlayW || 900;
+        const overlayH = options.overlayH || 600;
         return {
             id: `wall_${idx+1}`,
             varName: `barrierData${idx+1}`,
-            x: parseInt(source.wX?.value || 100, 10),
-            y: parseInt(source.wY?.value || 100, 10),
-            width: parseInt(source.wW?.value || 150, 10),
-            height: parseInt(source.wH?.value || 20, 10),
+            x: Math.max(0, parseInt(source.wX?.value || 100, 10) / overlayW),
+            y: Math.max(0, parseInt(source.wY?.value || 100, 10) / overlayH),
+            width: Math.max(0, parseInt(source.wW?.value || 150, 10) / overlayW),
+            height: Math.max(0, parseInt(source.wH?.value || 20, 10) / overlayH),
             visible: source.wVisible ? source.wVisible.checked : true,
             color: source.wColor?.value || '#4466ff',
             fromOverlay: false
@@ -1930,7 +1933,7 @@ function barriers_generate(walls, drawShapes, options = {}) {
 
     // Process walls (manual panel entries)
     walls.forEach((w, idx) => {
-        const bData = barrier_extract(w, 'wall', idx, { visible: visible });
+        const bData = barrier_extract(w, 'wall', idx, { visible: visible, overlayW: overlayW, overlayH: overlayH });
         const barrierCode = barrier_code(bData);
         defs.push(barrierCode.def);
         classes.push(barrierCode.classEntry);
@@ -3138,6 +3141,8 @@ function generateStepCode(currentStep) {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.width = 900;
+            canvas.height = 580;
         }
         if (container) {
             const canvases = container.querySelectorAll('canvas:not(#game-canvas-builder):not(#gameCanvas)');
@@ -3296,18 +3301,10 @@ function generateStepCode(currentStep) {
                 const canvases = Array.from(container ? container.querySelectorAll('canvas') : []);
                 canvases.forEach(c => {
                     const id = c.id || '';
-                    // Match explicit wall IDs or any secondary canvas (not the primary gameCanvas)
-                    if (/^(wall_|dbarrier_|barrier_)/.test(id) || (id && id !== 'gameCanvas' && id !== 'game-canvas-builder')) {
+                    if (/^(wall_\d|dbarrier_\d|mw-)/.test(id)) {
                         c.style.opacity = show ? '1' : '0';
                     }
                 });
-                // Also target the game output builder container's non-primary canvases
-                const outputContainer = document.getElementById('game-output-builder');
-                if (outputContainer) {
-                    Array.from(outputContainer.querySelectorAll('canvas')).forEach(c => {
-                        if (c.id !== 'gameCanvas') c.style.opacity = show ? '1' : '0';
-                    });
-                }
             } catch (_) {}
         });
     }

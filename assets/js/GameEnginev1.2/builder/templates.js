@@ -1,13 +1,14 @@
 // Templates utility for GameBuilder (v1)
-// Exposes `GameTemplatesV1` on window with functions that return code snippets
+// Exposes `GameTemplatesV1_1` on window with functions that return code snippets
 (function (global) {
   const tpl = {};
 
   tpl.playerData = function ({ name, p, ui, keypress, bg }) {
+    const mirrorLeft = p.rows < 3;
     return `// [TEMPLATE CODE] GameTemplatesV1.1.playerData\nconst playerData = {
             id: '${name}',
             src: ${p.src.startsWith('/') ? "'" + p.src + "'" : "path + \"" + p.src + "\""},
-            SCALE_FACTOR: 5,
+            SCALE_FACTOR: ${bg?.type === 'maze' ? 25 : parseInt(ui.pScale?.value || '5', 10)},
             STEP_FACTOR: 1000,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: ${ui.pX?.value || 0}, y: ${ui.pY?.value || 0} },
@@ -15,12 +16,12 @@
             orientation: { rows: ${p.rows}, columns: ${p.cols} },
             down: { row: 0, start: 0, columns: 3 },
             downRight: { row: Math.min(1, ${p.rows} - 1), start: 0, columns: 3, rotate: Math.PI/16 },
-            downLeft: { row: Math.min(2, ${p.rows} - 1), start: 0, columns: 3, rotate: -Math.PI/16 },
+            downLeft: { row: Math.min(2, ${p.rows} - 1), start: 0, columns: 3, rotate: -Math.PI/16${mirrorLeft ? ', mirror: true' : ''} },
             right: { row: Math.min(1, ${p.rows} - 1), start: 0, columns: 3 },
-            left: { row: Math.min(2, ${p.rows} - 1), start: 0, columns: 3 },
+            left: { row: Math.min(2, ${p.rows} - 1), start: 0, columns: 3${mirrorLeft ? ', mirror: true' : ''} },
             up: { row: Math.min(3, ${p.rows} - 1), start: 0, columns: 3 },
             upRight: { row: Math.min(1, ${p.rows} - 1), start: 0, columns: 3, rotate: -Math.PI/16 },
-            upLeft: { row: Math.min(2, ${p.rows} - 1), start: 0, columns: 3, rotate: Math.PI/16 },
+            upLeft: { row: Math.min(2, ${p.rows} - 1), start: 0, columns: 3, rotate: Math.PI/16${mirrorLeft ? ', mirror: true' : ''} },
             hitbox: { widthPercentage: 0.45, heightPercentage: 0.2 },
             keypress: ${keypress}
         };`;
