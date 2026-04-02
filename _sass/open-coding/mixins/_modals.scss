@@ -1,0 +1,53 @@
+// Modal Mixins
+
+@import "buttons";
+
+@mixin modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 1rem;
+
+  @media (max-width: 768px) {
+    padding: 60px 0 0 0;
+  }
+}
+
+@mixin modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 20px 0;
+    margin: 0;
+    border-radius: 0;
+    min-height: calc(100vh - 60px);
+  }
+}
+
+@mixin modal-close-btn {
+  @include icon-button;
+  position: absolute;
+  z-index: 10;
+  line-height: 1;
+  font-size: 28px;
+  top: 28px;
+  right: 28px;
+
+  @media (max-width: 768px) {
+    font-size: 20px;
+    top: 12px;
+    right: 12px;
+  }
+}

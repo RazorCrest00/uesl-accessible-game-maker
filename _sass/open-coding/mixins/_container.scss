@@ -1,0 +1,17 @@
+/**
+ * Container Mixins
+ */
+
+@mixin main-container($margin-bottom: 2rem) {
+  margin-bottom: $margin-bottom;
+}
+
+@mixin sub-container($margin-bottom: 20px) {
+  margin-bottom: $margin-bottom;
+}
+
+@mixin inline-container($display: flex, $gap: 1rem) {
+  display: $display;
+  gap: $gap;
+  align-items: center;
+}

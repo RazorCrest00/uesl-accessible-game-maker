@@ -1,0 +1,83 @@
+/**
+ * Panel Mixins
+ * Reusable panel patterns for consistent content containers
+ */
+
+$panel-bg: var(--panel);
+$panel-text: var(--pref-text-color);
+$panel-border: var(--ui-border);
+$panel-accent: var(--pref-accent-color);
+$panel-bg-primary: var(--pref-bg-color);
+$panel-bg-hover: var(--panel-mid);
+
+$mono-font: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+
+@mixin info-panel($padding: 1.5rem, $border-width: 2px, $margin-bottom: 1rem) {
+  padding: $padding;
+  margin-bottom: $margin-bottom;
+  border-radius: 8px;
+  background: $panel-bg;
+  border: $border-width solid $panel-accent;
+  color: $panel-text;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: $panel-accent;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.5;
+    font-size: 1rem;
+    color: $panel-text;
+    opacity: 0.95;
+  }
+}
+
+@mixin output-panel($min-height: 100px, $max-height: 300px) {
+  min-height: $min-height;
+  max-height: $max-height;
+  overflow-y: auto;
+  padding: 16px;
+  background: $panel-bg;
+  color: $panel-text;
+  white-space: pre-wrap;
+  font-family: $mono-font;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@mixin input-panel {
+  background: $panel-bg;
+  border: 1px solid $panel-border;
+  color: $panel-text;
+  font-family: $mono-font;
+  font-size: 14px;
+}
+
+@mixin control-panel($padding: 0.75rem 1rem, $gap: 1rem, $border-radius: 10px 10px 0 0) {
+  display: flex;
+  align-items: center;
+  gap: $gap;
+  padding: $padding;
+  border-radius: $border-radius;
+  background: $panel-bg-primary;
+  border: 1px solid $panel-border;
+
+  span {
+    font-size: 0.9rem;
+    color: $panel-text;
+  }
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.5rem;
+  }
+}
