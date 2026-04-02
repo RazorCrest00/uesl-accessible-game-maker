@@ -650,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const src = srcRel;
                     const dims = (item.h && item.w) ? { h: item.h, w: item.w } : await ensureImageDims(src);
                     const rows = item.rows || 4; const cols = item.cols || 3;
-                    if (!assets.sprites[key]) assets.sprites[key] = { src, h: dims.h, w: dims.w, rows, cols };
+                    if (!assets.sprites[key]) assets.sprites[key] = { src, h: dims.h, w: dims.w, rows, cols, mirrorLeft: item.mirrorLeft };
                     const opt = document.createElement('option'); opt.value = key; opt.textContent = name; ui.pSprite.appendChild(opt);
                     document.querySelectorAll('.npc-sprite').forEach(sel => {
                         const o = document.createElement('option'); o.value = key; o.textContent = name; sel.appendChild(o);
@@ -1705,18 +1705,22 @@ function maze_generate(canvasW = 900, canvasH = 600) {
     //   xVelocity = (canvasWidth / STEP_FACTOR) * 3 = (900/100)*3 = 27px/frame
     //
     // 64px barrier is also VISUALLY thick, giving the maze a clear stone-wall look.
-    // 150px cells leave 86px of open corridor (150 - 2×32 = 86px), enough for the
-    // player (23px) to navigate with 63px of clearance on each side.
-    const COLS = 6;
-    const ROWS = 4;
-    const cellW = canvasW / COLS;   // 150px
-    const cellH = canvasH / ROWS;   // 150px
+    // 225px cells leave 161px of open corridor (225 - 2×32 = 161px), wide enough
+    // for comfortable navigation — player (23px) has 138px of clearance on each side.
+    const COLS = 4;
+    const ROWS = 3;
+    const cellW = canvasW / COLS;   // 225px
+    const cellH = canvasH / ROWS;   // ~193px
     const WALL = 32;                // half-wall thickness; barrier = WALL*2 = 64px
 
     const visited = Array.from({ length: ROWS }, () => new Array(COLS).fill(false));
     const walls   = Array.from({ length: ROWS }, () =>
         Array.from({ length: COLS }, () => ({ N: true, E: true, S: true, W: true }))
     );
+
+    // Seeded RNG (fixed seed = 42) — same seed produces the same maze every run
+    let _seed = 42;
+    const _rng = () => { _seed = (_seed * 1664525 + 1013904223) & 0xffffffff; return (_seed >>> 0) / 0xffffffff; };
 
     // Iterative backtracker (perfect maze — exactly one path between any two cells)
     const stack = [[0, 0]];
@@ -1733,7 +1737,7 @@ function maze_generate(canvasW = 900, canvasH = 600) {
             .map(d => ({ ...d, nr: r + d.dr, nc: c + d.dc }))
             .filter(d => d.nr >= 0 && d.nr < ROWS && d.nc >= 0 && d.nc < COLS && !visited[d.nr][d.nc]);
         if (!unvisited.length) { stack.pop(); continue; }
-        const { to, from, nr, nc } = unvisited[Math.floor(Math.random() * unvisited.length)];
+        const { to, from, nr, nc } = unvisited[Math.floor(_rng() * unvisited.length)];
         walls[r][c][to] = false;
         walls[nr][nc][from] = false;
         visited[nr][nc] = true;
@@ -3221,8 +3225,9 @@ function generateStepCode(currentStep) {
 
         // Update env dimensions based on container
         try {
-            const containerWidth = ui.gameContainer?.parentElement?.clientWidth || ui.gameContainer?.clientWidth || 800;
-            const containerHeight = ui.gameContainer?.parentElement?.clientHeight || 580;
+            const gameFrame = document.querySelector('.game-frame');
+            const containerWidth = gameFrame?.clientWidth || ui.gameContainer?.parentElement?.clientWidth || ui.gameContainer?.clientWidth || 800;
+            const containerHeight = gameFrame?.clientHeight || ui.gameContainer?.parentElement?.clientHeight || 580;
             envWidth = containerWidth;
             envHeight = containerHeight;
             ui.gameCanvas.width = containerWidth;

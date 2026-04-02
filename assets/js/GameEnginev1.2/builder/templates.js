@@ -4,7 +4,7 @@
   const tpl = {};
 
   tpl.playerData = function ({ name, p, ui, keypress, bg }) {
-    const mirrorLeft = p.rows < 3;
+    const mirrorLeft = p.mirrorLeft !== undefined ? p.mirrorLeft : p.rows < 3;
     return `// [TEMPLATE CODE] GameTemplatesV1.1.playerData\nconst playerData = {
             id: '${name}',
             src: ${p.src.startsWith('/') ? "'" + p.src + "'" : "path + \"" + p.src + "\""},

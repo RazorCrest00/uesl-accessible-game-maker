@@ -1,5 +1,5 @@
 [
-    { "name": "Astronaut", "src": "astro.png", "rows": 4, "cols": 4 },
+    { "name": "Astronaut", "src": "astro.png", "rows": 4, "cols": 4, "mirrorLeft": true },
     { "name": "Kirby", "src": "kirby.png", "rows": 1, "cols": 13 },
     { "name": "Pew", "src": "pew.png", "rows": 4, "cols": 4 },
     { "name": "Slime", "src": "slime.png", "rows": 4, "cols": 4 },
