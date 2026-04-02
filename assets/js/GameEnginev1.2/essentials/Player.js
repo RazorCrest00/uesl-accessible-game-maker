@@ -131,6 +131,13 @@ class Player extends Character {
     }
 
     update() {
+        // Re-apply velocity from currently held keys every frame.
+        // Without this, collisionChecks() zeros velocity once and it stays 0
+        // for all subsequent frames while the key is held (no new keydown fires).
+        // With this, velocity is restored each frame so the player can slide
+        // along walls and escape collisions in valid directions.
+        this.updateVelocity();
+        this.updateDirection();
         super.update();
         if(!this.moved){
             if (this.gravity) {
@@ -150,26 +157,110 @@ class Player extends Character {
      *  - updating the player's direction   
      * @param {*} other - The object that the player is colliding with
      */
-    handleCollisionReaction(other) {    
-        // Do NOT clear pressed keys; keep walking animation active
-        // Halt movement by zeroing velocity along collision axis
+    /**
+     * Override move() to add AABB depenetration after super.move().
+     *
+     * WHY THIS IS NEEDED:
+     * The engine's touch-point detection (in isCollision/handleCollisionState) only
+     * fires when the player STRADDLES a barrier edge — one side in, one side out.
+     * With xVelocity = (canvasW/STEP_FACTOR)*3 = 27px/frame, a player 1px from a
+     * barrier can leap 26px past the edge in a single frame.  At that point the
+     * player is fully inside the barrier: no touch points fire, velocity is never
+     * zeroed, and the player tunnels through on subsequent frames.
+     *
+     * This override catches any remaining penetration AFTER super.move() and pushes
+     * the player back using minimum-overlap axis resolution (standard AABB SAT).
+     * It works in game-space coordinates (no getBoundingClientRect, no DOM reflow):
+     *   - Barriers track position via this.x / this.y  (set in Barrier constructor)
+     *   - Player  tracks position via this.position.x/y (set in Character)
+     * Both are in the same game-pixel coordinate space (container-relative, no top offset).
+     *
+     * Objects with a 'spriteData' property are Characters/NPCs (position tracked
+     * differently) and are intentionally skipped to avoid displacing NPC actors.
+     */
+    move() {
+        super.move(); // applies velocity + boundary clamping
 
-        // Avoid DOM-based push-out; rely on velocity zeroing only
-            // Do NOT clear pressed keys; keep walking animation active
-            // Halt movement by zeroing velocity along the touched axes; avoid DOM-based push-out
-            try {
-                const touchPoints = this.collisionData?.touchPoints?.this;
-                if (touchPoints) {
-                    // Horizontal block
-                    if (touchPoints.left || touchPoints.right) {
-                        this.velocity.x = 0;
-                    }
-                    // Vertical block
-                    if (touchPoints.top || touchPoints.bottom) {
-                        this.velocity.y = 0;
-                    }
+        // AABB depenetration pass: push player out of any Barrier they penetrated.
+        //
+        // WHY the outer-border barrier bug happened:
+        // The maze generated 4 outer-border barriers starting at x=0 / y=0.
+        // super.move() clamps position to [0, innerWidth-w] / [0, innerHeight-h].
+        // So the player at (0,0) was simultaneously overlapping the top border (y=0..32)
+        // AND left border (x=0..32). SAT chose the minimum-overlap axis and pushed
+        // the player to (-23, 0) — overriding super.move()'s clamping and putting the
+        // player at an invalid negative coordinate. Every subsequent AABB pass then saw
+        // wrong coordinates and cascaded into "invisible walls" all over the maze.
+        //
+        // The outer-border barriers are now REMOVED from maze generation (boundary
+        // clamping in super.move() handles screen edges). This pass only touches
+        // interior Barrier objects, which are never at x=0 or y=0, so SAT resolution
+        // always pushes toward the interior of the game area.
+        //
+        // After all AABB corrections, boundary clamping is reapplied so no single
+        // barrier resolution can push the player off-screen.
+
+        try {
+            let px = this.position.x;
+            let py = this.position.y;
+            const pw = this.width;
+            const ph = this.height;
+
+            for (const obj of this.gameEnv.gameObjects) {
+                if (obj === this || !obj.canvas) continue;
+                if ('spriteData' in obj) continue; // skip Characters / NPCs
+
+                const ox = obj.x;
+                const oy = obj.y;
+                const ow = obj.width;
+                const oh = obj.height;
+                if (!ow || !oh) continue;
+
+                // Broad-phase AABB skip
+                if (px + pw <= ox || px >= ox + ow || py + ph <= oy || py >= oy + oh) continue;
+
+                // Penetration depths (all four sides)
+                const dxL = (px + pw) - ox;   // overlap entering from left
+                const dxR = (ox + ow) - px;   // overlap entering from right
+                const dyT = (py + ph) - oy;   // overlap entering from top
+                const dyB = (oy + oh) - py;   // overlap entering from bottom
+
+                // Minimum-overlap axis resolution (SAT)
+                if (Math.min(dxL, dxR) <= Math.min(dyT, dyB)) {
+                    if (dxL <= dxR) { px -= dxL; this.velocity.x = 0; }
+                    else            { px += dxR; this.velocity.x = 0; }
+                } else {
+                    if (dyT <= dyB) { py -= dyT; this.velocity.y = 0; }
+                    else            { py += dyB; this.velocity.y = 0; }
                 }
-            } catch (_) {}
+            }
+
+            // Re-apply boundary clamping AFTER AABB so no resolution can push
+            // the player outside the game area.
+            if (px < 0) { px = 0; this.velocity.x = 0; }
+            if (py < 0) { py = 0; this.velocity.y = 0; }
+            if (px + pw > this.gameEnv.innerWidth)  { px = this.gameEnv.innerWidth  - pw; this.velocity.x = 0; }
+            if (py + ph > this.gameEnv.innerHeight) { py = this.gameEnv.innerHeight - ph; this.velocity.y = 0; }
+
+            this.position.x = px;
+            this.position.y = py;
+        } catch (_) {}
+    }
+
+    handleCollisionReaction(other) {
+        // Do NOT clear pressed keys; keep walking animation active
+        // Halt movement by zeroing velocity along the touched axes
+        try {
+            const touchPoints = this.collisionData?.touchPoints?.this;
+            if (touchPoints) {
+                if (touchPoints.left || touchPoints.right) {
+                    this.velocity.x = 0;
+                }
+                if (touchPoints.top || touchPoints.bottom) {
+                    this.velocity.y = 0;
+                }
+            }
+        } catch (_) {}
 
         super.handleCollisionReaction(other);
     }

@@ -228,16 +228,17 @@ class Character extends GameObject {
         const frameX = ((directionData.start || 0) + (this.frameIndex || 0)) * frameWidth;
         const frameY = (directionData.row || 0) * frameHeight;
 
-        // Set the canvas dimensions based on the frame size
-        // Set the canvas dimensions based on the frame size (integers)
+        // Set canvas dimensions FIRST — assigning canvas.width resets the 2D context
+        // transform to identity, so it must happen before applyTransformations().
+        // Doing it after (as the original code did) wiped every mirror/rotate transform.
         this.canvas.width = frameWidth;
         this.canvas.height = frameHeight;
 
-        // Apply transformations (rotation, mirroring, spinning)
-        this.applyTransformations(directionData);
-
-        // Apply visual effects (e.g., grayscale, blur)
+        // Apply visual effects (e.g., grayscale, blur) — no transform dependency
         this.applyFilters(directionData);
+
+        // Apply transformations (rotation, mirroring, spinning) AFTER resize
+        this.applyTransformations(directionData);
 
         // Draw the sprite sheet frame
         if (!this.visible) return; // Skip drawing if not visible
@@ -246,6 +247,9 @@ class Character extends GameObject {
             frameX, frameY, frameWidth, frameHeight, // Source rectangle
             0, 0, this.canvas.width, this.canvas.height // Destination rectangle
         );
+
+        // Reset transform so accumulated rotations/mirrors don't carry into next frame
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 
     /**

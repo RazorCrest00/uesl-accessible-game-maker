@@ -43,6 +43,65 @@ permalink: /gamebuilderv1-2
   max-width: 100% !important;
   padding: 0 !important;
 }
+
+/* ── Draw overlay: visual layer on top of the game frame ── */
+.game-frame {
+  position: relative;  /* anchor for the absolute overlay */
+}
+/* Cursor feedback on the game-frame when draw mode is active */
+.game-frame.drawing-active {
+  cursor: crosshair;
+}
+.draw-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* never intercepts events — game-frame handles mousedown */
+  z-index: 50;
+  overflow: hidden;
+}
+/* Drawn rectangle previews and confirmed walls */
+.draw-rect {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid rgba(99, 102, 241, 0.9);
+  background: rgba(99, 102, 241, 0.18);
+  pointer-events: none;
+}
+.draw-rect.preview {
+  border-style: dashed;
+  border-color: rgba(99, 102, 241, 0.7);
+  background: rgba(99, 102, 241, 0.1);
+}
+.draw-rect.barrier {
+  border-color: rgba(239, 68, 68, 0.9);
+  background: rgba(239, 68, 68, 0.2);
+}
+/* Draw toolbar button styles */
+.draw-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.draw-btn {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.draw-btn:hover {
+  background: #273449;
+  color: #e2e8f0;
+}
+.draw-btn.active {
+  background: #312e81;
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
 /* Embed mode: hide nav/header/footer when ?embed=1 is in URL */
 .embed-mode #side-nav,
 .embed-mode header,
@@ -273,8 +332,8 @@ permalink: /gamebuilderv1-2
                     </div>
                     <div class="draw-toolbar">
                         <button id="toggle-walls-game" class="draw-btn">Show Walls (Game)</button>
-                        <button id="draw-barrier" class="draw-btn" onclick="if(window._gbSetDrawMode){window._gbSetDrawMode('barrier')}">Draw Collision Wall</button>
-                        <button id="draw-clear" class="draw-btn" onclick="if(window._gbClearWalls){window._gbClearWalls()}">Clear All Walls</button>
+                        <button id="draw-barrier" class="draw-btn">Draw Collision Wall</button>
+                        <button id="draw-clear" class="draw-btn">Clear All Walls</button>
                     </div>
                     <div id="drawn-barriers-list" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
                     <div id="walls-container"></div>
@@ -729,10 +788,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         ui.drawState.mode = mode;
         if (ui.drawBarrierBtn) ui.drawBarrierBtn.classList.toggle('active', mode === 'barrier');
-        if (ui.drawOverlay) {
-            ui.drawOverlay.classList.toggle('active', !!mode);
-            ui.drawOverlay.classList.toggle('mode-barrier', mode === 'barrier');
-        }
+        // Toggle crosshair cursor on the game-frame (always interactable, no pointer-events issues)
+        const gf = document.querySelector('.game-frame');
+        if (gf) gf.classList.toggle('drawing-active', !!mode);
         if (!mode) removePreview();
     }
     if (ui.drawBarrierBtn) ui.drawBarrierBtn.addEventListener('click', () => { state.lastEdited = 'walls'; setDrawMode('barrier'); });
@@ -914,10 +972,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (ui.drawOverlay) {
-        ui.drawOverlay.addEventListener('mousedown', (e) => {
+    // Attach mousedown to the game-frame container rather than the overlay itself.
+    // The overlay uses pointer-events:none by default (so the game stays interactive)
+    // and pointer-events:auto only when .active — but attaching to game-frame avoids
+    // any pointer-events/z-index race. We just check ui.drawState.mode as a gate.
+    const gameFrameEl = document.querySelector('.game-frame');
+    const drawTarget = gameFrameEl || ui.drawOverlay;
+    if (drawTarget) {
+        drawTarget.addEventListener('mousedown', (e) => {
             if (!ui.drawState.mode) return;
-            const bounds = ui.drawOverlay.getBoundingClientRect();
+            e.preventDefault();
+            const bounds = (ui.drawOverlay || drawTarget).getBoundingClientRect();
             const localX = e.clientX - bounds.left;
             const localY = e.clientY - bounds.top;
             ui.drawState.activeBarrier = null;
@@ -925,17 +990,17 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.drawState.startX = localX;
             ui.drawState.startY = localY;
         });
-        window.addEventListener('mousemove', (e) => {
-            if (!ui.drawState.isDrawing) return;
-            updatePreview(e.clientX, e.clientY);
-        });
-        window.addEventListener('mouseup', (e) => {
-            if (!ui.drawState.isDrawing) return;
-            ui.drawState.isDrawing = false;
-            finalizeShape(e.clientX, e.clientY);
-            ui.drawState.activeBarrier = null;
-        });
     }
+    window.addEventListener('mousemove', (e) => {
+        if (!ui.drawState.isDrawing) return;
+        updatePreview(e.clientX, e.clientY);
+    });
+    window.addEventListener('mouseup', (e) => {
+        if (!ui.drawState.isDrawing) return;
+        ui.drawState.isDrawing = false;
+        finalizeShape(e.clientX, e.clientY);
+        ui.drawState.activeBarrier = null;
+    });
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -1582,19 +1647,38 @@ function barrier_code(barrierData) {
  * @returns {Object} { dataURL: string, barriers: Array<{x,y,width,height}> }
  */
 function maze_generate(canvasW = 900, canvasH = 600) {
-    // 9×6 grid → ~40 barriers (vs 18×12 → ~190), wide corridors, fast code generation
-    const COLS = 9;
-    const ROWS = 6;
-    const cellW = canvasW / COLS;   // 100px per cell
-    const cellH = canvasH / ROWS;   // 100px per cell
-    const WALL = 10;                // wall thickness in px
+    // 6×4 grid: 150×150px cells, WALL=32 → barrier thickness=64px.
+    //
+    // WHY THIS GRID AND WALL SIZE:
+    // The engine collision system (isCollision in GameObject.js) uses touch-point
+    // conditions that only fire when the player STRADDLES a barrier edge — one side
+    // inside, one side outside. If the player steps far enough in one frame to land
+    // with BOTH edges inside the barrier, no touch point fires and velocity is not
+    // zeroed → the player ghosts through or enters an undefined stuck state.
+    //
+    // No-tunnelling guarantee requires:
+    //   barrier_thickness  >  player_width + player_x_velocity
+    //   64px               >  23px          + 27px              = 50px  ✓
+    //
+    // Player defaults (from Character.js):
+    //   width    = canvasHeight / SCALE_FACTOR  = 580 / 25 ≈ 23px
+    //   xVelocity = (canvasWidth / STEP_FACTOR) * 3 = (900/100)*3 = 27px/frame
+    //
+    // 64px barrier is also VISUALLY thick, giving the maze a clear stone-wall look.
+    // 150px cells leave 86px of open corridor (150 - 2×32 = 86px), enough for the
+    // player (23px) to navigate with 63px of clearance on each side.
+    const COLS = 6;
+    const ROWS = 4;
+    const cellW = canvasW / COLS;   // 150px
+    const cellH = canvasH / ROWS;   // 150px
+    const WALL = 32;                // half-wall thickness; barrier = WALL*2 = 64px
 
     const visited = Array.from({ length: ROWS }, () => new Array(COLS).fill(false));
     const walls   = Array.from({ length: ROWS }, () =>
         Array.from({ length: COLS }, () => ({ N: true, E: true, S: true, W: true }))
     );
 
-    // Iterative backtracker (avoids call-stack issues on any grid size)
+    // Iterative backtracker (perfect maze — exactly one path between any two cells)
     const stack = [[0, 0]];
     visited[0][0] = true;
     const DIRS = [
@@ -1617,36 +1701,51 @@ function maze_generate(canvasW = 900, canvasH = 600) {
     }
 
     // --- Render maze ---
+    // Passage openings are exactly WALL*2 = 64px wide/tall so they match barriers.
     const oc = document.createElement('canvas');
     oc.width = canvasW; oc.height = canvasH;
     const ctx = oc.getContext('2d');
 
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = '#1a1a2e';          // dark = wall
     ctx.fillRect(0, 0, canvasW, canvasH);
 
-    ctx.fillStyle = '#e8d5b0';
+    ctx.fillStyle = '#e8d5b0';          // sandy = passable floor
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            // Cell interior
-            ctx.fillRect(c * cellW + WALL, r * cellH + WALL, cellW - WALL, cellH - WALL);
-            // Open east passage
+            // Open cell interior (inset WALL from every edge)
+            ctx.fillRect(c * cellW + WALL, r * cellH + WALL, cellW - WALL * 2, cellH - WALL * 2);
+            // Open east passage: ±WALL around column boundary, trimmed top/bottom
             if (!walls[r][c].E && c + 1 < COLS)
-                ctx.fillRect(c * cellW + cellW - WALL, r * cellH + WALL, WALL * 2, cellH - WALL);
-            // Open south passage
+                ctx.fillRect((c + 1) * cellW - WALL, r * cellH + WALL, WALL * 2, cellH - WALL * 2);
+            // Open south passage: ±WALL around row boundary, trimmed left/right
             if (!walls[r][c].S && r + 1 < ROWS)
-                ctx.fillRect(c * cellW + WALL, r * cellH + cellH - WALL, cellW - WALL, WALL * 2);
+                ctx.fillRect(c * cellW + WALL, (r + 1) * cellH - WALL, cellW - WALL * 2, WALL * 2);
         }
     }
-    ctx.strokeStyle = '#8b6914';
-    ctx.lineWidth = WALL;
-    ctx.strokeRect(WALL / 2, WALL / 2, canvasW - WALL, canvasH - WALL);
+    // Outer border highlight
+    ctx.strokeStyle = '#5a3e1b';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, canvasW - 4, canvasH - 4);
 
     const dataURL = oc.toDataURL('image/png');
 
-    // --- Barriers: merge collinear runs to minimise barrier count ---
+    // --- Collision barriers ---
+    //
+    // Design rules:
+    // 1. CENTERED on each grid boundary (±WALL) so barrier blocks equally on
+    //    both the approach and departure sides.
+    // 2. CORNER-TRIMMED (inset WALL on perpendicular sides) so barriers at
+    //    two adjacent walls never overlap at grid intersections, keeping
+    //    passage corners collision-free.
+    // 3. PER-CELL (one rect per wall segment) so a run of walls in one row
+    //    never accidentally extends past an adjacent open passage.
+    // 4. 64px THICK so barrier_width (64) > player_width+step (50), ensuring
+    //    the player always straddles the barrier edge before penetrating it,
+    //    which is the precondition for touch-point detection to work correctly.
+
     const barriers = [];
     let bIdx = 0;
-    function addBarrier(px, py, pw, ph) {
+    function addB(px, py, pw, ph) {
         barriers.push({
             varName: `mw${bIdx}`,
             id: `mw-${bIdx++}`,
@@ -1658,35 +1757,30 @@ function maze_generate(canvasW = 900, canvasH = 600) {
         });
     }
 
-    // 4 outer edges
-    addBarrier(0, 0, canvasW, WALL);
-    addBarrier(0, canvasH - WALL, canvasW, WALL);
-    addBarrier(0, 0, WALL, canvasH);
-    addBarrier(canvasW - WALL, 0, WALL, canvasH);
+    // NOTE: outer border barriers are intentionally omitted.
+    // super.move() in Character.js already clamps the player to [0, innerWidth] x [0, innerHeight].
+    // Generating border barriers at x=0 / y=0 caused AABB SAT to push the player to negative
+    // coordinates (overriding the clamping), which looked like phantom invisible walls everywhere.
 
-    // Horizontal interior walls — merge consecutive south-wall segments per row
+    // Interior south walls — centered on row boundary, trimmed left/right by WALL
     for (let r = 0; r < ROWS - 1; r++) {
-        let start = -1;
-        for (let c = 0; c <= COLS; c++) {
-            const hasWall = c < COLS && walls[r][c].S;
-            if (hasWall && start === -1) { start = c; }
-            else if (!hasWall && start !== -1) {
-                addBarrier(start * cellW, (r + 1) * cellH, (c - start) * cellW, WALL);
-                start = -1;
-            }
+        for (let c = 0; c < COLS; c++) {
+            if (!walls[r][c].S) continue;
+            addB(c * cellW + WALL,       // x: inset WALL from left edge
+                 (r+1) * cellH - WALL,   // y: centered on boundary
+                 cellW - WALL * 2,        // width: full cell minus corner trim
+                 WALL * 2);              // height: WALL above + WALL below boundary
         }
     }
 
-    // Vertical interior walls — merge consecutive east-wall segments per column
-    for (let c = 0; c < COLS - 1; c++) {
-        let start = -1;
-        for (let r = 0; r <= ROWS; r++) {
-            const hasWall = r < ROWS && walls[r][c].E;
-            if (hasWall && start === -1) { start = r; }
-            else if (!hasWall && start !== -1) {
-                addBarrier((c + 1) * cellW, start * cellH, WALL, (r - start) * cellH);
-                start = -1;
-            }
+    // Interior east walls — centered on column boundary, trimmed top/bottom by WALL
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS - 1; c++) {
+            if (!walls[r][c].E) continue;
+            addB((c+1) * cellW - WALL,   // x: centered on boundary
+                 r * cellH + WALL,        // y: inset WALL from top edge
+                 WALL * 2,               // width: WALL left + WALL right of boundary
+                 cellH - WALL * 2);      // height: full cell minus corner trim
         }
     }
 
