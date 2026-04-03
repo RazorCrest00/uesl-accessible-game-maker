@@ -1111,7 +1111,7 @@ permalink: /game-maker/
           <b>🗑️ Erase</b> — click to delete<br>
           <b>DEL</b> — delete selected<br>
           <b>Ctrl+Z/Y</b> — undo / redo<br>
-          <b>🌀 Maze mode:</b> the spline corridors ARE the walls — place ⭐ stars inside the glowing paths!
+          <b>🌀 Maze mode:</b> dark stone areas are walls — place ⭐ stars inside the glowing spline corridors!
         </div>
       </div>
 
@@ -1487,34 +1487,21 @@ const MAZE_CX = [65, 195, 325, 455, 585, 715];  // node x positions
 const MAZE_RY = [65, 165, 265, 365, 455];        // node y positions
 function _mn(c,r){return[MAZE_CX[c],MAZE_RY[r]];}
 
-/* Each entry is an ordered list of [x,y] waypoints forming one corridor
-   drawn as a single Catmull-Rom stroke.  All 30 grid nodes are reachable
-   from the start node (0,0) = top-left; exit is node (5,4) = bottom-right. */
+/* Spanning-tree maze: 17-step solution path (start→exit), three dead-end
+   arms. Corridors with 3+ non-collinear waypoints create real Catmull-Rom
+   curves at each bend in the serpentine main path.
+   Start = node(0,0) top-left, Exit = node(5,4) bottom-right. */
 const MAZE_CORRIDORS=[
-  // ── Horizontal ──────────────────────────────────────────────────────────
-  [_mn(0,0),_mn(1,0)],
-  [_mn(3,0),_mn(4,0),_mn(5,0)],
-  [_mn(1,1),_mn(2,1)],
-  [_mn(4,1),_mn(5,1)],
-  [_mn(0,2),_mn(1,2),_mn(2,2)],
-  [_mn(3,2),_mn(4,2)],
-  [_mn(1,3),_mn(2,3)],
-  [_mn(3,3),_mn(4,3),_mn(5,3)],
-  [_mn(0,4),_mn(1,4)],
-  [_mn(2,4),_mn(3,4)],
-  [_mn(4,4),_mn(5,4)],
-  // ── Vertical ────────────────────────────────────────────────────────────
-  [_mn(0,0),_mn(0,1),_mn(0,2)],
-  [_mn(0,3),_mn(0,4)],
-  [_mn(1,0),_mn(1,1)],
-  [_mn(1,2),_mn(1,3),_mn(1,4)],
-  [_mn(2,0),_mn(2,1),_mn(2,2)],
-  [_mn(2,3),_mn(2,4)],
-  [_mn(3,0),_mn(3,1),_mn(3,2)],
-  [_mn(3,3),_mn(3,4)],
-  [_mn(4,0),_mn(4,1)],
-  [_mn(4,2),_mn(4,3)],
-  [_mn(5,0),_mn(5,1),_mn(5,2),_mn(5,3),_mn(5,4)],
+  // ── Dead-end arms (wrong-turn traps) ────────────────────────────────────
+  [_mn(0,0),_mn(1,0),_mn(2,0),_mn(3,0),_mn(4,0),_mn(5,0)], // full top row
+  [_mn(0,1),_mn(1,1),_mn(2,1),_mn(3,1),_mn(4,1)],           // row-1 arm
+  [_mn(5,0),_mn(5,1),_mn(5,2),_mn(5,3)],                     // right-col arm
+  // ── Main path — serpentine with Catmull-Rom curves at each bend ─────────
+  [_mn(0,0),_mn(0,1),_mn(0,2),_mn(0,3),_mn(0,4),_mn(1,4)], // down then →
+  [_mn(1,4),_mn(1,3),_mn(1,2),_mn(2,2)],                     // up   then →
+  [_mn(2,2),_mn(2,3),_mn(2,4),_mn(3,4)],                     // down then →
+  [_mn(3,4),_mn(3,3),_mn(3,2),_mn(4,2)],                     // up   then →
+  [_mn(4,2),_mn(4,3),_mn(4,4),_mn(5,4)],                     // down then → EXIT
 ];
 
 /* Draw a Catmull-Rom spline through pts (call beginPath before this) */
@@ -1529,7 +1516,8 @@ function catmullRomPath(ctx,pts){
   }
 }
 
-/* Lazy offscreen collision mask — white pixels = walkable corridor */
+/* Lazy offscreen collision mask — white pixels = walkable corridor.
+   Reset whenever MAZE_CORRIDORS changes (e.g. background switch). */
 let _mazePixels=null;
 function getMazePixels(){
   if(_mazePixels)return _mazePixels;
@@ -1546,6 +1534,14 @@ function isMazeOpen(px,py){
   const x=Math.round(px),y=Math.round(py);
   if(x<0||x>=W||y<0||y>=H)return false;
   return getMazePixels()[(y*W+x)*4]>64;
+}
+function nearestMazeNode(px,py){
+  let bestX=MAZE_CX[0],bestY=MAZE_RY[0],bestD=Infinity;
+  for(const cx of MAZE_CX)for(const ry of MAZE_RY){
+    const d=Math.hypot(px-cx,py-ry);
+    if(d<bestD){bestD=d;bestX=cx;bestY=ry;}
+  }
+  return {x:bestX,y:bestY};
 }
 function resolveMazeCollision(ps,prevX,prevY){
   const sz=ps.size,m=5;
@@ -2112,7 +2108,12 @@ function onEDown(e) {
     editorState.dragStart = { x:sx, y:sy };
 
   } else if (t === 'star') {
-    lv.stars.push({ id:uid(), x:snap(x), y:snap(y) });
+    let sx2=snap(x),sy2=snap(y);
+    if(game.background==='maze'){
+      // Always place at the exact corridor-node centre so stars are always reachable
+      const node=nearestMazeNode(sx2,sy2);sx2=node.x;sy2=node.y;
+    }
+    lv.stars.push({ id:uid(), x:sx2, y:sy2 });
     saveHistory();
 
   } else if (t === 'heart') {
@@ -3091,7 +3092,8 @@ function updatePlay(st) {
   const pcx=ps.x+ps.size/2, pcy=ps.y+ps.size/2;
   st.stars.forEach((s, starIdx) => {
     if (s.collected) return;
-    if (Math.hypot(s.x-pcx,s.y-pcy)<ps.size*0.7) {
+    const _starR=game.background==='maze'?50:ps.size*0.7;
+    if (Math.hypot(s.x-pcx,s.y-pcy)<_starR) {
       s.collected=true; st.score++;
       sfxCollect();
       spawnParticles(st,s.x,s.y);

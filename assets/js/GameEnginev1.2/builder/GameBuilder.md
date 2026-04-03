@@ -1744,32 +1744,92 @@ function maze_generate(canvasW = 900, canvasH = 600) {
         stack.push([nr, nc]);
     }
 
-    // --- Render maze ---
-    // Passage openings are exactly WALL*2 = 64px wide/tall so they match barriers.
+    // --- Render maze with Catmull-Rom spline corridors ---
+    // Corridors connect cell centres through each passage opening.
+    // Round lineCap/lineJoin and a teal glow give smooth, organic spline-style paths.
     const oc = document.createElement('canvas');
     oc.width = canvasW; oc.height = canvasH;
     const ctx = oc.getContext('2d');
 
-    ctx.fillStyle = '#1a1a2e';          // dark = wall
+    // Stone-wall background with faint masonry grid texture
+    ctx.fillStyle = '#12100f';
     ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.strokeStyle = 'rgba(55,42,30,0.55)';
+    ctx.lineWidth = 0.8;
+    for (let gx = 0; gx < canvasW; gx += 32) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, canvasH); ctx.stroke();
+    }
+    for (let gy = 0; gy < canvasH; gy += 28) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(canvasW, gy); ctx.stroke();
+    }
 
-    ctx.fillStyle = '#e8d5b0';          // sandy = passable floor
+    // Cell-centre node positions (passage midpoints)
+    const nodeX = Array.from({ length: COLS }, (_, c) => (c + 0.5) * cellW);
+    const nodeY = Array.from({ length: ROWS }, (_, r) => (r + 0.5) * cellH);
+
+    // Collect open-corridor segments: [[x0,y0],[x1,y1]]
+    const corridors = [];
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            // Open cell interior (inset WALL from every edge)
-            ctx.fillRect(c * cellW + WALL, r * cellH + WALL, cellW - WALL * 2, cellH - WALL * 2);
-            // Open east passage: ±WALL around column boundary, trimmed top/bottom
             if (!walls[r][c].E && c + 1 < COLS)
-                ctx.fillRect((c + 1) * cellW - WALL, r * cellH + WALL, WALL * 2, cellH - WALL * 2);
-            // Open south passage: ±WALL around row boundary, trimmed left/right
+                corridors.push([[nodeX[c], nodeY[r]], [nodeX[c + 1], nodeY[r]]]);
             if (!walls[r][c].S && r + 1 < ROWS)
-                ctx.fillRect(c * cellW + WALL, (r + 1) * cellH - WALL, cellW - WALL * 2, WALL * 2);
+                corridors.push([[nodeX[c], nodeY[r]], [nodeX[c], nodeY[r + 1]]]);
         }
     }
-    // Outer border highlight
-    ctx.strokeStyle = '#5a3e1b';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2, 2, canvasW - 4, canvasH - 4);
+
+    // Corridor stroke width — fills each passage opening (min interior dimension)
+    const COR_W = Math.min(cellW, cellH) - WALL * 2;
+
+    // Catmull-Rom spline path helper (bezier approximation)
+    function _crPath(c2, pts) {
+        if (pts.length < 2) return;
+        c2.moveTo(pts[0][0], pts[0][1]);
+        if (pts.length === 2) { c2.lineTo(pts[1][0], pts[1][1]); return; }
+        const p = [pts[0], ...pts, pts[pts.length - 1]];
+        for (let i = 1; i < p.length - 2; i++) {
+            const [x0,y0]=p[i-1],[x1,y1]=p[i],[x2,y2]=p[i+1],[x3,y3]=p[i+2];
+            c2.bezierCurveTo(x1+(x2-x0)/6,y1+(y2-y0)/6,x2-(x3-x1)/6,y2-(y3-y1)/6,x2,y2);
+        }
+    }
+
+    // Layer 1 — outer glow halo
+    ctx.save();
+    ctx.shadowColor = '#00e5cc'; ctx.shadowBlur = 26;
+    ctx.strokeStyle = 'rgba(0,200,180,0.18)';
+    ctx.lineWidth = COR_W + 20; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const seg of corridors) { ctx.beginPath(); _crPath(ctx, seg); ctx.stroke(); }
+    ctx.restore();
+
+    // Layer 2 — corridor floor (dark teal fill)
+    ctx.strokeStyle = '#0b2924';
+    ctx.lineWidth = COR_W; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const seg of corridors) { ctx.beginPath(); _crPath(ctx, seg); ctx.stroke(); }
+
+    // Layer 3 — inner glow centerline (spline highlight)
+    ctx.save();
+    ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 12;
+    ctx.strokeStyle = 'rgba(0,235,185,0.55)';
+    ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const seg of corridors) { ctx.beginPath(); _crPath(ctx, seg); ctx.stroke(); }
+    ctx.restore();
+
+    // EXIT marker — gold pulsing dot at bottom-right cell
+    ctx.save();
+    ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 22;
+    ctx.fillStyle = 'rgba(255,215,0,0.85)';
+    ctx.beginPath(); ctx.arc(nodeX[COLS - 1], nodeY[ROWS - 1], 14, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#000';
+    ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('EXIT', nodeX[COLS - 1], nodeY[ROWS - 1] + 1);
+    ctx.restore();
+
+    // START marker — green dot at top-left cell
+    ctx.save();
+    ctx.shadowColor = '#00FF88'; ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(0,255,136,0.5)';
+    ctx.beginPath(); ctx.arc(nodeX[0], nodeY[0], 10, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
 
     const dataURL = oc.toDataURL('image/png');
 
