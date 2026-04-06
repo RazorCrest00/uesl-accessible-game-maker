@@ -1111,7 +1111,7 @@ permalink: /game-maker/
           <b>🗑️ Erase</b> — click to delete<br>
           <b>DEL</b> — delete selected<br>
           <b>Ctrl+Z/Y</b> — undo / redo<br>
-          <b>🌀 Maze mode:</b> the spline corridors ARE the walls — place ⭐ stars inside the glowing paths!
+          <b>🌀 Maze mode:</b> navigate the maze corridors and reach the gold EXIT to win! Stars are optional bonuses.
         </div>
       </div>
 
@@ -1481,43 +1481,23 @@ function drawOceanBg(ctx) {
   ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(0, H*0.63, W, 4);
 }
 
-/* ── Spline Maze Background ─────────────────────────────────────────────── */
-const MAZE_CW = 64; // corridor stroke width in pixels
-const MAZE_CX = [65, 195, 325, 455, 585, 715];  // node x positions
-const MAZE_RY = [65, 165, 265, 365, 455];        // node y positions
-function _mn(c,r){return[MAZE_CX[c],MAZE_RY[r]];}
+/* ── Maze Background (image visual + pixel collision) ────────────────────── */
+/* Newmaze.png is drawn as the visual. Its actual pixel data drives collision — */
+/* bright pixels (R > 180) are walkable corridors, dark pixels are walls.     */
 
-/* Each entry is an ordered list of [x,y] waypoints forming one corridor
-   drawn as a single Catmull-Rom stroke.  All 30 grid nodes are reachable
-   from the start node (0,0) = top-left; exit is node (5,4) = bottom-right. */
-const MAZE_CORRIDORS=[
-  // ── Horizontal ──────────────────────────────────────────────────────────
-  [_mn(0,0),_mn(1,0)],
-  [_mn(3,0),_mn(4,0),_mn(5,0)],
-  [_mn(1,1),_mn(2,1)],
-  [_mn(4,1),_mn(5,1)],
-  [_mn(0,2),_mn(1,2),_mn(2,2)],
-  [_mn(3,2),_mn(4,2)],
-  [_mn(1,3),_mn(2,3)],
-  [_mn(3,3),_mn(4,3),_mn(5,3)],
-  [_mn(0,4),_mn(1,4)],
-  [_mn(2,4),_mn(3,4)],
-  [_mn(4,4),_mn(5,4)],
-  // ── Vertical ────────────────────────────────────────────────────────────
-  [_mn(0,0),_mn(0,1),_mn(0,2)],
-  [_mn(0,3),_mn(0,4)],
-  [_mn(1,0),_mn(1,1)],
-  [_mn(1,2),_mn(1,3),_mn(1,4)],
-  [_mn(2,0),_mn(2,1),_mn(2,2)],
-  [_mn(2,3),_mn(2,4)],
-  [_mn(3,0),_mn(3,1),_mn(3,2)],
-  [_mn(3,3),_mn(3,4)],
-  [_mn(4,0),_mn(4,1)],
-  [_mn(4,2),_mn(4,3)],
-  [_mn(5,0),_mn(5,1),_mn(5,2),_mn(5,3),_mn(5,4)],
-];
+const MAZE_PLAYER_SIZE = 30; // player size in maze mode — fits ~46px corridors with 8px clearance
 
-/* Draw a Catmull-Rom spline through pts (call beginPath before this) */
+/* Visual image */
+const mazeImg = new Image();
+mazeImg.src = '/images/gamebuilder/Newmaze.png';
+
+/* Entry/exit positions — initially guessed, updated after image loads */
+let MAZE_SPAWN_X = 365;
+let MAZE_SPAWN_Y = 26; // must be > BORDER (22) so resolveBarriers doesn't interfere
+let MAZE_EXIT_X  = 410;
+let MAZE_EXIT_Y  = H - 28;
+
+/* ── Catmull-Rom spline helper (also used by the Road background) ─────────── */
 function catmullRomPath(ctx,pts){
   if(pts.length<2)return;
   ctx.moveTo(pts[0][0],pts[0][1]);
@@ -1529,76 +1509,84 @@ function catmullRomPath(ctx,pts){
   }
 }
 
-/* Lazy offscreen collision mask — white pixels = walkable corridor */
-let _mazePixels=null;
-function getMazePixels(){
-  if(_mazePixels)return _mazePixels;
-  const oc=document.createElement('canvas');
-  oc.width=W;oc.height=H;
-  const c=oc.getContext('2d');
-  c.fillStyle='#000';c.fillRect(0,0,W,H);
-  c.strokeStyle='#FFF';c.lineWidth=MAZE_CW;c.lineCap='round';c.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){c.beginPath();catmullRomPath(c,cor);c.stroke();}
-  _mazePixels=c.getImageData(0,0,W,H).data;
+/* ── Offscreen pixel cache — drawn from the actual maze image ─────────────── */
+let _mazePixels = null;
+
+function getMazePixels() {
+  if (_mazePixels) return _mazePixels;
+  if (!mazeImg.complete || !mazeImg.naturalWidth) return null;
+  const oc = document.createElement('canvas');
+  oc.width = W; oc.height = H;
+  const c = oc.getContext('2d');
+  c.drawImage(mazeImg, 0, 0, W, H);
+  _mazePixels = c.getImageData(0, 0, W, H).data;
+  _scanMazeOpenings(_mazePixels);
   return _mazePixels;
 }
-function isMazeOpen(px,py){
-  const x=Math.round(px),y=Math.round(py);
-  if(x<0||x>=W||y<0||y>=H)return false;
-  return getMazePixels()[(y*W+x)*4]>64;
-}
-function resolveMazeCollision(ps,prevX,prevY){
-  const sz=ps.size,m=5;
-  function blocked(x,y){
-    return !isMazeOpen(x+m,y+m)||!isMazeOpen(x+sz-m,y+m)||
-           !isMazeOpen(x+m,y+sz-m)||!isMazeOpen(x+sz-m,y+sz-m);
+
+/* Scan the image border to auto-detect the entry (top gap) and exit (bottom gap) */
+function _scanMazeOpenings(px) {
+  function findBorderGap(fromY, toY, step) {
+    // Find the row in the scan range with the most black (wall) pixels
+    let bestY = fromY, bestBlacks = 0;
+    for (let y = fromY; step > 0 ? y <= toY : y >= toY; y += step) {
+      let blacks = 0;
+      for (let x = 0; x < W; x++) { if (px[(y * W + x) * 4] < 80) blacks++; }
+      if (blacks > bestBlacks) { bestBlacks = blacks; bestY = y; }
+    }
+    if (bestBlacks < 10) return null; // no real border found
+    // Find the widest white gap in that border row (skip 5px edges)
+    let best = null, bestW = 0, runStart = -1;
+    for (let x = 5; x <= W - 5; x++) {
+      const r = px[(bestY * W + x) * 4];
+      if (r > 180 && runStart < 0) runStart = x;
+      if ((r <= 180 || x === W - 5) && runStart >= 0) {
+        const gw = x - runStart;
+        if (gw > bestW) { bestW = gw; best = { x: runStart + Math.floor(gw / 2), y: bestY }; }
+        runStart = -1;
+      }
+    }
+    return best && bestW >= 8 ? best : null;
   }
-  if(!blocked(ps.x,ps.y))return;
-  if(!blocked(prevX,ps.y)){ps.x=prevX;ps.vx=0;return;}
-  if(!blocked(ps.x,prevY)){ps.y=prevY;ps.vy=0;return;}
-  ps.x=prevX;ps.y=prevY;ps.vx=0;ps.vy=0;
+
+  const entry = findBorderGap(0, Math.floor(H / 4), 1);
+  const exit  = findBorderGap(H - 1, Math.floor(3 * H / 4), -1);
+
+  if (entry) {
+    MAZE_SPAWN_X = Math.round(entry.x - MAZE_PLAYER_SIZE / 2);
+    // Ensure spawn is below the canvas border barrier (BORDER = 22px)
+    MAZE_SPAWN_Y = Math.max(BORDER + 2, Math.min(Math.round(entry.y + 4), Math.floor(H / 4)));
+  }
+  if (exit) {
+    MAZE_EXIT_X = Math.round(exit.x);
+    // Ensure exit marker is above the canvas border barrier
+    MAZE_EXIT_Y = Math.max(Math.round(exit.y - 4), Math.floor(3 * H / 4));
+  }
 }
 
-function drawMazeBg(ctx){
-  const t=Date.now()*0.001;
-  // Stone wall
-  ctx.fillStyle='#12100f';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(55,42,30,0.55)';ctx.lineWidth=0.8;
-  for(let gx=0;gx<W;gx+=32){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-  for(let gy=0;gy<H;gy+=28){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-  // Outer corridor glow
-  ctx.save();
-  ctx.shadowColor='#00e5cc';ctx.shadowBlur=26;
-  ctx.strokeStyle='rgba(0,200,180,0.15)';
-  ctx.lineWidth=MAZE_CW+20;ctx.lineCap='round';ctx.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
-  ctx.restore();
-  // Corridor floor
-  ctx.strokeStyle='#0b2924';ctx.lineWidth=MAZE_CW;ctx.lineCap='round';ctx.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
-  // Inner glow line (animated)
-  ctx.save();
-  ctx.shadowColor='#00ffcc';ctx.shadowBlur=12;
-  ctx.strokeStyle=`rgba(0,235,185,${0.4+0.2*Math.sin(t*1.8)})`;
-  ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
-  ctx.restore();
-  // EXIT marker — pulsing gold at node(5,4)
-  const ex=MAZE_CX[5],ey=MAZE_RY[4],pulse=0.85+0.25*Math.sin(t*2.5);
-  ctx.save();
-  ctx.shadowColor='#FFD700';ctx.shadowBlur=22*pulse;
-  ctx.fillStyle=`rgba(255,215,0,${0.75*pulse})`;
-  ctx.beginPath();ctx.arc(ex,ey,13*pulse,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#000';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('EXIT',ex,ey+1);
-  ctx.restore();
-  // START marker — soft green at node(0,0)
-  ctx.save();
-  ctx.shadowColor='#00FF88';ctx.shadowBlur=10;
-  ctx.fillStyle='rgba(0,255,136,0.45)';
-  ctx.beginPath();ctx.arc(MAZE_CX[0],MAZE_RY[0],9,0,Math.PI*2);ctx.fill();
-  ctx.restore();
+/* Trigger a re-scan when the image finishes loading */
+mazeImg.onload = () => { _mazePixels = null; getMazePixels(); };
+
+function isMazeOpen(px, py) {
+  const x = Math.round(px), y = Math.round(py);
+  if (x < 0 || x >= W || y < 0 || y >= H) return false;
+  const pixels = getMazePixels();
+  if (!pixels) return true; // image not ready — allow movement
+  return pixels[(y * W + x) * 4] > 180; // white/light = open corridor
 }
+
+function resolveMazeCollision(ps, prevX, prevY) {
+  const sz = ps.size, m = 2;
+  function blocked(x, y) {
+    return !isMazeOpen(x+m,y+m) || !isMazeOpen(x+sz-m,y+m) ||
+           !isMazeOpen(x+m,y+sz-m) || !isMazeOpen(x+sz-m,y+sz-m);
+  }
+  if (!blocked(ps.x, ps.y)) return;
+  if (!blocked(prevX, ps.y)) { ps.x = prevX; ps.vx = 0; return; }
+  if (!blocked(ps.x, prevY)) { ps.y = prevY; ps.vy = 0; return; }
+  ps.x = prevX; ps.y = prevY; ps.vx = 0; ps.vy = 0;
+}
+
 
 /* ── Spline Road Background ──────────────────────────────────────────────── */
 const ROAD_W = 115; // road width in pixels
@@ -1712,7 +1700,7 @@ const BACKGROUNDS = [
   { id: 'space',  label: '🚀 Deep Space',   type: 'drawn', draw: drawSpaceBg },
   { id: 'sunset', label: '🌅 Sunset',        type: 'drawn', draw: drawSunsetBg },
   { id: 'ocean',  label: '🌊 Ocean Sky',     type: 'drawn', draw: drawOceanBg },
-  { id: 'maze',   label: '🌀 Maze',   type: 'drawn', draw: drawMazeBg },
+  { id: 'maze',   label: '🌀 Maze',   type: 'image', src: '/images/gamebuilder/Newmaze.png' },
   { id: 'road',   label: '🛣️ Road Drive', type: 'drawn', draw: drawRoadBg },
 ];
 
@@ -2738,7 +2726,8 @@ window._gmLoadPlayLevel = function(idx) { loadPlayLevel(idx); };
 function startPlay() {
   // Validate: at least one level has stars
   const hasAny = game.levels.some(lv => lv.stars.length > 0);
-  if (!hasAny) { alert('⭐ Add at least one star to your level before playing!'); return false; }
+  // Maze mode uses the EXIT marker as the win condition — stars are optional
+  if (!hasAny && game.background !== 'maze') { alert('⭐ Add at least one star to your level before playing!'); return false; }
 
   hideAllOverlays();
   document.getElementById('gm-play-title').textContent = game.title || 'My Game';
@@ -2782,13 +2771,14 @@ function buildPlayState(lv) {
   // begins inside a corridor regardless of where the editor marker was placed.
   const mazeMode = game.background === 'maze';
   const roadMode = game.background === 'road';
-  const spawnX = mazeMode ? MAZE_CX[0] - 20 : roadMode ? ROAD_WAYPOINTS[0][0] - 20 : lvClone.playerStart.x - 20;
-  const spawnY = mazeMode ? MAZE_RY[0] - 20 : roadMode ? ROAD_WAYPOINTS[0][1] - 20 : lvClone.playerStart.y - 20;
+  if (mazeMode) getMazePixels(); // ensure entry/exit positions are computed from image
+  const spawnX = mazeMode ? MAZE_SPAWN_X : roadMode ? ROAD_WAYPOINTS[0][0] - 20 : lvClone.playerStart.x - 20;
+  const spawnY = mazeMode ? MAZE_SPAWN_Y : roadMode ? ROAD_WAYPOINTS[0][1] - 20 : lvClone.playerStart.y - 20;
   return {
     player: {
       x:    spawnX,
       y:    spawnY,
-      size: a11y.largeSprites ? 52 : gameConfig.playerSize,
+      size: mazeMode ? MAZE_PLAYER_SIZE : a11y.largeSprites ? 52 : gameConfig.playerSize,
       spd:  gameConfig.playerSpeed, vx:0, vy:0,
     },
     barriers:      lvClone.barriers,
@@ -2944,6 +2934,21 @@ function updatePlay(st) {
   ps.x+=ps.vx; ps.y+=ps.vy;
   resolveBarriers(ps,[...st.barriers,...BORDER_WALLS]);
   if(game.background==='maze') resolveMazeCollision(ps,_px,_py);
+
+  // Maze exit detection — reaching the EXIT marker completes the level
+  if(game.background==='maze' && !st.won){
+    const mpcx=ps.x+ps.size/2, mpcy=ps.y+ps.size/2;
+    if(Math.hypot(mpcx-MAZE_EXIT_X, mpcy-MAZE_EXIT_Y)<24){
+      st.won=true; st.score=Math.max(st.score,st.totalStars);
+      spawnParticles(st,mpcx,mpcy); spawnParticles(st,W/2,H/2);
+      if(!st.wonHandled){
+        st.wonHandled=true;
+        const hasNext=playLevelIdx+1<game.levels.length;
+        sfxLevelComplete();
+        setTimeout(()=>{ hasNext ? showLevelCompleteUI(playLevelIdx,false) : showFinalWin(); }, 900);
+      }
+    }
+  }
   if(game.background==='road') resolveRoadCollision(ps,_px,_py);
 
   // Road obstacle collisions — damage on contact
@@ -3146,6 +3151,29 @@ function drawPlay(st) {
       ctx.strokeStyle=HC?'#FFFF00':'#FF9900'; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
       if(bw>30&&bh>14){ctx.fillStyle=HC?'#000':'#FFF';ctx.font=`bold ${LG?16:13}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.label,bx+bw/2,by+bh/2);}
     }
+  }
+
+  // Maze GO/EXIT markers
+  if (game.background === 'maze') {
+    const mt = Date.now() * 0.001;
+    const sx = MAZE_SPAWN_X + MAZE_PLAYER_SIZE / 2, sy = MAZE_SPAWN_Y + MAZE_PLAYER_SIZE / 2;
+    ctx.save();
+    ctx.shadowColor = '#00FF88'; ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(0,200,100,0.9)';
+    ctx.beginPath(); ctx.arc(sx, sy, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 7px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('GO', sx, sy);
+    ctx.restore();
+    const mp = 0.85 + 0.25 * Math.sin(mt * 2.5);
+    ctx.save();
+    ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 20 * mp;
+    ctx.fillStyle = `rgba(255,215,0,${0.85 * mp})`;
+    ctx.beginPath(); ctx.arc(MAZE_EXIT_X, MAZE_EXIT_Y, 12 * mp, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.font = 'bold 8px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('EXIT', MAZE_EXIT_X, MAZE_EXIT_Y + 1);
+    ctx.restore();
   }
 
   // Stars

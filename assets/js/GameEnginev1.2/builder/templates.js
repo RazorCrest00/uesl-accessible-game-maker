@@ -8,7 +8,7 @@
     return `// [TEMPLATE CODE] GameTemplatesV1.1.playerData\nconst playerData = {
             id: '${name}',
             src: ${p.src.startsWith('/') ? "'" + p.src + "'" : "path + \"" + p.src + "\""},
-            SCALE_FACTOR: ${bg?.type === 'maze' ? 25 : parseInt(ui.pScale?.value || '5', 10)},
+            SCALE_FACTOR: ${bg?.type === 'maze' ? 15 : parseInt(ui.pScale?.value || '5', 10)},
             STEP_FACTOR: 1000,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: ${ui.pX?.value || 0}, y: ${ui.pY?.value || 0} },

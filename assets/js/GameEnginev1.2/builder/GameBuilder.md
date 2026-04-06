@@ -635,6 +635,14 @@ document.addEventListener('DOMContentLoaded', () => {
             mazeOpt.value = 'maze'; mazeOpt.textContent = 'Maze';
             ui.bg.appendChild(mazeOpt);
         }
+        // Pre-scan Newmaze.png for wall barriers so they're ready when the user confirms
+        _mazeScanBarriersAsync(900, 600).then(() => {
+            // If maze is already selected, re-stage the code now that barriers are loaded
+            if (ui.bg && ui.bg.value === 'maze') {
+                state.lastEdited = 'background';
+                syncFromControlsIfFreestyle();
+            }
+        });
 
         dedupSelectOptions(ui.bg);
 
@@ -1538,7 +1546,7 @@ function player_code(px, p, name = "playerData" ) {
         throw new Error('GameTemplatesV1_1.playerData is required');
     }
 
-    const tpl = window.GameTemplatesV1_1.playerData({ name: px.name || 'player', p: p || {}, ui: ui, keypress: px.keypress, bg: (assets && assets.bg && assets[ui.bg?.value]) || null });
+    const tpl = window.GameTemplatesV1_1.playerData({ name: px.name || 'player', p: p || {}, ui: ui, keypress: px.keypress, bg: (assets && assets.bg && assets.bg[ui.bg?.value]) || null });
     return { def: tpl, classEntry: `{ class: Player, data: ${name} }` };
 }
 
@@ -1896,29 +1904,132 @@ function maze_generate(canvasW = 900, canvasH = 600) {
  * @param {Object} bg - Background asset object
  * @returns {Object} { defs: array, classes: array }
  */
+/* ── Maze barrier scanner ───────────────────────────────────────────────────
+ * Loads Newmaze.png onto an offscreen canvas, detects wall positions by
+ * finding rows/columns with high dark-pixel density, then scans each wall
+ * band's centre-line for horizontal/vertical wall segments. Results are
+ * cached in _mazeBarrierData after the first call.
+ *
+ * BARRIER_HALF = 6 px   →  barrier total = 12 px (hugs visual wall, ~46px passable corridor)
+ * Player SCALE_FACTOR=20 → 30px player fits 46px corridor with 8px clearance each side
+ * ─────────────────────────────────────────────────────────────────────────── */
+let _mazeBarrierData = null;
+
+function _mazeScanBarriersAsync(canvasW = 900, canvasH = 600) {
+    if (_mazeBarrierData) return Promise.resolve(_mazeBarrierData);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = '';
+        img.onload = () => {
+            try {
+                const oc = document.createElement('canvas');
+                oc.width = canvasW; oc.height = canvasH;
+                const c2 = oc.getContext('2d');
+                c2.drawImage(img, 0, 0, canvasW, canvasH);
+                const px = c2.getImageData(0, 0, canvasW, canvasH).data;
+                const W = canvasW, H = canvasH;
+                const dark = (x, y) => px[(y * W + x) * 4] < 100;
+
+                // Per-row darkness fraction
+                const rowDark = new Float32Array(H);
+                for (let y = 0; y < H; y++) {
+                    let d = 0;
+                    for (let x = 0; x < W; x++) if (dark(x, y)) d++;
+                    rowDark[y] = d / W;
+                }
+                // Per-column darkness fraction
+                const colDark = new Float32Array(W);
+                for (let x = 0; x < W; x++) {
+                    let d = 0;
+                    for (let y = 0; y < H; y++) if (dark(x, y)) d++;
+                    colDark[x] = d / H;
+                }
+
+                const THRESH = 0.025;      // min darkness fraction to count as a wall band
+                const BARRIER_HALF = 6;    // barrier extends 6 px each side of wall centre (~12px total, hugs the visual wall)
+
+                // Find centre-line y of each horizontal wall band
+                const hBands = [];
+                let inB = false, bs = 0;
+                for (let y = 0; y <= H; y++) {
+                    const w = y < H && rowDark[y] > THRESH;
+                    if (w && !inB) { inB = true; bs = y; }
+                    if (!w && inB) { hBands.push(Math.round((bs + y - 1) / 2)); inB = false; }
+                }
+
+                // Find centre-line x of each vertical wall band
+                const vBands = [];
+                inB = false; bs = 0;
+                for (let x = 0; x <= W; x++) {
+                    const w = x < W && colDark[x] > THRESH;
+                    if (w && !inB) { inB = true; bs = x; }
+                    if (!w && inB) { vBands.push(Math.round((bs + x - 1) / 2)); inB = false; }
+                }
+
+                const barriers = [];
+                let bIdx = 0;
+                const addB = (x1, y1, x2, y2) => {
+                    x1 = Math.max(0, x1); y1 = Math.max(0, y1);
+                    x2 = Math.min(W, x2); y2 = Math.min(H, y2);
+                    if (x2 - x1 < 2 || y2 - y1 < 2) return;
+                    barriers.push({
+                        varName: `mw${bIdx}`, id: `mw-${bIdx++}`,
+                        x: x1 / W, y: y1 / H,
+                        width: (x2 - x1) / W, height: (y2 - y1) / H,
+                        visible: false,
+                    });
+                };
+
+                // Horizontal bands → scan centre row for wall runs → horizontal barriers
+                for (const yCtr of hBands) {
+                    let run = -1;
+                    for (let x = 0; x <= W; x++) {
+                        const d = x < W && dark(x, yCtr);
+                        if (d && run < 0) run = x;
+                        if (!d && run >= 0) { addB(run, yCtr - BARRIER_HALF, x, yCtr + BARRIER_HALF); run = -1; }
+                    }
+                }
+
+                // Vertical bands → scan centre column for wall runs → vertical barriers
+                for (const xCtr of vBands) {
+                    let run = -1;
+                    for (let y = 0; y <= H; y++) {
+                        const d = y < H && dark(xCtr, y);
+                        if (d && run < 0) run = y;
+                        if (!d && run >= 0) { addB(xCtr - BARRIER_HALF, run, xCtr + BARRIER_HALF, y); run = -1; }
+                    }
+                }
+
+                _mazeBarrierData = barriers;
+            } catch (e) {
+                console.warn('Maze barrier scan failed:', e);
+                _mazeBarrierData = [];
+            }
+            resolve(_mazeBarrierData);
+        };
+        img.onerror = () => { _mazeBarrierData = []; resolve([]); };
+        img.src = '/images/gamebuilder/Newmaze.png';
+    });
+}
+
 function background_generate(bg) {
     if (!bg) return { defs: [], classes: [] };
 
-    // Special case: procedural maze background
+    // Maze background — use Newmaze.png with auto-scanned pixel barriers
     if (bg.type === 'maze') {
-        const canvasW = parseInt(bg.w) || 900;
         const canvasH = parseInt(bg.h) || 600;
-        const { dataURL, barriers } = maze_generate(canvasW, canvasH);
-
-        // Re-use existing bg_extract/bg_code pipeline — it already handles data: URLs
-        // correctly by wrapping them in single-quoted string literals.
-        const mazeBg = { src: dataURL, h: canvasH, w: canvasW };
+        const canvasW = parseInt(bg.w) || 900;
+        const mazeBg = { src: '/images/gamebuilder/Newmaze.png', h: canvasH, w: canvasW };
         const bgx = bg_extract(mazeBg, 'maze_bg');
         const bgCode = bg_code(bgx, 'mazeData');
         const defs = [bgCode.def];
         const classes = [bgCode.classEntry];
-
-        for (const b of barriers) {
+        // Include pre-scanned wall barriers (ready if _mazeScanBarriersAsync was called earlier)
+        for (const b of (_mazeBarrierData || [])) {
             const bc = barrier_code(b);
             defs.push(bc.def);
             classes.push(bc.classEntry);
         }
-
         return { defs, classes };
     }
 
@@ -2762,7 +2873,7 @@ function generateStepCode(currentStep) {
                 const re = new RegExp(`(${label}\\s*:\\s*)(\\d+)`, 'i');
                 code = code.replace(re, `$1${v}`);
             };
-            numSet('SCALE_FACTOR', ui.pScale?.value);
+            numSet('SCALE_FACTOR', ui.bg?.value === 'maze' ? '20' : ui.pScale?.value);
             numSet('STEP_FACTOR', ui.pStep?.value);
             numSet('ANIMATION_RATE', ui.pAnim?.value);
 
