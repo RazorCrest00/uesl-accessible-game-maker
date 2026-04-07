@@ -257,7 +257,8 @@
   }
 
   // ─── Game State ───────────────────────────────────────────────────────────
-  let barriers   = [];
+  let barriers        = [];
+  let corridorSamples = [];   // spline guide lines for every walkable corridor
   let stars      = [];
   let npcs       = [];
   let totalStars = 0;
@@ -313,57 +314,235 @@
     if (e.key === 'Enter') sbMoving = false;
   });
 
+  // ─── Seeded RNG (xorshift32) ─────────────────────────────────────────────
+  function mkRng(seed) {
+    let s = (seed | 0) || 1;
+    return () => {
+      s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+      return (s >>> 0) / 4294967296;
+    };
+  }
+
+  // ─── Perfect-maze generator (recursive backtracker) ───────────────────────
+  // hWall[r][c] = true  →  solid wall BELOW row r at column c
+  // vWall[r][c] = true  →  solid wall to the RIGHT of column c at row r
+  function generateMaze(cols, rows, seed) {
+    const rng   = mkRng(seed);
+    const hWall = Array.from({length: rows - 1}, () => new Array(cols).fill(true));
+    const vWall = Array.from({length: rows},     () => new Array(cols - 1).fill(true));
+    const vis   = Array.from({length: rows},     () => new Array(cols).fill(false));
+    function carve(r, c) {
+      vis[r][c] = true;
+      const dirs = [[0,1],[1,0],[0,-1],[-1,0]].sort(() => rng() - 0.5);
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !vis[nr][nc]) {
+          if (dr ===  1) hWall[r][c]  = false;
+          if (dr === -1) hWall[nr][c] = false;
+          if (dc ===  1) vWall[r][c]  = false;
+          if (dc === -1) vWall[r][nc] = false;
+          carve(nr, nc);
+        }
+      }
+    }
+    carve(0, 0);
+    return { hWall, vWall };
+  }
+
+  // ─── Convert maze arrays → barrier rectangles ────────────────────────────
+  function mazeToBars(maze, cols, rows, cw, ch, wt, ox, oy, col) {
+    const bars = [];
+    // Horizontal walls (below row r)
+    for (let r = 0; r < rows - 1; r++)
+      for (let c = 0; c < cols; c++)
+        if (maze.hWall[r][c])
+          bars.push({ x: ox + c * cw,         y: oy + (r + 1) * ch - wt, w: cw, h: wt, col, label: null });
+    // Vertical walls (right of column c)
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols - 1; c++)
+        if (maze.vWall[r][c])
+          bars.push({ x: ox + (c + 1) * cw - wt, y: oy + r * ch,          w: wt, h: ch, col, label: null });
+    return bars;
+  }
+
+  // ─── Catmull-Rom spline math (manual — no engine helpers) ────────────────
+  //
+  //  crPt  : position at t ∈ [0,1] between P1 and P2
+  //  crTan : exact derivative (tangent direction) at t
+  //
+  //  Formula:  q(t) = 0.5 × [ 2·P1 + (−P0+P2)·t
+  //                          + (2P0−5P1+4P2−P3)·t²
+  //                          + (−P0+3P1−3P2+P3)·t³ ]
+  function crPt(P0,P1,P2,P3,t) {
+    const t2=t*t, t3=t2*t;
+    return {
+      x: 0.5*((2*P1.x)+(-P0.x+P2.x)*t+(2*P0.x-5*P1.x+4*P2.x-P3.x)*t2+(-P0.x+3*P1.x-3*P2.x+P3.x)*t3),
+      y: 0.5*((2*P1.y)+(-P0.y+P2.y)*t+(2*P0.y-5*P1.y+4*P2.y-P3.y)*t2+(-P0.y+3*P1.y-3*P2.y+P3.y)*t3),
+    };
+  }
+  function crTan(P0,P1,P2,P3,t) {
+    const t2=t*t;
+    return {
+      x: 0.5*((-P0.x+P2.x)+2*(2*P0.x-5*P1.x+4*P2.x-P3.x)*t+3*(-P0.x+3*P1.x-3*P2.x+P3.x)*t2),
+      y: 0.5*((-P0.y+P2.y)+2*(2*P0.y-5*P1.y+4*P2.y-P3.y)*t+3*(-P0.y+3*P1.y-3*P2.y+P3.y)*t2),
+    };
+  }
+
+  // ─── Extract EVERY walkable corridor chain from maze as world-space points ─
+  //
+  //  Builds adjacency from vWall/hWall, then walks between
+  //  dead-ends (degree 1) and junctions (degree ≥ 3), recording
+  //  a world-space centre-point for each cell along the way.
+  //  Returns an array of point-arrays — one per corridor chain.
+  function extractCorridorPaths(maze, cols, rows, CW, CH, OX, OY) {
+    // adj[r][c] = list of [nr,nc] neighbours with NO wall between them
+    const adj = Array.from({length:rows}, (_, r) =>
+      Array.from({length:cols}, (_, c) => {
+        const nb = [];
+        if (c < cols-1 && !maze.vWall[r][c])   nb.push([r, c+1]);
+        if (c > 0      && !maze.vWall[r][c-1])  nb.push([r, c-1]);
+        if (r < rows-1 && !maze.hWall[r][c])    nb.push([r+1, c]);
+        if (r > 0      && !maze.hWall[r-1][c])  nb.push([r-1, c]);
+        return nb;
+      })
+    );
+
+    const ctr  = (r,c) => ({ x: OX + c*CW + CW/2, y: OY + r*CH + CH/2 });
+    const isNode = (r,c) => adj[r][c].length !== 2;  // dead-end or junction
+    const key    = (r,c) => r * 1000 + c;
+
+    const visited = new Set();
+    const paths   = [];
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!isNode(r,c)) continue;
+        for (const [nr,nc] of adj[r][c]) {
+          // Canonical edge key — skip if we already traced this connection
+          const lo = Math.min(key(r,c), key(nr,nc));
+          const hi = Math.max(key(r,c), key(nr,nc));
+          const ek = lo * 1e6 + hi;
+          if (visited.has(ek)) continue;
+          visited.add(ek);
+
+          // Walk from (r,c) through the corridor until another node
+          const pts = [ctr(r,c)];
+          let pr=r, pc=c, cr_=nr, cc_=nc;
+          while (!isNode(cr_,cc_)) {
+            pts.push(ctr(cr_,cc_));
+            const nxt = adj[cr_][cc_].filter(([a,b]) => a!==pr || b!==pc);
+            if (!nxt.length) break;
+            [pr,pc] = [cr_,cc_];
+            [cr_,cc_] = nxt[0];
+          }
+          pts.push(ctr(cr_,cc_));
+          if (pts.length >= 2) paths.push(pts);
+        }
+      }
+    }
+    return paths;
+  }
+
+  // ─── Sample a corridor path using Catmull-Rom ──────────────────────────────
+  //  Returns [{x, y, nx, ny}] — position + perpendicular normal per sample.
+  function sampleCorridor(pts, minSamples) {
+    const n = pts.length;
+    if (n < 2) return [];
+    const segs   = n - 1;
+    const perSeg = Math.max(6, Math.ceil(minSamples / segs));
+    const ph0 = { x:2*pts[0].x-pts[1].x,       y:2*pts[0].y-pts[1].y };
+    const phN = { x:2*pts[n-1].x-pts[n-2].x,   y:2*pts[n-1].y-pts[n-2].y };
+    const ext = [ph0, ...pts, phN];
+    const out = [];
+    for (let i = 1; i <= segs; i++) {
+      const P0=ext[i-1], P1=ext[i], P2=ext[i+1], P3=ext[i+2];
+      for (let s = 0; s < perSeg; s++) {
+        const t  = s / perSeg;
+        const p  = crPt(P0,P1,P2,P3,t);
+        const d  = crTan(P0,P1,P2,P3,t);
+        const dl = Math.hypot(d.x,d.y) || 1;
+        const tx = d.x/dl, ty = d.y/dl;
+        out.push({ x:p.x, y:p.y, nx:-ty, ny:tx });
+      }
+    }
+    const lp=pts[n-1], pp=pts[n-2];
+    const dx=lp.x-pp.x, dy=lp.y-pp.y, dl=Math.hypot(dx,dy)||1;
+    out.push({ x:lp.x, y:lp.y, nx:-dy/dl, ny:dx/dl });
+    return out;
+  }
+
   // ─── Level Configs ────────────────────────────────────────────────────────
+  // Grid dimensions are chosen so  cols × CW = 756  and  rows × CH = 476
+  // which fills the 22 px outer-wall inset exactly (no gaps, no overflow).
+  //
+  //  Easy   6 ×  4 cells  126 × 119 px  WT=14  → 112 × 105 px corridors
+  //  Medium 9 ×  7 cells   84 ×  68 px  WT=11  →  73 ×  57 px corridors
+  //  Hard   9 ×  7 cells   84 ×  68 px  WT=11  →  73 ×  57 px corridors (different seed, 3 fast NPCs)
+  const LEVEL_CFGS = {
+    easy: {
+      cols:6, rows:4, CW:126, CH:119, WT:14, seed:42,
+      stars: [[0,5],[1,0],[1,4],[2,2],[3,1],[3,4]],
+      npcRows:[1], speeds:[0.9],
+      emojis:['👾'], npcColors:['#FF4444'],
+    },
+    medium: {
+      cols:9, rows:7, CW:84, CH:68, WT:11, seed:137,
+      stars: [[0,8],[1,0],[2,5],[3,8],[4,2],[5,7],[6,4]],
+      npcRows:[2,5], speeds:[1.3,1.1],
+      emojis:['👾','🤖'], npcColors:['#FF4444','#FF8800'],
+    },
+    hard: {
+      cols:9, rows:7, CW:84, CH:68, WT:11, seed:999,
+      stars: [[0,8],[1,1],[2,6],[3,0],[3,4],[4,7],[5,2],[6,5]],
+      npcRows:[1,3,5], speeds:[2.2,1.9,1.7],
+      emojis:['👾','🤖','🦾'], npcColors:['#FF4444','#FF8800','#FF00FF'],
+    },
+  };
+
   function buildLevel(diff) {
-    barriers = [];
-    stars    = [];
-    npcs     = [];
+    barriers        = [];
+    corridorSamples = [];
+    stars           = [];
+    npcs            = [];
+    particles       = [];
+    scorePops       = [];
 
-    // Outer walls
-    const wall = (x,y,w,h,col) => barriers.push({x,y,w,h,col,label:null});
-    wall(0,   0,   W,  22, null); // top
-    wall(0,   H-22,W,  22, null); // bottom
-    wall(0,   0,   22, H,  null); // left
-    wall(W-22,0,   22, H,  null); // right
+    // Canvas outer-border walls
+    const addWall = (x,y,w,h,col) => barriers.push({x,y,w,h,col,label:null});
+    addWall(0,    0,    W, 22, null);
+    addWall(0,    H-22, W, 22, null);
+    addWall(0,    0,   22,  H, null);
+    addWall(W-22, 0,   22,  H, null);
 
-    if (diff === 'easy') {
-      // Two simple interior barriers with directional arrows
-      barriers.push({x:180,y:80, w:22,h:230, col:'#FF7700',label:'→ go right'});
-      barriers.push({x:380,y:240,w:230,h:22, col:'#FF7700',label:'↓ go down'});
+    const cfg = LEVEL_CFGS[diff];
+    const OX = 22, OY = 22;
+    const WC = '#1a3a7a';
 
-      // Stars placed in open areas
-      [[120,240],[300,120],[550,140],[550,380],[130,400],[420,400]].forEach(([sx,sy]) => {
-        stars.push({x:sx,y:sy,collected:false});
-      });
+    // Build the full maze and add every corridor wall as a physical barrier
+    const maze = generateMaze(cfg.cols, cfg.rows, cfg.seed);
+    mazeToBars(maze, cfg.cols, cfg.rows, cfg.CW, cfg.CH, cfg.WT, OX, OY, WC)
+      .forEach(b => barriers.push(b));
 
-      // 1 slow, predictable NPC
-      npcs.push(makeNpc(430,100, [{x:430,y:100},{x:430,y:420}], 0.9, '#FF4444','👾'));
+    // ── Build Catmull-Rom spline samples for EVERY walkable corridor ─────────
+    // hw = half the open corridor width (cell size minus wall thickness, halved)
+    const corrHW = Math.floor((Math.min(cfg.CW, cfg.CH) - cfg.WT) / 2) - 1;
+    const rawPaths = extractCorridorPaths(maze, cfg.cols, cfg.rows, cfg.CW, cfg.CH, OX, OY);
+    corridorSamples = rawPaths.map(pts => ({
+      s:  sampleCorridor(pts, Math.max(20, pts.length * 10)),
+      hw: corrHW,
+    }));
 
-    } else if (diff === 'medium') {
-      barriers.push({x:150,y:70, w:22,h:240, col:'#FF7700',label:'→'});
-      barriers.push({x:380,y:200,w:240,h:22, col:'#FF7700',label:'↓'});
-      barriers.push({x:260,y:360,w:22,h:140, col:'#FF7700',label:'↑'});
+    // Stars — placed at the centre of selected cells
+    for (const [r, c] of cfg.stars)
+      stars.push({ x: OX + c * cfg.CW + cfg.CW / 2,
+                   y: OY + r * cfg.CH + cfg.CH / 2,
+                   collected: false });
 
-      [[100,140],[430,100],[630,260],[320,430],[640,430],[100,370],[480,310]].forEach(([sx,sy]) => {
-        stars.push({x:sx,y:sy,collected:false});
-      });
-
-      npcs.push(makeNpc(480,80,  [{x:480,y:80},{x:480,y:420}], 1.3,'#FF4444','👾'));
-      npcs.push(makeNpc(220,310, [{x:220,y:310},{x:650,y:310}],1.1,'#FF8800','🤖'));
-
-    } else { // hard
-      barriers.push({x:140,y:60, w:22,h:210, col:'#FF7700',label:'→'});
-      barriers.push({x:340,y:140,w:250,h:22, col:'#FF7700',label:'↓'});
-      barriers.push({x:490,y:300,w:22,h:180, col:'#FF7700',label:'↑'});
-      barriers.push({x:200,y:360,w:200,h:22, col:'#FF7700',label:'→'});
-
-      [[80,80],[430,80],[660,240],[360,400],[100,400],[620,430],[310,210],[530,480]].forEach(([sx,sy]) => {
-        stars.push({x:sx,y:sy,collected:false});
-      });
-
-      npcs.push(makeNpc(450,70,  [{x:450,y:70},{x:450,y:360}], 2.2,'#FF4444','👾'));
-      npcs.push(makeNpc(210,280, [{x:210,y:280},{x:630,y:280}],1.9,'#FF8800','🤖'));
-      npcs.push(makeNpc(310,140, [{x:310,y:140},{x:310,y:460}],1.7,'#FF00FF','🦾'));
+    // NPCs patrol horizontally across the centre of their row
+    for (let i = 0; i < cfg.npcRows.length; i++) {
+      const ny = OY + cfg.npcRows[i] * cfg.CH + cfg.CH / 2;
+      npcs.push(makeNpc(80, ny, [{x:80,y:ny},{x:W-80,y:ny}],
+                        cfg.speeds[i], cfg.npcColors[i], cfg.emojis[i]));
     }
 
     totalStars = stars.length;
@@ -371,12 +550,12 @@
     won        = false;
     gameOver   = false;
     hitFlash   = 0;
-    particles  = [];
-    scorePops  = [];
-    player.x   = 60;
-    player.y   = 60;
-    player.vx  = 0;
-    player.vy  = 0;
+
+    // Spawn player in the centre of cell (0,0)
+    player.x = OX + Math.floor(cfg.CW / 2) - Math.floor(player.size / 2);
+    player.y = OY + Math.floor(cfg.CH / 2) - Math.floor(player.size / 2);
+    player.vx = 0;
+    player.vy = 0;
   }
 
   function makeNpc(x, y, path, speed, color, emoji) {
@@ -556,29 +735,99 @@
       for (let gy = 0; gy <= H; gy += 40) { ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
     }
 
-    // Barriers
+    // Barriers — corridor walls with rounded corners and depth highlight
     for (const b of barriers) {
-      ctx.fillStyle = HC ? WALL_COLOR_CONTRAST : (b.col || '#223366');
-      ctx.fillRect(b.x, b.y, b.w, b.h);
+      const isOuter = !b.col;
+      // Rounded corners only on interior corridor walls
+      const r = isOuter ? 0 : Math.min(5, Math.floor(Math.min(b.w, b.h) / 3));
 
-      // Directional label/arrow on non-outer barriers with labels
-      if (b.label && b.w > 22 && b.h > 22) {
-        ctx.save();
-        ctx.fillStyle = HC ? '#000' : '#FFF';
-        ctx.font = `bold ${LG ? 16 : 13}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(b.label, b.x + b.w/2, b.y + b.h/2);
-        ctx.restore();
-      }
+      if (HC) {
+        ctx.fillStyle = WALL_COLOR_CONTRAST;
+        if (r > 0) { roundRect(ctx, b.x, b.y, b.w, b.h, r); ctx.fill(); }
+        else ctx.fillRect(b.x, b.y, b.w, b.h);
+      } else {
+        // Subtle blue glow on interior corridor walls
+        if (!isOuter && !settings.reduceMotion) {
+          ctx.shadowColor = 'rgba(40,100,220,0.55)';
+          ctx.shadowBlur  = 8;
+        }
+        ctx.fillStyle = b.col || WALL_COLOR_NORMAL;
+        if (r > 0) { roundRect(ctx, b.x, b.y, b.w, b.h, r); ctx.fill(); }
+        else ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.shadowBlur = 0;
 
-      // Coloured border on interior barriers for visual cue
-      if (b.label) {
-        ctx.strokeStyle = HC ? '#FFFF00' : '#FF9900';
-        ctx.lineWidth   = HC ? 3 : 2;
-        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        // Inner edge highlight for 3D corridor depth
+        if (!isOuter) {
+          ctx.strokeStyle = 'rgba(100,160,255,0.35)';
+          ctx.lineWidth   = 1.5;
+          roundRect(ctx, b.x + 2, b.y + 2, b.w - 4, b.h - 4, Math.max(0, r - 1));
+          ctx.stroke();
+        }
       }
     }
+
+    // ── Spline corridor guide lines — drawn along EVERY walkable corridor ─────
+    //
+    //  For each corridor chain extracted from the maze graph:
+    //    • filled ribbon polygon (corridor floor tint)
+    //    • left + right edge glow lines
+    //    • centreline dash
+    //
+    //  Drawn AFTER the wall barriers so the lines only show in open areas.
+    //  No new collision added — purely visual.
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap  = 'round';
+
+    for (const { s: samps, hw } of corridorSamples) {
+      if (samps.length < 2) continue;
+
+      // ── Floor tint polygon (left edge forward, right edge backward) ────────
+      ctx.fillStyle = HC
+        ? 'rgba(255,255,255,0.07)'
+        : 'rgba(40,90,180,0.18)';
+      ctx.beginPath();
+      ctx.moveTo(samps[0].x + samps[0].nx*hw, samps[0].y + samps[0].ny*hw);
+      for (const p of samps)
+        ctx.lineTo(p.x + p.nx*hw, p.y + p.ny*hw);
+      for (let i=samps.length-1; i>=0; i--)
+        ctx.lineTo(samps[i].x - samps[i].nx*hw, samps[i].y - samps[i].ny*hw);
+      ctx.closePath();
+      ctx.fill();
+
+      // ── Left edge glow line ────────────────────────────────────────────────
+      ctx.strokeStyle = HC ? 'rgba(255,255,0,0.6)' : 'rgba(80,170,255,0.55)';
+      ctx.shadowColor  = HC ? 'rgba(255,255,0,0.4)' : 'rgba(60,140,255,0.5)';
+      ctx.shadowBlur   = settings.reduceMotion ? 0 : 5;
+      ctx.lineWidth    = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(samps[0].x + samps[0].nx*hw, samps[0].y + samps[0].ny*hw);
+      for (const p of samps)
+        ctx.lineTo(p.x + p.nx*hw, p.y + p.ny*hw);
+      ctx.stroke();
+
+      // ── Right edge glow line ───────────────────────────────────────────────
+      ctx.beginPath();
+      ctx.moveTo(samps[0].x - samps[0].nx*hw, samps[0].y - samps[0].ny*hw);
+      for (const p of samps)
+        ctx.lineTo(p.x - p.nx*hw, p.y - p.ny*hw);
+      ctx.stroke();
+
+      // ── Centreline (dashed, subtler) ───────────────────────────────────────
+      ctx.shadowBlur   = 0;
+      ctx.strokeStyle  = HC ? 'rgba(255,255,0,0.3)' : 'rgba(120,200,255,0.3)';
+      ctx.lineWidth    = 1;
+      ctx.setLineDash([5, 6]);
+      ctx.beginPath();
+      ctx.moveTo(samps[0].x, samps[0].y);
+      for (const p of samps) ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Stars
     const starSz = LG ? 30 : 22;
