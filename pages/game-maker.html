@@ -490,6 +490,15 @@ permalink: /game-maker/
   z-index: 9999;
 }
 .gm-overlay.hidden { display: none !important; }
+@keyframes gm-overlay-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes gm-win-stars {
+  0%, 100% { text-shadow: 0 0 12px #FFD700, 0 0 30px #FFD700; }
+  50%       { text-shadow: 0 0 24px #FF8800, 0 0 60px #FFD700; }
+}
 .gm-overlay-box {
   background: #1a1a2e;
   border: 2px solid #FFD700;
@@ -501,8 +510,10 @@ permalink: /game-maker/
   align-items: center;
   gap: 10px;
   box-shadow: 0 0 40px rgba(255,215,0,0.25);
+  animation: gm-overlay-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 .gm-overlay-emoji { font-size: 2.6rem; }
+#gm-overlay-win .gm-overlay-emoji { animation: gm-win-stars 1.2s ease-in-out infinite; }
 .gm-overlay-box h2 { margin: 0; color: #FFD700; font-size: 1.25rem; }
 .gm-overlay-box p  { margin: 0; color: #aaa; font-size: 0.88rem; }
 .gm-overlay-btn {
@@ -1171,9 +1182,10 @@ permalink: /game-maker/
       <div id="gm-overlay-win" class="gm-overlay hidden">
         <div class="gm-overlay-box">
           <div class="gm-overlay-emoji">🏆</div>
-          <h2 id="gm-win-heading">You Won!</h2>
-          <p id="gm-win-sub">All levels complete!</p>
-          <div class="gm-overlay-btns">
+          <h2 id="gm-win-heading" style="font-size:1.6rem;">🎉 You Win! 🎉</h2>
+          <p id="gm-win-score" style="color:#FFD700;font-size:1.1rem;font-weight:bold;margin:0;"></p>
+          <p id="gm-win-sub" style="color:#aaa;font-size:0.88rem;margin:0;">All stars collected! Amazing job!</p>
+          <div class="gm-overlay-btns" style="margin-top:6px;">
             <button class="gm-overlay-btn" id="gm-play-again-btn">▶ Play Again</button>
             <button class="gm-overlay-btn secondary" id="gm-back-design-btn">← Back to Editor</button>
           </div>
@@ -1717,7 +1729,7 @@ const gameConfig = {
   playerSpeed: 3.2,
   npcSpeed:    1.2,
   playerSize:  40,
-  starRadius:  14,
+  starRadius:  40,
 };
 
 /* ── Code Panel ─────────────────────────────────────────────────────────── */
@@ -1728,7 +1740,7 @@ function codePanelSnippet() {
     `playerSpeed = ${gameConfig.playerSpeed};    // how fast the player moves`,
     `npcSpeed    = ${gameConfig.npcSpeed};    // how fast NPCs move`,
     `playerSize  = ${gameConfig.playerSize};      // player hitbox size (px)`,
-    `starRadius  = ${gameConfig.starRadius};      // star collect distance (px)`,
+    `starRadius  = ${gameConfig.starRadius};      // how close player must be to collect a star (px)`,
   ].join('\n');
 }
 
@@ -2722,10 +2734,12 @@ function mpCheckLevelWin(st, pcx, pcy) {
     spawnParticles(st, pcx, pcy); spawnParticles(st, W/2, H/2);
     if (!st.wonHandled) {
       st.wonHandled = true;
-      const hasNext = playLevelIdx + 1 < game.levels.length;
+      const hasMore = playLevelIdx + 1 < game.levels.length;
+      // Only show Level Complete if a future level actually has stars to collect
+      const hasNextWithStars = hasMore && game.levels.slice(playLevelIdx + 1).some(lv => lv.stars && lv.stars.length > 0);
       // Tell partner to advance too
-      mpEmitCoopEvent({ type: 'level_done', level: playLevelIdx, next: hasNext ? playLevelIdx+1 : -1 });
-      if (hasNext) {
+      mpEmitCoopEvent({ type: 'level_done', level: playLevelIdx, next: hasMore ? playLevelIdx+1 : -1 });
+      if (hasNextWithStars) {
         setTimeout(() => { sfxLevelComplete(); showLevelCompleteUI(playLevelIdx, false); }, 1200);
       } else {
         setTimeout(() => { sfxWin(); showFinalWin(); }, 1400);
@@ -2824,11 +2838,16 @@ function buildPlayState(lv) {
 document.addEventListener('keydown', e => {
   playKeys[e.key] = true;
   if (!playState) return;
+  // Prevent arrow keys / WASD from scrolling the page while playing
+  const isPlayActive = document.getElementById('gm-mode-play').classList.contains('active');
+  if (isPlayActive && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+    e.preventDefault();
+  }
   if (a11y.singleButton) {
     if (e.key===' ') { playState.sbDir=(playState.sbDir+1)%4; e.preventDefault(); }
     if (e.key==='Enter') { playState.sbMoving=true; e.preventDefault(); }
   }
-  if ((e.key==='r'||e.key==='R') && document.getElementById('gm-mode-play').classList.contains('active')) {
+  if ((e.key==='r'||e.key==='R') && isPlayActive) {
     loadPlayLevel(playLevelIdx);
   }
 });
@@ -2867,9 +2886,22 @@ function showLevelCompleteUI(idx, isEmpty) {
 }
 
 function showFinalWin() {
-  document.getElementById('gm-win-heading').textContent = `🏆 ${game.playerName||'You'} Won!`;
-  document.getElementById('gm-win-sub').textContent =
-    `"${game.title||'My Game'}" complete — all levels beaten! Amazing job!`;
+  const name = game.playerName || 'You';
+  const title = game.title || 'My Game';
+  // Count total stars collected across all levels
+  const totalCollected = game.levels.reduce((sum, lv) => sum + (lv.stars ? lv.stars.length : 0), 0);
+  document.getElementById('gm-win-heading').textContent = `🎉 ${name} Won! 🎉`;
+  document.getElementById('gm-win-score').textContent = `⭐ ${totalCollected} star${totalCollected !== 1 ? 's' : ''} collected!`;
+  document.getElementById('gm-win-sub').textContent = `"${title}" complete — amazing job!`;
+  // Trigger a big confetti burst on the canvas
+  if (playState && !a11y.reduceMotion) {
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        spawnParticles(playState, W * Math.random(), H * Math.random());
+        spawnParticles(playState, W / 2, H / 2);
+      }, i * 200);
+    }
+  }
   document.getElementById('gm-overlay-win').classList.remove('hidden');
 }
 
@@ -3088,21 +3120,7 @@ function updatePlay(st) {
     }
   }
 
-  // Star collection
-  const pcx=ps.x+ps.size/2, pcy=ps.y+ps.size/2;
-  st.stars.forEach((s, starIdx) => {
-    if (s.collected) return;
-    const _starR=game.background==='maze'?50:ps.size*0.7;
-    if (Math.hypot(s.x-pcx,s.y-pcy)<_starR) {
-      s.collected=true; st.score++;
-      sfxCollect();
-      spawnParticles(st,s.x,s.y);
-      st.scorePops.push({x:s.x,y:s.y-10,alpha:1,dy:-1.2,text:'+1 ⭐'});
-      // Broadcast star collected to co-op partner
-      mpEmitCoopEvent({ type:'star', idx: starIdx, level: playLevelIdx });
-      mpCheckLevelWin(st, pcx, pcy);
-    }
-  });
+  // (star collection is handled in playLoop so it always runs)
 
   // Heart pickup collection
   const hpcx=ps.x+ps.size/2, hpcy=ps.y+ps.size/2;
@@ -3155,11 +3173,18 @@ function drawPlay(st) {
   for (const s of st.stars) {
     if (s.collected) continue;
     const sz=LG?30:22;
-    if (HC){ctx.fillStyle='#FFFF00';ctx.beginPath();ctx.arc(s.x,s.y,sz/2+2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.font=`${sz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★',s.x,s.y+1);}
-    else{ctx.shadowColor='#FFD700';ctx.shadowBlur=a11y.reduceMotion?0:10;ctx.font=`${sz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⭐',s.x,s.y);ctx.shadowBlur=0;}
+    ctx.save();
+    if (HC){
+      ctx.fillStyle='#FFFF00';ctx.beginPath();ctx.arc(s.x,s.y,sz/2+2,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#000';ctx.font=`${sz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★',s.x,s.y+1);
+    } else {
+      ctx.shadowColor='#FFD700'; ctx.shadowBlur=a11y.reduceMotion?0:14;
+      ctx.font=`${sz}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⭐',s.x,s.y);
+    }
+    ctx.restore();
     if (near===s) drawGuide(ctx,ps,s);
   }
-  ctx.shadowBlur=0;
 
   // Particles
   for (const p of st.particles){ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}
@@ -3397,8 +3422,8 @@ function drawPlay(st) {
     ctx.font=`bold ${LG?52:42}px Arial`;
     ctx.shadowColor='#FFD700'; ctx.shadowBlur=a11y.reduceMotion?0:28;
     ctx.fillStyle='#FFD700';
-    const hasNext = playLevelIdx + 1 < game.levels.length;
-    ctx.fillText(hasNext ? '⭐  Level Complete!  ⭐' : '🏆  You Won!  🏆', W/2, H/2 - 20);
+    const hasNextWithStars = game.levels.slice(playLevelIdx + 1).some(lv => lv.stars && lv.stars.length > 0);
+    ctx.fillText(hasNextWithStars ? '⭐  Level Complete!  ⭐' : '🏆  You Won!  🏆', W/2, H/2 - 20);
     ctx.shadowBlur=0;
     ctx.font=`${LG?22:18}px Arial`; ctx.fillStyle='#fff';
     ctx.fillText('(A popup will appear in a moment…)', W/2, H/2 + 36);
@@ -3441,12 +3466,40 @@ function drawPBadge(ctx,text,x,y,bg,font) {
   ctx.fillStyle='#FFF'; ctx.fillText(text,x+2,y+1);
 }
 
+function collectStars(st) {
+  if (!st || st.won || st.isEmpty) return;
+  const ps = st.player;
+  const R = 55;
+  st.stars.forEach((s, idx) => {
+    if (s.collected) return;
+    const hit = ps.x < s.x + R && ps.x + ps.size > s.x - R &&
+                ps.y < s.y + R && ps.y + ps.size > s.y - R;
+    // Log every frame so we can see if it's even running and the distances
+    if (!window._csLog) window._csLog = 0;
+    if (window._csLog++ % 60 === 0) {
+      console.log('[stars] player=('+Math.round(ps.x)+','+Math.round(ps.y)+') size='+ps.size+
+        ' star=('+s.x+','+s.y+') dx='+(s.x-ps.x).toFixed(0)+' hit='+hit+
+        ' won='+st.won+' isEmpty='+st.isEmpty+' score='+st.score+'/'+st.totalStars);
+    }
+    if (hit) {
+      s.collected = true;
+      st.score++;
+      sfxCollect();
+      spawnParticles(st, s.x, s.y);
+      st.scorePops.push({ x: s.x, y: s.y - 10, alpha: 1, dy: -1.2, text: '+1 ⭐' });
+      mpEmitCoopEvent({ type: 'star', idx, level: playLevelIdx });
+      mpCheckLevelWin(st, ps.x + ps.size/2, ps.y + ps.size/2);
+    }
+  });
+}
+
 function playLoop() {
   if (!playState) return;
   // Expose current state for co-op handler outside IIFE
   window._activePlayState    = playState;
   window._activePlayLevelIdx = playLevelIdx;
   if (!playState.paused) updatePlay(playState);
+  collectStars(playState);   // runs every frame, guaranteed
   drawPlay(playState);
   // Emit own position to partner (BroadcastChannel for same-device, Socket.IO for cross-device)
   if (window._mp && window._mp.roomId) {

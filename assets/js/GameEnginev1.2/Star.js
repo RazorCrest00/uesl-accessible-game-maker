@@ -45,6 +45,7 @@ class Star extends Npc {
             this.gameEnv.stats.starsTotal      = (this.gameEnv.stats.starsTotal      || 0) + 1;
             this.gameEnv.stats.starsCollected  = (this.gameEnv.stats.starsCollected  || 0);
         }
+        console.log('[Star] constructed, id=', this.canvas?.id, 'total so far=', this.gameEnv?.stats?.starsTotal);
     }
 
     // ─── game loop ────────────────────────────────────────────────────────────
@@ -54,6 +55,13 @@ class Star extends Npc {
         this._pulse = (this._pulse + 0.07) % (Math.PI * 2);
         this.draw();
         this._checkPlayerCollision();
+        // Debug: log every ~120 frames
+        if (!this._dbg) this._dbg = 0;
+        if (this._dbg++ % 120 === 0) {
+            const objs = this.gameEnv?.gameObjects || [];
+            console.log('[Star] update tick, gameObjects=', objs.length,
+                'players=', objs.filter(o => o.pressedKeys !== undefined).map(o => o.canvas?.id));
+        }
     }
 
     draw() {
@@ -97,15 +105,19 @@ class Star extends Npc {
 
     _checkPlayerCollision() {
         for (const obj of this.gameEnv.gameObjects) {
-            const id = String(obj?.id ?? obj?.spriteData?.id ?? '').toLowerCase();
-            const isPlayer = obj instanceof Player
-                || id.includes('player')
-                || id.includes('chill guy')
-                || id.includes('tux');
+            if (obj === this) continue;
+            if (!obj.canvas) continue;
+
+            // Identify player: instanceof check first, then presence of pressedKeys
+            // (only Player has pressedKeys — NPCs and backgrounds do not)
+            const isPlayer = obj instanceof Player || obj.pressedKeys !== undefined;
             if (!isPlayer) continue;
 
-            this.isCollision(obj);
-            if (this.collisionData.hit) {
+            // Raw bounding-box overlap — works regardless of hitbox config
+            const sr = this.canvas.getBoundingClientRect();
+            const pr = obj.canvas.getBoundingClientRect();
+            if (sr.left < pr.right && sr.right > pr.left &&
+                sr.top  < pr.bottom && sr.bottom > pr.top) {
                 this._collect();
                 return;
             }
