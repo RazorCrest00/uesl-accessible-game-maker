@@ -27,7 +27,7 @@ class GameLevelPlanets {
         const playerData = {
             id: 'Astronaut',
             src: path + "/images/gamebuilder/sprites/astro.png",
-            SCALE_FACTOR: 5,
+            SCALE_FACTOR: 10,
             STEP_FACTOR: 1000,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: 100, y: 300 },
@@ -49,7 +49,7 @@ class GameLevelPlanets {
             id: 'slime',
             greeting: 'sluuurp',
             src: path + "/images/gamebuilder/sprites/slime.png",
-            SCALE_FACTOR: 8,
+            SCALE_FACTOR: 14,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: 733, y: 300 },
             pixels: { height: 225, width: 225 },

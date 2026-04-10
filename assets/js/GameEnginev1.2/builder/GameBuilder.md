@@ -226,7 +226,7 @@ permalink: /gamebuilderv1-2
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:end;">
                                 <div>
                                     <label>Scale Factor</label>
-                                    <input type="number" id="player-scale" min="1" max="20" value="5">
+                                    <input type="number" id="player-scale" min="1" max="40" value="10">
                                 </div>
                                 <div>
                                     <label>Step Factor</label>
@@ -867,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.style.filter = 'drop-shadow(0 0 4px #FFD700)';
             }
             el.style.cursor = ui.drawState.mode ? 'crosshair' : 'pointer';
-            el.title = ui.drawState.mode ? '' : `Wall ${idx+1} — click to edit`;
+            el.title = ui.drawState.mode ? '' : `${shape.type === 'star' ? 'Star' : 'Wall'} ${idx+1} — click to edit`;
             el.addEventListener('click', (e) => {
                 if (ui.drawState.mode) return; // don't open editor while drawing
                 e.stopPropagation();
@@ -882,21 +882,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!listEl) return;
         listEl.innerHTML = '';
         if (ui.drawShapes.length === 0) return;
+        let starCount = 0, wallCount = 0;
         ui.drawShapes.forEach((shape, idx) => {
+            const isStar = shape.type === 'star';
+            const label  = isStar ? `⭐ Star ${++starCount}` : `🧱 Wall ${++wallCount}`;
             const row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 6px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:.78rem;';
             row.innerHTML = `
-                <input type="color" value="${shape.color || '#4466ff'}" title="Change color" style="width:24px;height:20px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0;">
-                <span style="flex:1;color:#cbd5e1;">Wall ${idx+1}</span>
+                ${isStar ? `<span style="font-size:16px;flex-shrink:0;">⭐</span>` : `<input type="color" value="${shape.color || '#4466ff'}" title="Change color" style="width:24px;height:20px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0;">`}
+                <span style="flex:1;color:${isStar ? '#FFD700' : '#cbd5e1'};">${label}</span>
                 <label style="display:flex;align-items:center;gap:3px;color:#94a3b8;cursor:pointer;white-space:nowrap;">
                     <input type="checkbox" ${shape.visible !== false ? 'checked' : ''} title="Visible in game"> Visible
                 </label>
-                <button title="Delete this wall" style="background:#7f1d1d;border:none;border-radius:5px;color:#fff;padding:2px 7px;cursor:pointer;font-size:.8rem;">🗑</button>
+                <button title="Delete this ${isStar ? 'star' : 'wall'}" style="background:#7f1d1d;border:none;border-radius:5px;color:#fff;padding:2px 7px;cursor:pointer;font-size:.8rem;">🗑</button>
             `;
             const colorInput = row.querySelector('input[type=color]');
             const visibleInput = row.querySelector('input[type=checkbox]');
             const deleteBtn = row.querySelector('button');
-            colorInput.addEventListener('input', () => {
+            if (colorInput) colorInput.addEventListener('input', () => {
                 shape.color = colorInput.value;
                 renderDrawShapes();
                 syncFromControlsIfFreestyle();
@@ -1090,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:end; margin-top:8px;">
                 <div>
                     <label>Scale Factor</label>
-                    <input type="number" min="1" max="20" value="8" class="npc-scale">
+                    <input type="number" min="1" max="40" value="14" class="npc-scale">
                 </div>
                 <div>
                     <label>Animation Rate (ms)</label>
@@ -1574,7 +1577,7 @@ function npc_extract(slot, assets) {
     const nSrcVal = nIsData ? `'${(nSprite.src||'').replace(/'/g, "\\'")}'` : `path + "${nSprite.src || ''}"`;
     const nRows = Math.max(1, parseInt(slot.nRows?.value || nSprite.rows || 1, 10));
     const nCols = Math.max(1, parseInt(slot.nCols?.value || nSprite.cols || 1, 10));
-    const nScale = Math.max(1, parseInt(slot.nScale?.value || 8, 10));
+    const nScale = Math.max(1, parseInt(slot.nScale?.value || 14, 10));
     const nAnim = Math.max(1, parseInt(slot.nAnim?.value || 50, 10));
 
     return {

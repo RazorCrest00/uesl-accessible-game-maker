@@ -30,7 +30,7 @@ class GameLevelGBSlimey {
         const playerData = {
             id: 'playerData',
             src: path + "/images/gamebuilder/sprites/slime.png",
-            SCALE_FACTOR: 5,
+            SCALE_FACTOR: 10,
             STEP_FACTOR: 1000,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: 450, y: 300 },
@@ -52,7 +52,7 @@ class GameLevelGBSlimey {
             id: 'NPC',
             greeting: 'Hi I am r2d2',
             src: path + "/images/gamify/r2_idle.png",
-            SCALE_FACTOR: 8,
+            SCALE_FACTOR: 14,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: 500, y: 158 },
             pixels: { height: 223, width: 505 },

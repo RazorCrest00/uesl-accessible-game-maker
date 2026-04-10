@@ -30,7 +30,7 @@ class GameLevelGBSpace {
         const playerData = {
             id: 'playerData',
             src: path + "/images/gamebuilder/sprites/ufos.png",
-            SCALE_FACTOR: 6,
+            SCALE_FACTOR: 10,
             STEP_FACTOR: 1000,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: 100, y: 300 },
@@ -52,7 +52,7 @@ class GameLevelGBSpace {
             id: 'NPC',
             greeting: 'Hello!',
             src: path + "/images/gamebuilder/sprites/astro.png",
-            SCALE_FACTOR: 9,
+            SCALE_FACTOR: 14,
             ANIMATION_RATE: 50,
             INIT_POSITION: { x: 0.7, y: 0.2 },
             pixels: { height: 770, width: 513 },
