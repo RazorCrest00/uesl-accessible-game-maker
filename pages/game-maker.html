@@ -4822,7 +4822,7 @@ setStatus('👋 Welcome! Customize your Game Title and Character above, then bui
 ═══════════════════════════════════════════════════════════════════════════ */
 // `game` lives inside the main IIFE; access it via the window alias set above
 const game = window._gmGame;
-window._mp = { socket: null, roomId: null, partnerPos: null, _lastEmit: 0, bc: null };
+window._mp = { socket: null, roomId: null, partnerPos: null, _lastEmit: 0, bc: null, _playStarted: false };
 
 const SOCKET_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
@@ -4915,16 +4915,20 @@ function mpConnect() {
   });
 
   // Guest: receive game data when joining via invite link
-  s.on('game_data', ({ game_data, game_name, room_id }) => {
+  s.on('game_data', ({ game_data, game_name, host_name, room_id }) => {
     window._mp.roomId = room_id;
+    // Guard: if already started from localStorage snapshot, just update roomId and bail
+    if (window._mp._playStarted) return;
+    window._mp._playStarted = true;
     try {
       const loaded = JSON.parse(game_data);
       Object.assign(game, loaded);
       if (game_name) game.title = game_name;
     } catch(e) {}
-    document.getElementById('mp-status-text').textContent = `🎮 Playing "${game_name}" with host`;
+    const displayName = host_name || 'host';
+    document.getElementById('mp-status-text').textContent = `🎮 Playing "${game_name}" with ${displayName}`;
     document.getElementById('mp-status-bar').classList.add('show');
-    // Auto-start play mode
+    // Switch to play mode and start
     setTimeout(() => {
       document.querySelectorAll('.gm-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.gm-mode').forEach(m => m.classList.remove('active'));
@@ -4932,6 +4936,10 @@ function mpConnect() {
       document.getElementById('gm-mode-play') && document.getElementById('gm-mode-play').classList.add('active');
       if (typeof window._gmStartPlay === 'function') window._gmStartPlay();
     }, 300);
+  });
+
+  s.on('connect_error', (err) => {
+    console.warn('[MP] Socket.IO connection error:', err.message);
   });
 
   s.on('join_error', ({ msg }) => { alert('Could not join game: ' + msg); });
@@ -5012,11 +5020,13 @@ function mpSendInviteViaChat(friend, room_id) {
 
   // ── Step 1: load game data from localStorage snapshot (works without backend) ──
   function loadAndStart(gameDataStr, gameName, hostName) {
+    if (window._mp._playStarted) return; // guard: only start once
+    window._mp._playStarted = true;
     try {
       const loaded = JSON.parse(gameDataStr);
       Object.assign(game, loaded);
       if (gameName) game.title = gameName;
-    } catch(e) { console.warn('Failed to parse game data:', e); return; }
+    } catch(e) { console.warn('Failed to parse game data:', e); window._mp._playStarted = false; return; }
 
     // Show join banner
     const bar = document.getElementById('mp-status-bar');
@@ -5044,13 +5054,10 @@ function mpSendInviteViaChat(friend, room_id) {
   } catch(e) {}
 
   // ── Step 2: also connect Socket.IO for live position sync ──
+  // mpConnect() already has a permanent game_data handler that starts play if not yet started
   const s = mpConnect();
   s.once('connect', () => {
     s.emit('join_room_event', { room_id: roomId, uid: myUid, name: myName });
-  });
-  // If backend responds with fresher game data, use it (overrides localStorage)
-  s.once('game_data', ({ game_data, game_name, host_name }) => {
-    loadAndStart(game_data, game_name, host_name);
   });
 
   if (!loaded) {

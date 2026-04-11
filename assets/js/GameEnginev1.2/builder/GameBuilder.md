@@ -2260,7 +2260,7 @@ function builder_code() {
                 const player = objs.find(o => o?.constructor?.name === 'Player');
                 if (!player) return;
                 _s.emit('player_update', {
-                    room: _r,
+                    room_id: _r,
                     x: Math.round(player.position?.x || 0),
                     y: Math.round(player.position?.y || 0),
                     width: Math.round(player.width || 32),
@@ -3282,11 +3282,12 @@ function generateStepCode(currentStep) {
     /* SECTION: Runtime */
     function safeCodeToRun() {
         // Multiplayer: if a level was received via socket, use it directly and bypass
-        // all staged/editor logic so syncControlsFromEditor can't interfere
+        // all staged/editor logic so syncControlsFromEditor can't interfere.
+        // Trust the host's code unconditionally — don't re-validate it here.
         if (typeof window.__mpInjectedCode === 'string' && window.__mpInjectedCode.length) {
             const code = window.__mpInjectedCode;
             window.__mpInjectedCode = null; // consume it
-            return /export\s+const\s+gameLevelClasses/.test(code) ? code : generateBaselineCode();
+            return code;
         }
         const preferStaged = (typeof stagedStep !== 'undefined' && !['npc','walls'].includes(stagedStep));
         const preferred = (preferStaged && typeof stagedCode === 'string' && stagedCode.length) ? stagedCode : (ui.editor.value || '');
@@ -3344,6 +3345,7 @@ function generateStepCode(currentStep) {
         document.getElementById('gb-mp-remote-overlay')?.remove();
         (window.__mpPosIntervals || []).forEach(id => clearInterval(id));
         window.__mpPosIntervals = [];
+
     }
 
     async function runInRunner() {
@@ -3353,6 +3355,7 @@ function generateStepCode(currentStep) {
         let code = safeCodeToRun();
         stagedCode = null; stagedStep = null;
         if (!code || !code.trim()) return;
+
 
         const path = '{{ site.baseurl }}';
         const baseUrl = window.location.origin + path;
@@ -3440,6 +3443,27 @@ function generateStepCode(currentStep) {
             if (_mpRoom && _socket) {
                 _createRemoteOverlay();
             }
+        } catch (err) {
+            console.error('[GameBuilder] Failed to load game module:', err);
+            // Show error in the game viewer so guest/host knows what went wrong
+            const canvas = ui.gameCanvas;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#0d1117';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = 'bold 16px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('⚠ Game failed to load', canvas.width / 2, canvas.height / 2 - 20);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '13px monospace';
+                    ctx.fillText(String(err).slice(0, 80), canvas.width / 2, canvas.height / 2 + 10);
+                    if (_mpRoom) ctx.fillText('Ask the host to re-send the level via "Update Level"', canvas.width / 2, canvas.height / 2 + 36);
+                }
+            }
+            if (_mpRoom) mpStatus('⚠ Game failed to load: ' + String(err).slice(0, 60), '#ef4444');
         } finally {
             URL.revokeObjectURL(blobUrl);
         }
@@ -3557,6 +3581,20 @@ function generateStepCode(currentStep) {
     // Expose draw controls globally so onclick in HTML always works
     window._gbSetDrawMode = setDrawMode;
     window._gbClearWalls = () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); };
+
+    // Expose code generator for multiplayer — generates fresh code from the current
+    // builder state (background + player + NPCs + walls) rather than relying on whatever
+    // is currently typed in the editor.
+    window.__generateCurrentCode = function() {
+        try {
+            const fresh = step_generate();
+            if (fresh && fresh.trim()) {
+                ui.editor.value = fresh; // keep editor in sync
+                return fresh;
+            }
+        } catch (_) {}
+        return ui.editor.value || '';
+    };
 });
 </script>
 
@@ -3582,7 +3620,43 @@ const gbSettings = {
   voice: false, face: false, coach: false, coachChaseSpeed: 2.5, coachPatrolSpeed: 1.2,
 };
 
-document.getElementById('gb-slow-mode')?.addEventListener('change', e => { gbSettings.slowMode = e.target.checked; });
+// ── Slow Mode: throttle requestAnimationFrame to ~10 FPS ────────────────────
+(function() {
+  const _realRAF = window.requestAnimationFrame.bind(window);
+  const _realCAF = window.cancelAnimationFrame.bind(window);
+  let _slowActive = false;
+  let _pending = new Map(); // fakeId → { realId, cb }
+  let _nextId = 1;
+
+  window.__setSlowMode = function(on) {
+    _slowActive = on;
+  };
+
+  window.requestAnimationFrame = function(cb) {
+    if (!_slowActive) return _realRAF(cb);
+    const fakeId = _nextId++;
+    const tid = setTimeout(() => {
+      _pending.delete(fakeId);
+      cb(performance.now());
+    }, 100); // ~10 FPS
+    _pending.set(fakeId, tid);
+    return fakeId;
+  };
+
+  window.cancelAnimationFrame = function(id) {
+    if (_pending.has(id)) {
+      clearTimeout(_pending.get(id));
+      _pending.delete(id);
+    } else {
+      _realCAF(id);
+    }
+  };
+})();
+
+document.getElementById('gb-slow-mode')?.addEventListener('change', e => {
+  gbSettings.slowMode = e.target.checked;
+  window.__setSlowMode(e.target.checked);
+});
 document.getElementById('gb-high-contrast')?.addEventListener('change', e => {
   gbSettings.highContrast = e.target.checked;
   document.body.style.filter = e.target.checked ? 'contrast(1.6) brightness(1.1)' : '';
@@ -3731,7 +3805,9 @@ function _disableMpMode() {
 // ── Remote player overlay ────────────────────────────────────────────────────
 function _createRemoteOverlay() {
   document.getElementById('gb-mp-remote-overlay')?.remove();
-  const gc = document.getElementById('game-container-builder');
+  // runInRunner renames the container from 'game-container-builder' to 'gameContainer'
+  // before calling this function, so try both to be safe
+  const gc = document.getElementById('gameContainer') || document.getElementById('game-container-builder');
   if (!gc) return;
   const overlay = document.createElement('canvas');
   overlay.id = 'gb-mp-remote-overlay';
@@ -3946,7 +4022,10 @@ function _createRoomAndInviteFriend(friendUid, friendName) {
   const myName = sessionStorage.getItem('uesl_my_name') || 'A friend';
   if (!myUid) { mpStatus('⚠ Not logged in — log in on the UESL hub first'); return; }
   _mpRoom = generateRoomCode();
-  const code = document.getElementById('code-editor')?.value || '';
+  // Generate fresh code from builder state so guest always gets the actual game,
+  // not just whatever happened to be in the editor at invitation time.
+  const code = (typeof window.__generateCurrentCode === 'function' ? window.__generateCurrentCode() : null)
+    || document.getElementById('code-editor')?.value || '';
   connectSocket(_mpRoom, true, code, 'UESL Game Builder');
   mpShowRoom(_mpRoom);
   mpStatus('Room ' + _mpRoom + ' created — inviting ' + friendName + '…');
@@ -4017,7 +4096,8 @@ document.getElementById('gb-mp-close')?.addEventListener('click', () => {
 
 document.getElementById('gb-mp-create')?.addEventListener('click', () => {
   _mpRoom = generateRoomCode();
-  const code = document.getElementById('code-editor')?.value || '';
+  const code = (typeof window.__generateCurrentCode === 'function' ? window.__generateCurrentCode() : null)
+    || document.getElementById('code-editor')?.value || '';
   connectSocket(_mpRoom, true, code, 'UESL Game Builder');
   mpShowRoom(_mpRoom);
   mpStatus('Room created — share the code with a friend!');
@@ -4049,7 +4129,8 @@ document.getElementById('gb-mp-copy-btn')?.addEventListener('click', () => {
 document.getElementById('gb-mp-send-level')?.addEventListener('click', () => {
   if (!_mpRoom) { mpStatus('⚠ Not connected to a room'); return; }
   // Re-create the room with updated code so the guest receives the latest level
-  const code = document.getElementById('code-editor')?.value || '';
+  const code = (typeof window.__generateCurrentCode === 'function' ? window.__generateCurrentCode() : null)
+    || document.getElementById('code-editor')?.value || '';
   connectSocket(_mpRoom, true, code, 'UESL Game Builder');
   mpStatus('📤 Updating level for partner…', '#4ade80');
 });
