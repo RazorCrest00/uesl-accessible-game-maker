@@ -183,36 +183,56 @@ class Star extends Npc {
     _showWinOverlay() {
         document.getElementById('star-win-overlay')?.remove();
 
+        const gc          = this.gameEnv?.gameControl;
+        const hasNextLevel = gc && (gc.currentLevelIndex < gc.levelClasses.length - 1);
+        const currentNum   = gc ? gc.currentLevelIndex + 1 : 1;
+        const totalLevels  = gc ? gc.levelClasses.length   : 1;
+
         const overlay = document.createElement('div');
         overlay.id = 'star-win-overlay';
         Object.assign(overlay.style, {
-            position:    'fixed',
-            top:         '50%',
-            left:        '50%',
-            transform:   'translate(-50%, -50%)',
-            background:  'rgba(10, 5, 40, 0.97)',
-            border:      '3px solid #facc15',
-            borderRadius:'20px',
-            padding:     '36px 48px',
-            textAlign:   'center',
-            zIndex:      '10001',
-            fontFamily:  'Arial, sans-serif',
-            color:       '#fef9c3',
-            boxShadow:   '0 0 60px rgba(250,204,21,0.6)',
-            minWidth:    '300px',
-            animation:   'star-win-in 0.45s ease-out',
+            position:     'fixed',
+            top:          '50%',
+            left:         '50%',
+            transform:    'translate(-50%, -50%)',
+            background:   'rgba(10, 5, 40, 0.97)',
+            border:       `3px solid ${hasNextLevel ? '#6366f1' : '#facc15'}`,
+            borderRadius: '20px',
+            padding:      '36px 48px',
+            textAlign:    'center',
+            zIndex:       '10001',
+            fontFamily:   'Arial, sans-serif',
+            color:        '#fef9c3',
+            boxShadow:    `0 0 60px ${hasNextLevel ? 'rgba(99,102,241,0.6)' : 'rgba(250,204,21,0.6)'}`,
+            minWidth:     '320px',
+            animation:    'star-win-in 0.45s ease-out',
         });
 
-        overlay.innerHTML = `
-            <div style="font-size:3.5rem;margin-bottom:8px;">⭐</div>
-            <div style="font-size:1.8rem;font-weight:bold;color:#facc15;margin-bottom:10px;">
-                YOU WIN!
-            </div>
-            <div style="font-size:1.05rem;color:#fde68a;margin-bottom:14px;">
-                All stars collected — great job!
-            </div>
-            <div style="font-size:0.85rem;color:#a16207;">Restarting level…</div>
-        `;
+        if (hasNextLevel) {
+            overlay.innerHTML = `
+                <div style="font-size:3.5rem;margin-bottom:8px;">🎉</div>
+                <div style="font-size:1.8rem;font-weight:bold;color:#818cf8;margin-bottom:10px;">
+                    Level ${currentNum} Complete!
+                </div>
+                <div style="font-size:1.05rem;color:#c7d2fe;margin-bottom:14px;">
+                    All stars collected — great job!
+                </div>
+                <div style="font-size:0.85rem;color:#6366f1;">
+                    Loading Level ${currentNum + 1} of ${totalLevels}…
+                </div>
+            `;
+        } else {
+            overlay.innerHTML = `
+                <div style="font-size:3.5rem;margin-bottom:8px;">🏆</div>
+                <div style="font-size:1.8rem;font-weight:bold;color:#facc15;margin-bottom:10px;">
+                    You Win!
+                </div>
+                <div style="font-size:1.05rem;color:#fde68a;margin-bottom:14px;">
+                    All ${totalLevels} level${totalLevels !== 1 ? 's' : ''} completed — amazing!
+                </div>
+                <div style="font-size:0.85rem;color:#a16207;">Restarting from Level 1…</div>
+            `;
+        }
 
         // Inject animation keyframes once
         if (!document.getElementById('star-win-styles')) {
@@ -232,16 +252,18 @@ class Star extends Npc {
         setTimeout(() => {
             overlay.remove();
             try {
-                const gc = this.gameEnv?.gameControl;
                 if (gc && typeof gc.transitionToLevel === 'function') {
                     // Reset star stats so the next level counts fresh
                     if (this.gameEnv.stats) {
                         this.gameEnv.stats.starsTotal     = 0;
                         this.gameEnv.stats.starsCollected = 0;
                     }
-                    // Advance to the next level if one exists, otherwise restart current
-                    if (gc.currentLevelIndex < gc.levelClasses.length - 1) {
+                    if (hasNextLevel) {
+                        // Advance to next level
                         gc.currentLevelIndex++;
+                    } else {
+                        // All levels done — restart from the beginning
+                        gc.currentLevelIndex = 0;
                     }
                     gc.transitionToLevel();
                 }

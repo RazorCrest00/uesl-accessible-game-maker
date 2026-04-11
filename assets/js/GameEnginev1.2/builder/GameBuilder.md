@@ -3429,10 +3429,15 @@ function generateStepCode(currentStep) {
 
     }
 
-    async function runInRunner() {
-        renderOverlay();
-        stopRunner();
+    // Run only the current single level in the preview (used when switching tabs).
+    // Does NOT combine all levels — what you see is exactly what you're editing.
+    async function runCurrentLevelPreview() {
+        const code = ui.editor?.value || '';
+        if (!code.trim()) return;
+        await _executeCode(code);
+    }
 
+    async function runInRunner() {
         // Use multi-level code when the levels system is initialised and not in multiplayer mode
         let code;
         if (typeof _generateAllLevelsCode === 'function' && !window.__mpInjectedCode) {
@@ -3441,6 +3446,14 @@ function generateStepCode(currentStep) {
             code = safeCodeToRun();
         }
         stagedCode = null; stagedStep = null;
+        await _executeCode(code);
+    }
+
+    // Core runner: takes final code string, injects imports/coach, starts the game.
+    // Shared by runInRunner (all levels) and runCurrentLevelPreview (single level).
+    async function _executeCode(code) {
+        renderOverlay();
+        stopRunner();
         if (!code || !code.trim()) return;
 
 
@@ -3925,9 +3938,9 @@ function generateStepCode(currentStep) {
                 _restoreLevelState(_levels[_activeLevel]);
                 _saveLevels();
                 _renderLevelTabs();
-                // Stop the running game so the preview clears — the user is now
-                // editing a different level and the old game would look identical
-                try { stopRunner(); } catch(_) {}
+                // Preview only this level — don't bundle all levels together,
+                // otherwise Level 2's code always shows up when viewing Level 1.
+                try { runCurrentLevelPreview(); } catch(_) {}
             });
 
             bar.appendChild(tab);
