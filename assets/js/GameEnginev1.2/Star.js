@@ -234,10 +234,14 @@ class Star extends Npc {
             try {
                 const gc = this.gameEnv?.gameControl;
                 if (gc && typeof gc.transitionToLevel === 'function') {
-                    // Reset star stats before restarting so the new level counts fresh
+                    // Reset star stats so the next level counts fresh
                     if (this.gameEnv.stats) {
                         this.gameEnv.stats.starsTotal     = 0;
                         this.gameEnv.stats.starsCollected = 0;
+                    }
+                    // Advance to the next level if one exists, otherwise restart current
+                    if (gc.currentLevelIndex < gc.levelClasses.length - 1) {
+                        gc.currentLevelIndex++;
                     }
                     gc.transitionToLevel();
                 }

@@ -117,6 +117,81 @@ permalink: /gamebuilderv1-2
 .embed-mode .page-content,
 .embed-mode .page-content .wrapper { padding: 0 !important; margin: 0 !important; }
 .embed-mode .opencs_root { padding: 0 !important; margin: 0 !important; }
+
+/* ── Level Tabs ─────────────────────────────────────────────────── */
+.level-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid #1e293b;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+  background: rgba(0,0,0,.15);
+  border-radius: 8px 8px 0 0;
+}
+.level-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 7px 7px 0 0;
+  border-bottom: none;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+  user-select: none;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.level-tab:hover { background: #273449; color: #e2e8f0; }
+.level-tab.active {
+  background: #0f172a;
+  border-color: #6366f1;
+  color: #a5b4fc;
+  font-weight: 600;
+}
+.level-tab-name {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.level-tab-del {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0 0 0 2px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.level-tab-del:hover { color: #ef4444; }
+.level-tab-add {
+  padding: 4px 9px;
+  background: none;
+  border: 1px dashed #334155;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 0.8rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.12s, border-color 0.12s;
+}
+.level-tab-add:hover { color: #6366f1; border-color: #6366f1; }
+.level-tab-name[contenteditable="true"] {
+  outline: 1px solid #6366f1;
+  border-radius: 3px;
+  min-width: 40px;
+  padding: 0 2px;
+}
 </style>
 
 <script>
@@ -171,6 +246,10 @@ permalink: /gamebuilderv1-2
                 2. Player - Configure character<br>
                 3. Freestyle - Add NPCs, Walls, etc<br><br>
                 <strong>Tips:</strong> Draw red barriers directly on the game view. Barriers collide. Walls are visible in-game by default; use the Walls toggle to hide them while testing.
+            </div>
+            <!-- level tabs: switch between saved levels -->
+            <div class="level-tabs-bar" id="level-tabs-bar">
+                <!-- tabs rendered by JS -->
             </div>
             <!-- scrollable form: asset configuration sections -->
             <div class="scroll-form">
@@ -2507,6 +2586,7 @@ function generateStepCode(currentStep) {
      * Detects which entity type was last edited and generates appropriate code
      */
     function syncFromControlsIfFreestyle() {
+        if (typeof _restoringLevel !== 'undefined' && _restoringLevel) return;
         const current = steps[stepIndex];
         // Always stage builder changes, even after manual code edits
         const hasNPCs = ui.npcs.length > 0;
@@ -2920,8 +3000,9 @@ function generateStepCode(currentStep) {
     }
 
     // Background change event handler
-    if (ui.bg) ui.bg.addEventListener('change', () => { state.lastEdited = 'background'; rerunPlayer(); });
+    if (ui.bg) ui.bg.addEventListener('change', () => { if (_restoringLevel) return; state.lastEdited = 'background'; rerunPlayer(); });
     if (ui.pSprite) ui.pSprite.addEventListener('change', () => {
+        if (_restoringLevel) return;
         try {
             const key = ui.pSprite.value;
             const spr = assets && assets.sprites ? assets.sprites[key] : null;
@@ -3352,7 +3433,13 @@ function generateStepCode(currentStep) {
         renderOverlay();
         stopRunner();
 
-        let code = safeCodeToRun();
+        // Use multi-level code when the levels system is initialised and not in multiplayer mode
+        let code;
+        if (typeof _generateAllLevelsCode === 'function' && !window.__mpInjectedCode) {
+            code = _generateAllLevelsCode();
+        } else {
+            code = safeCodeToRun();
+        }
         stagedCode = null; stagedStep = null;
         if (!code || !code.trim()) return;
 
@@ -3581,6 +3668,357 @@ function generateStepCode(currentStep) {
     // Expose draw controls globally so onclick in HTML always works
     window._gbSetDrawMode = setDrawMode;
     window._gbClearWalls = () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); };
+
+    // ── Multi-Level System ────────────────────────────────────────────────────
+    // Each level entry: { id, name, bg, pSprite, pX, pY, pName, pScale, pStep,
+    //   pAnim, pRows, pCols, keys, dirDown, dirRight, dirLeft, dirUp, dirUpRight,
+    //   dirDownRight, dirUpLeft, dirDownLeft, dirCols, hitboxW, hitboxH,
+    //   npcs[], walls[], drawShapes[], overlayConfirmed, code }
+
+    const LEVELS_STORAGE_KEY = 'gb_levels_v3';
+    let _levels = [];
+    let _activeLevel = 0;
+    // Flag to suppress all reactive UI handlers while a level is being restored,
+    // preventing mid-restore code generation with a mix of old+new values.
+    let _restoringLevel = false;
+
+    /** Capture current UI state into a plain object */
+    /** Extract plain serialisable data from an NPC slot (no DOM refs) */
+    function _serializeNpc(slot) {
+        return {
+            id:     slot.nId?.value     || '',
+            msg:    slot.nMsg?.value    || '',
+            sprite: slot.nSprite?.value || '',
+            rows:   slot.nRows?.value   || '4',
+            cols:   slot.nCols?.value   || '3',
+            scale:  slot.nScale?.value  || '14',
+            anim:   slot.nAnim?.value   || '50',
+            x:      slot.nX?.value      || '500',
+            y:      slot.nY?.value      || '300',
+            fieldsOpen: slot.fieldsOpen || false,
+            locked:      slot.locked      || false,
+            displayName: slot.displayName || '',
+        };
+    }
+
+    function _captureLevelState() {
+        // Best-effort code capture: prefer staged code (unconfirmed user changes)
+        // over the editor text, since syncFromControlsIfFreestyle only stages code
+        // and doesn't write it to the editor until the user hits Confirm.
+        // If neither exists, try generating fresh from the current UI state.
+        let editorCode = ui.editor?.value || '';
+        if (typeof stagedCode === 'string' && stagedCode.trim()) {
+            editorCode = stagedCode;
+        }
+        if (!editorCode.trim()) {
+            try { const fresh = step_generate(); if (fresh && fresh.trim()) editorCode = fresh; } catch(_) {}
+        }
+        return {
+            bg: ui.bg?.value || '',
+            pSprite: ui.pSprite?.value || '',
+            pX: document.getElementById('player-x')?.value || '100',
+            pY: document.getElementById('player-y')?.value || '300',
+            pName: document.getElementById('player-name')?.value || '',
+            pScale: document.getElementById('player-scale')?.value || '10',
+            pStep: document.getElementById('player-step')?.value || '1000',
+            pAnim: document.getElementById('player-anim')?.value || '50',
+            pRows: document.getElementById('player-rows')?.value || '1',
+            pCols: document.getElementById('player-cols')?.value || '1',
+            keys: document.getElementById('movement-keys')?.value || '',
+            dirDown: document.getElementById('player-dir-down-row')?.value || '0',
+            dirRight: document.getElementById('player-dir-right-row')?.value || '1',
+            dirLeft: document.getElementById('player-dir-left-row')?.value || '2',
+            dirUp: document.getElementById('player-dir-up-row')?.value || '3',
+            dirUpRight: document.getElementById('player-dir-upright-row')?.value || '3',
+            dirDownRight: document.getElementById('player-dir-downright-row')?.value || '1',
+            dirUpLeft: document.getElementById('player-dir-upleft-row')?.value || '2',
+            dirDownLeft: document.getElementById('player-dir-downleft-row')?.value || '0',
+            dirCols: document.getElementById('player-dir-columns')?.value || '3',
+            hitboxW: document.getElementById('player-hitbox-width')?.value || '0',
+            hitboxH: document.getElementById('player-hitbox-height')?.value || '0',
+            // Serialize NPCs as plain data — no DOM references so levels don't share elements
+            npcs: (ui.npcs || []).map(_serializeNpc),
+            walls: (ui.walls || []).map(w => ({ ...w })),
+            drawShapes: (ui.drawShapes || []).map(s => ({ ...s })),
+            overlayConfirmed: ui.overlayConfirmed || false,
+            code: editorCode,
+        };
+    }
+
+    /** Restore UI from a saved level state */
+    function _restoreLevelState(s) {
+        if (!s) return;
+
+        // Clear any staged code from the previous level so it can't bleed into this one
+        stagedCode = null;
+        stagedStep = null;
+
+        // Block all reactive handlers while restoring so we don't get
+        // code generated mid-restore with a mix of old+new values.
+        _restoringLevel = true;
+        try {
+            // Set all UI values directly — no dispatchEvent during restore.
+            // Setting .value on a <select> is enough to change its visual display.
+            // All reactive listeners check _restoringLevel and bail, so no
+            // code generation or cross-level contamination can happen here.
+            if (ui.bg)      ui.bg.value      = s.bg      || '';
+            if (ui.pSprite) ui.pSprite.value = s.pSprite || '';
+
+            const _set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+            _set('player-x',              s.pX);
+            _set('player-y',              s.pY);
+            _set('player-name',           s.pName);
+            _set('player-scale',          s.pScale);
+            _set('player-step',           s.pStep);
+            _set('player-anim',           s.pAnim);
+            _set('player-rows',           s.pRows);
+            _set('player-cols',           s.pCols);
+            _set('movement-keys',         s.keys);
+            _set('player-dir-down-row',      s.dirDown);
+            _set('player-dir-right-row',     s.dirRight);
+            _set('player-dir-left-row',      s.dirLeft);
+            _set('player-dir-up-row',        s.dirUp);
+            _set('player-dir-upright-row',   s.dirUpRight);
+            _set('player-dir-downright-row', s.dirDownRight);
+            _set('player-dir-upleft-row',    s.dirUpLeft);
+            _set('player-dir-downleft-row',  s.dirDownLeft);
+            _set('player-dir-columns',       s.dirCols);
+            _set('player-hitbox-width',      s.hitboxW);
+            _set('player-hitbox-height',     s.hitboxH);
+
+            // Rebuild NPC DOM slots from serialized plain-data — no DOM refs shared.
+            (ui.npcs || []).forEach(slot => { try { slot.container?.remove(); } catch(_) {} });
+            ui.npcs = [];
+            if (ui.npcsContainer) ui.npcsContainer.innerHTML = '';
+            (s.npcs || []).forEach((nData, idx) => {
+                const slot = makeNpcSlot(idx + 1);
+                if (slot.nId)     slot.nId.value     = nData.id     || '';
+                if (slot.nMsg)    slot.nMsg.value    = nData.msg    || '';
+                if (slot.nSprite) slot.nSprite.value = nData.sprite || '';
+                if (slot.nRows)   slot.nRows.value   = nData.rows   || '4';
+                if (slot.nCols)   slot.nCols.value   = nData.cols   || '3';
+                if (slot.nScale)  slot.nScale.value  = nData.scale  || '14';
+                if (slot.nAnim)   slot.nAnim.value   = nData.anim   || '50';
+                if (slot.nX)      slot.nX.value      = nData.x      || '500';
+                if (slot.nY)      slot.nY.value      = nData.y      || '300';
+                slot.locked      = nData.locked      || false;
+                slot.displayName = nData.displayName || '';
+                if (slot.fieldsContainer) slot.fieldsContainer.style.display = nData.fieldsOpen ? '' : 'none';
+                slot.fieldsOpen  = nData.fieldsOpen  || false;
+            });
+
+            // Walls and drawn shapes — plain data only, no shared references
+            ui.walls       = (s.walls      || []).map(w  => ({ ...w  }));
+            ui.drawShapes  = (s.drawShapes || []).map(ds => ({ ...ds }));
+            ui.overlayConfirmed = s.overlayConfirmed || false;
+
+            // Redraw overlay shapes for this level
+            try { renderDrawShapes?.(); } catch(_) {}
+
+        } finally {
+            _restoringLevel = false;
+        }
+
+        // Restore editor code for this level.
+        // Use stored code if available; otherwise generate fresh from the just-restored UI values.
+        try {
+            let code = s.code || '';
+            if (!code.trim()) {
+                try { code = step_generate() || ''; } catch(_) {}
+            }
+            if (ui.editor) {
+                state.programmaticEdit = true;
+                ui.editor.value = code;
+                state.programmaticEdit = false;
+            }
+        } catch(_) {}
+
+        // Move to freestyle step so all asset changes (bg, player, NPCs, walls) are
+        // accepted without the step-wizard blocking them.
+        if (stepIndex < 2) {
+            stepIndex = 2;
+            try { updateStepUI?.(); } catch(_) {}
+        }
+        state.lastEdited = s.bg ? 'background' : null;
+    }
+
+    /** Persist levels to localStorage */
+    function _saveLevels() {
+        try { localStorage.setItem(LEVELS_STORAGE_KEY, JSON.stringify(_levels)); } catch(_) {}
+    }
+
+    /** Load levels from localStorage */
+    function _loadLevels() {
+        try {
+            const raw = localStorage.getItem(LEVELS_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length) return parsed;
+            }
+        } catch(_) {}
+        return null;
+    }
+
+    /** Render the tab strip */
+    function _renderLevelTabs() {
+        const bar = document.getElementById('level-tabs-bar');
+        if (!bar) return;
+        bar.innerHTML = '';
+        _levels.forEach((lv, i) => {
+            const tab = document.createElement('div');
+            tab.className = 'level-tab' + (i === _activeLevel ? ' active' : '');
+            tab.dataset.idx = i;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'level-tab-name';
+            nameSpan.textContent = lv.name;
+            nameSpan.title = 'Double-click to rename';
+            nameSpan.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                nameSpan.contentEditable = 'true';
+                nameSpan.focus();
+                const range = document.createRange();
+                range.selectNodeContents(nameSpan);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+            });
+            nameSpan.addEventListener('blur', () => {
+                nameSpan.contentEditable = 'false';
+                const newName = nameSpan.textContent.trim() || lv.name;
+                _levels[i].name = newName;
+                nameSpan.textContent = newName;
+                _saveLevels();
+            });
+            nameSpan.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); nameSpan.blur(); }
+                if (e.key === 'Escape') { nameSpan.textContent = _levels[i].name; nameSpan.blur(); }
+            });
+
+            tab.appendChild(nameSpan);
+
+            // Delete button (only show when more than 1 level)
+            if (_levels.length > 1) {
+                const del = document.createElement('button');
+                del.className = 'level-tab-del';
+                del.title = 'Delete level';
+                del.textContent = '×';
+                del.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (_levels.length <= 1) return;
+                    if (!confirm(`Delete "${_levels[i].name}"?`)) return;
+                    _levels.splice(i, 1);
+                    if (_activeLevel >= _levels.length) _activeLevel = _levels.length - 1;
+                    _restoreLevelState(_levels[_activeLevel]);
+                    _saveLevels();
+                    _renderLevelTabs();
+                });
+                tab.appendChild(del);
+            }
+
+            tab.addEventListener('click', (e) => {
+                if (e.target.classList.contains('level-tab-del') ||
+                    e.target.contentEditable === 'true') return;
+                if (i === _activeLevel) return;
+                // Save current level state before switching
+                _levels[_activeLevel] = { ..._levels[_activeLevel], ..._captureLevelState() };
+                _activeLevel = i;
+                _restoreLevelState(_levels[_activeLevel]);
+                _saveLevels();
+                _renderLevelTabs();
+                // Stop the running game so the preview clears — the user is now
+                // editing a different level and the old game would look identical
+                try { stopRunner(); } catch(_) {}
+            });
+
+            bar.appendChild(tab);
+        });
+
+        // Add new level button
+        const addBtn = document.createElement('button');
+        addBtn.className = 'level-tab-add';
+        addBtn.textContent = '+ Level';
+        addBtn.title = 'Add a new level';
+        addBtn.addEventListener('click', () => {
+            // Save current level state
+            _levels[_activeLevel] = { ..._levels[_activeLevel], ..._captureLevelState() };
+            // Create a fresh blank level
+            const newIdx = _levels.length;
+            _levels.push({ id: Date.now(), name: `Level ${newIdx + 1}`, bg: '', pSprite: '', pX: '100', pY: '300', pName: '', pScale: '10', pStep: '1000', pAnim: '50', pRows: '1', pCols: '1', keys: '', dirDown: '0', dirRight: '1', dirLeft: '2', dirUp: '3', dirUpRight: '3', dirDownRight: '1', dirUpLeft: '2', dirDownLeft: '0', dirCols: '3', hitboxW: '0', hitboxH: '0', npcs: [], walls: [], drawShapes: [], overlayConfirmed: false, code: '' });
+            _activeLevel = newIdx;
+            _restoreLevelState(_levels[_activeLevel]);
+            _saveLevels();
+            _renderLevelTabs();
+        });
+        bar.appendChild(addBtn);
+    }
+
+    /** Generate combined multi-level ES module code for all levels */
+    function _generateAllLevelsCode() {
+        // Save current level first
+        _levels[_activeLevel] = { ..._levels[_activeLevel], ..._captureLevelState() };
+        _saveLevels();
+
+        if (_levels.length === 1) {
+            // Single level — use existing code path
+            return _levels[0].code || step_generate() || '';
+        }
+
+        // Multiple levels: rename GameLevelCustom → GameLevelN in each, then combine
+        const importLines = new Set();
+        const classBodies = [];
+        const classNames = [];
+
+        for (let i = 0; i < _levels.length; i++) {
+            let code = _levels[i].code || '';
+            if (!code.trim()) continue; // skip empty levels
+
+            const className = `GameLevelCustom${i + 1}`;
+            classNames.push(className);
+
+            // Extract import lines
+            const lines = code.split('\n');
+            const nonImportLines = [];
+            for (const line of lines) {
+                if (/^\s*import\s+/.test(line)) {
+                    importLines.add(line.trim());
+                } else {
+                    nonImportLines.push(line);
+                }
+            }
+
+            // Rename class and export
+            let body = nonImportLines.join('\n');
+            body = body.replace(/\bclass\s+GameLevelCustom\b/g, `class ${className}`);
+            body = body.replace(/export\s+const\s+gameLevelClasses\s*=\s*\[[^\]]*\];?\s*/g, '');
+            classBodies.push(body.trim());
+        }
+
+        if (classNames.length === 0) return step_generate() || '';
+
+        const combined = [...importLines].join('\n') + '\n\n'
+            + classBodies.join('\n\n') + '\n\n'
+            + `export const gameLevelClasses = [${classNames.join(', ')}];\n`;
+        return combined;
+    }
+
+    // Expose multi-level code generator globally
+    window.__generateAllLevelsCode = _generateAllLevelsCode;
+
+    // Initialise levels: try loading from localStorage, else start with one blank level
+    (function _initLevels() {
+        const saved = _loadLevels();
+        if (saved) {
+            _levels = saved;
+            _activeLevel = 0;
+            _restoreLevelState(_levels[0]);
+        } else {
+            _levels = [{ id: Date.now(), name: 'Level 1', bg: '', pSprite: '', pX: '100', pY: '300', pName: '', pScale: '10', pStep: '1000', pAnim: '50', pRows: '1', pCols: '1', keys: '', dirDown: '0', dirRight: '1', dirLeft: '2', dirUp: '3', dirUpRight: '3', dirDownRight: '1', dirUpLeft: '2', dirDownLeft: '0', dirCols: '3', hitboxW: '0', hitboxH: '0', npcs: [], walls: [], drawShapes: [], overlayConfirmed: false, code: '' }];
+            _activeLevel = 0;
+        }
+        _renderLevelTabs();
+    })();
+
+    // ── End Multi-Level System ────────────────────────────────────────────────
 
     // Expose code generator for multiplayer — generates fresh code from the current
     // builder state (background + player + NPCs + walls) rather than relying on whatever
