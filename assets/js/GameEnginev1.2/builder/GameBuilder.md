@@ -461,9 +461,9 @@ permalink: /gamebuilderv1-2
     <div class="col-main view-split">
         <!-- view controls: switch between code, game, or split view -->
         <div class="view-controls">
-            <button class="view-btn" data-view="game">Game</button>
-            <button class="view-btn" data-view="code">Code</button>
-            <button class="view-btn active" data-view="split">Split</button>
+            <button class="view-btn" data-view="game">🎮 Game</button>
+            <button class="view-btn" data-view="code">💻 Code</button>
+            <button class="view-btn active" data-view="split">⬜ Split</button>
         </div>
         <div class="main-content">
             <!-- game panel + drawing overlay -->
@@ -3541,7 +3541,7 @@ function generateStepCode(currentStep) {
             runnerGameControl = runnerGameInstance?.gameControl || runnerGameInstance;
             // If in a multiplayer room, create the remote player overlay
             if (_mpRoom && _socket) {
-                _createRemoteOverlay();
+                _createRemoteOverlay(true); // host sees guest
             }
         } catch (err) {
             console.error('[GameBuilder] Failed to load game module:', err);
@@ -4254,7 +4254,7 @@ function _disableMpMode() {
 }
 
 // ── Remote player overlay ────────────────────────────────────────────────────
-function _createRemoteOverlay() {
+function _createRemoteOverlay(isHost) {
   document.getElementById('gb-mp-remote-overlay')?.remove();
   // runInRunner renames the container from 'game-container-builder' to 'gameContainer'
   // before calling this function, so try both to be safe
@@ -4268,6 +4268,8 @@ function _createRemoteOverlay() {
   if (getComputedStyle(gc).position === 'static') gc.style.position = 'relative';
   gc.appendChild(overlay);
   const ctx = overlay.getContext('2d');
+  // Host sees the guest as "Player 2"; guest sees the host as "Host"
+  const partnerLabel = isHost ? 'Player 2' : 'Host';
   function _renderLoop() {
     if (!document.getElementById('gb-mp-remote-overlay')) return;
     ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -4282,7 +4284,7 @@ function _createRemoteOverlay() {
       ctx.fillStyle = '#c4b5fd';
       ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Player 2', pos.x + w / 2, pos.y - 5);
+      ctx.fillText(partnerLabel, pos.x + w / 2, pos.y - 5);
     }
     requestAnimationFrame(_renderLoop);
   }
@@ -4406,10 +4408,11 @@ function connectSocket(room, isHost, gameData, gameName) {
     mpRenderPlayers(1);
   });
 
-  // HOST: a guest joined
+  // HOST: a guest joined — (re)create the remote overlay so host can see guest
   _socket.on('partner_joined', ({ name }) => {
     mpStatus('🎮 ' + (name || 'A player') + ' joined the room!', '#4ade80');
     mpRenderPlayers(2);
+    _createRemoteOverlay(true); // host sees guest as "Player 2"
   });
 
   // GUEST: receive host's game data and launch it
@@ -4425,6 +4428,8 @@ function connectSocket(room, isHost, gameData, gameName) {
         } else {
           document.getElementById('btn-code-play')?.click();
         }
+        // Guest also needs the remote overlay to see the host's player
+        setTimeout(() => _createRemoteOverlay(false), 600); // guest sees host as "Host"
         mpStatus('🎮 Playing "' + (game_name || 'Game') + '" — have fun!', '#4ade80');
       }, 500);
     }

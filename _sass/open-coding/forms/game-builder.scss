@@ -73,8 +73,12 @@
 
 @mixin view-mode-controls {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 4px;
 
   @media (max-width: 768px) {
     display: none;
@@ -83,22 +87,30 @@
 
 @mixin view-toggle-button {
   flex: 1;
-  padding: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 6px;
-  background: rgba(0,0,0,0.3);
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  font-size: 0.8em;
+  font-size: 0.78em;
+  font-weight: 600;
   text-transform: uppercase;
-  transition: all 0.2s;
+  letter-spacing: 0.06em;
+  transition: all 0.18s ease;
 
   &.active {
-    background: rgba(255,255,255,0.1);
-    border-color: var(--pref-accent-color);
+    background: var(--pref-accent-color, #4CAFEF);
+    border-color: var(--pref-accent-color, #4CAFEF);
+    color: #000;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--pref-accent-color, #4CAFEF) 50%, transparent);
+    font-weight: 700;
   }
 
   &:hover:not(.active) {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
   }
 }
 
