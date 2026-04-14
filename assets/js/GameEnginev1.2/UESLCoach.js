@@ -202,16 +202,43 @@ class UESLCoach extends Enemy {
 
     async _fetchTaunt(context = 'chasing') {
         try {
+            const payload = { context, ...this._getGameState() };
             const res = await fetch(`${pythonURI}/api/ainpc/coach-taunt`, {
                 ...fetchOptions,
                 method: 'POST',
-                body: JSON.stringify({ context }),
+                body: JSON.stringify(payload),
             });
             const data = await res.json();
             return data.taunt || this._fallbackTaunt(context);
         } catch {
             return this._fallbackTaunt(context);
         }
+    }
+
+    /**
+     * Gather current game-state context to enrich the AI taunt.
+     * Returns starsLeft, totalStars, and levelName when available.
+     */
+    _getGameState() {
+        const state = {};
+        const objects = this.gameEnv?.gameObjects ?? [];
+
+        // Count collectible star objects in the scene
+        const stars = objects.filter(o => o.constructor?.name === 'Star');
+        if (stars.length > 0) {
+            const collected = stars.filter(s => s.collected || s._collected || !s.canvas).length;
+            state.totalStars = stars.length;
+            state.starsLeft  = stars.length - collected;
+        }
+
+        // Pull level name from gameControl if available
+        const levelName =
+            this.gameEnv?.gameControl?.currentLevel?.name ??
+            this.gameEnv?.gameControl?.currentLevel?.constructor?.name ??
+            null;
+        if (levelName) state.levelName = levelName;
+
+        return state;
     }
 
     _fallbackTaunt(context) {

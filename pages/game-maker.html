@@ -3068,15 +3068,28 @@ function updatePlay(st) {
         c.tauntTick = 270;
         c.fetchingTaunt = true;
         const ctx2 = dist < 60 ? 'nearby' : 'chasing';
+        const starsLeft2   = st.stars.filter(s => !s.collected).length;
+        const levelName2   = document.getElementById('gi-title')?.value?.trim() || '';
         fetch(`${PYTHON_URI}/api/ainpc/coach-taunt`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' },
-          body: JSON.stringify({ context: ctx2 }),
+          body: JSON.stringify({
+            context:    ctx2,
+            starsLeft:  starsLeft2,
+            totalStars: st.totalStars,
+            levelName:  levelName2,
+          }),
         })
         .then(r => r.json())
         .then(d => { c.taunt = d.taunt || 'You can\'t outrun me!'; c.tauntAlpha = 1; })
         .catch(() => {
-          const bank = ['You can\'t outrun me!','This level ends NOW!','Nowhere to hide!','Speed won\'t save you!'];
+          const bank = [
+            'You can\'t outrun me!',
+            'Those stars belong to ME!',
+            'No one beats this level on my watch!',
+            'UESL champions don\'t lose — and neither do I!',
+            'Speed won\'t save you, kid!',
+          ];
           c.taunt = bank[Math.floor(Math.random() * bank.length)];
           c.tauntAlpha = 1;
         })
@@ -3102,14 +3115,21 @@ function updatePlay(st) {
         ps.x = st.spawnX; ps.y = st.spawnY;
 
         // Fetch caught taunt and show it
+        const starsLeftCaught = st.stars.filter(s => !s.collected).length;
+        const levelNameCaught = document.getElementById('gi-title')?.value?.trim() || '';
         fetch(`${PYTHON_URI}/api/ainpc/coach-taunt`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' },
-          body: JSON.stringify({ context: 'caught' }),
+          body: JSON.stringify({
+            context:    'caught',
+            starsLeft:  starsLeftCaught,
+            totalStars: st.totalStars,
+            levelName:  levelNameCaught,
+          }),
         })
         .then(r => r.json())
-        .then(d => { c.taunt = d.taunt || 'Got you!'; c.tauntAlpha = 1; c.tauntTick = 300; })
-        .catch(() => { c.taunt = 'Got you!'; c.tauntAlpha = 1; });
+        .then(d => { c.taunt = d.taunt || 'Caught you. Game over.'; c.tauntAlpha = 1; c.tauntTick = 300; })
+        .catch(() => { c.taunt = 'Caught you. Back to the start!'; c.tauntAlpha = 1; });
 
         const msg = st.currentHearts <= 0
           ? '🧑‍🏫 Coach caught you! No hearts left — respawning…'

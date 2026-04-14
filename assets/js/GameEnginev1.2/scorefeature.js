@@ -1,5 +1,5 @@
 // ScoreFeature.js (copied from GameEnginev2)
-import { javaURI, fetchOptions } from '/assets/js/api/config.js';
+import { javaURI, pythonURI, fetchOptions } from '/assets/js/api/config.js';
 
 export default class ScoreFeature {
     constructor(pauseMenu, scoreSettings = null) {
@@ -178,17 +178,13 @@ export default class ScoreFeature {
      * Get the backend base URL with proper priority
      */
     _getBackendBase() {
-        const opt = (this.pauseMenu.options && this.pauseMenu.options.backendUrl) 
+        const opt = (this.pauseMenu.options && this.pauseMenu.options.backendUrl)
             || (this.pauseMenu.gameControl && this.pauseMenu.gameControl.pauseMenuOptions && this.pauseMenu.gameControl.pauseMenuOptions.backendUrl);
         if (opt) return opt;
-        
+
         try {
-            if (typeof window !== 'undefined') {
-                if (window.javaBackendUrl) return String(window.javaBackendUrl);
-                if (window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-                    return 'http://localhost:8585';
-                }
-            }
+            // Always use the Flask (pythonURI) backend — same server in dev and prod
+            if (pythonURI) return String(pythonURI);
             if (javaURI) return String(javaURI);
             if (typeof window !== 'undefined' && window.location && window.location.origin) return String(window.location.origin);
         } catch (e) { /* ignore */ }

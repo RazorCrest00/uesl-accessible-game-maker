@@ -109,7 +109,7 @@
  * leaderboard.destroy();
  */
 
-import { javaURI, fetchOptions } from '../../api/config.js';
+import { javaURI, pythonURI, fetchOptions } from '../../api/config.js';
 
 export default class Leaderboard {
     constructor(gameControl = null, options = {}) {
@@ -152,7 +152,7 @@ export default class Leaderboard {
 
         // Flag whether a backend URI is available; allow UI to mount even when
         // backend is unreachable so leaderboard can operate in offline/local mode.
-        this.hasBackend = Boolean(javaURI);
+        this.hasBackend = Boolean(pythonURI);
 
         this.init();
     }
@@ -505,10 +505,10 @@ export default class Leaderboard {
             return;
         }
 
-        const url = `${javaURI}${endpoint}`;
+        const url = `${pythonURI}${endpoint}`;
         console.log('Full URL:', url);
 
-        // Create payload matching Java backend AlgorithmicEvent structure
+        // Create payload matching AlgorithmicEvent structure
         const requestBody = {
             payload: {
                 user: name,
@@ -593,7 +593,7 @@ export default class Leaderboard {
             return;
         }
 
-        const url = `${javaURI}/api/events/ELEMENTARY_LEADERBOARD/${id}`;
+        const url = `${pythonURI}/api/events/ELEMENTARY_LEADERBOARD/${id}`;
         console.log('DELETE URL:', url);
 
         // DELETE from backend using API chaining pattern
@@ -651,7 +651,7 @@ export default class Leaderboard {
             return Promise.resolve();
         }
 
-        const url = `${javaURI}/api/events/ELEMENTARY_LEADERBOARD`;
+        const url = `${pythonURI}/api/events/ELEMENTARY_LEADERBOARD`;
         console.log('Fetching from:', url);
 
         return fetch(url, fetchOptions)
@@ -813,7 +813,7 @@ export default class Leaderboard {
             return;
         }
 
-        fetch(`${javaURI}/api/events/SCORE_COUNTER`, fetchOptions)
+        fetch(`${pythonURI}/api/events/SCORE_COUNTER`, fetchOptions)
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 return res.json();
@@ -866,10 +866,10 @@ export default class Leaderboard {
             return Promise.resolve(entry);
         }
 
-        const url = `${javaURI}${endpoint}`;
+        const url = `${pythonURI}${endpoint}`;
         console.log('Full URL:', url);
 
-        // Create payload matching Java backend AlgorithmicEvent structure
+        // Create payload matching AlgorithmicEvent structure
         const requestBody = {
             payload: {
                 user: username,
