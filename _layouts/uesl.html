@@ -114,6 +114,22 @@
       white-space: nowrap;
     }
     .nav-signin-btn:hover { opacity: .88; transform: scale(1.04); }
+
+    /* Logged-in user chip in nav */
+    #nav-user-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 14px 5px 5px; border-radius: 30px;
+      background: rgba(0,212,255,.1); border: 1.5px solid rgba(0,212,255,.35);
+      cursor: pointer; transition: background .2s, border-color .2s;
+    }
+    #nav-user-chip:hover { background: rgba(0,212,255,.2); border-color: var(--cyan); }
+    #nav-user-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; color: #fff;
+    }
+    #nav-user-name { font-size: .85rem; font-weight: 700; color: var(--cyan); white-space: nowrap; }
     .nav-social-btn .invite-dot {
       display: none; width: 9px; height: 9px; border-radius: 50%;
       background: #ff4444; margin-left: 2px; flex-shrink: 0;
@@ -575,6 +591,36 @@
       border-radius: var(--r); background: none; color: var(--muted); cursor: pointer; font-size: .9rem;
       transition: color .2s, border-color .2s; }
     .afm-close:hover { color: var(--text); border-color: var(--text); }
+
+    /* Create Group Modal */
+    #create-group-modal {
+      position: absolute; inset: 0; z-index: 110;
+      background: rgba(13,17,23,.85);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px);
+    }
+    #create-group-modal.hidden { display: none; }
+    .cgm-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 28px 32px;
+      width: min(400px, 92vw);
+    }
+    .cgm-title {
+      font-family: var(--font-h); font-size: 1.2rem; color: var(--text);
+      margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+    }
+    #cgm-friend-checkboxes label:hover { background: var(--surface2); }
+    #cgm-friend-checkboxes::-webkit-scrollbar { width: 4px; }
+    #cgm-friend-checkboxes::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    /* Group avatar badge */
+    .gi-avatar {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; color: #fff;
+    }
+    /* Sender name label above other-people's group bubbles */
+    .msg-sender-name { font-size: .72rem; color: var(--muted); margin-bottom: 3px; font-weight: 600; }
 
     /* Responsive tweaks for social */
     @media (max-width: 700px) {
@@ -1098,8 +1144,12 @@
         <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
            class="nav-donate" target="_blank" rel="noopener">Donate</a>
       </li>
-      <li>
+      <li id="nav-auth-item">
         <button id="nav-signin-btn" class="nav-signin-btn" aria-label="Sign in or create an account">Sign Up</button>
+        <div id="nav-user-chip" style="display:none;">
+          <div id="nav-user-avatar"></div>
+          <span id="nav-user-name"></span>
+        </div>
       </li>
     </ul>
     <button id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -1634,6 +1684,25 @@
       </div>
     </div>
 
+    <!-- Create Group Modal -->
+    <div id="create-group-modal" class="hidden">
+      <div class="cgm-card">
+        <div class="cgm-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cyan)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Create Group Chat
+        </div>
+        <div class="slm-field">
+          <label class="slm-label">Group Name</label>
+          <input class="slm-input" id="cgm-name-input" type="text" placeholder="e.g. UESL Team" maxlength="40"/>
+        </div>
+        <div style="font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:8px;">Add friends:</div>
+        <div id="cgm-friend-checkboxes" style="max-height:200px;overflow-y:auto;margin-bottom:14px;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;"></div>
+        <div id="cgm-msg" style="display:none;font-size:.82rem;color:#ff6b6b;margin-bottom:8px;"></div>
+        <button class="slm-btn" id="cgm-create-btn">Create Group</button>
+        <button class="slm-btn" id="cgm-cancel-btn" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);">Cancel</button>
+      </div>
+    </div>
+
     <!-- Top bar -->
     <div id="social-topbar">
       <div class="st-logo">
@@ -1681,6 +1750,12 @@
           <button class="ss-add-btn" id="open-add-friend" title="Add friend" aria-label="Add friend">＋</button>
         </div>
         <div id="friend-list" role="list"></div>
+        <div class="ss-divider"></div>
+        <div class="ss-section-header">
+          Group Chats
+          <button class="ss-add-btn" id="open-create-group" title="Create group" aria-label="Create group chat">＋</button>
+        </div>
+        <div id="group-list" role="list"></div>
         <div class="ss-divider"></div>
         <div class="ss-section-header" style="padding-bottom:12px;">Online — <span id="online-count">0</span></div>
       </aside>
@@ -1986,6 +2061,7 @@
       if (myName) sessionStorage.setItem('uesl_my_name', myName);
       loginModal.classList.add('hidden');
       renderTopbar();
+      _updateNavAuthState();
       loadFriends();
       startReqPoll();
       startInvitePoll();
@@ -2109,8 +2185,10 @@
 
     // ── State ────────────────────────────────────────────────────────────────
     let activeFriend = null;   // { uid, name }
+    let activeGroup  = null;   // { id, name, members: [{uid,name}] }
     let friendsCache = [];     // [{ uid, name, status }]
     let pollTimer    = null;
+    let groupPollTimer = null;
     let reqPollTimer = null;   // polls for incoming friend requests every 5s
     let lastMsgTs    = '';     // ISO timestamp of newest fetched message
 
@@ -2131,6 +2209,32 @@
       $('suc-avatar-el').style.background = `linear-gradient(135deg, ${colorFor(myName)}, #7c3aed)`;
       $('suc-name').textContent = myName;
     }
+
+    // ── Nav auth state — show user chip when logged in ────────────────────────
+    function _updateNavAuthState() {
+      const signUpBtn = document.getElementById('nav-signin-btn');
+      const chip      = document.getElementById('nav-user-chip');
+      const avatar    = document.getElementById('nav-user-avatar');
+      const nameEl    = document.getElementById('nav-user-name');
+      if (!signUpBtn || !chip) return;
+      if (myUid) {
+        signUpBtn.style.display = 'none';
+        avatar.textContent = initials(myName);
+        nameEl.textContent  = myName || myUid;
+        chip.style.display  = 'inline-flex';
+        // clicking the chip opens the social hub
+        chip.onclick = () => { $('nav-social-btn') && $('nav-social-btn').click(); };
+      } else {
+        signUpBtn.style.display = '';
+        chip.style.display = 'none';
+      }
+    }
+
+    // Check login on page load and update nav immediately
+    (async () => {
+      await checkLogin();
+      if (myUid) _updateNavAuthState();
+    })();
 
     // ── Friend requests UI ────────────────────────────────────────────────────
     function renderRequests() {
@@ -2169,6 +2273,7 @@
       friendsCache = lsLoad();
       renderFriendList();
       renderRequests();
+      renderGroupList();
     }
 
     function renderFriendList() {
@@ -2214,6 +2319,7 @@
     // ── Open chat ────────────────────────────────────────────────────────────
     function openChat(friend) {
       activeFriend = friend;
+      activeGroup  = null;
       stopPoll();
       renderFriendList();
       const avatarEl = $('chat-friend-avatar');
@@ -2317,10 +2423,14 @@
     }
 
     function startPoll() { pollTimer = setInterval(() => fetchMessages(false), 2000); }
-    function stopPoll()  { clearInterval(pollTimer); pollTimer = null; }
+    function stopPoll()  {
+      clearInterval(pollTimer); pollTimer = null;
+      clearInterval(groupPollTimer); groupPollTimer = null;
+    }
 
     // ── Send message ─────────────────────────────────────────────────────────
     function sendMsg() {
+      if (activeGroup) { sendGroupMsg(); return; }
       const text = chatInput.value.trim();
       if (!text || !activeFriend) return;
       chatInput.value = '';
@@ -2342,6 +2452,248 @@
     $('chat-send-btn').addEventListener('click', sendMsg);
     chatInput.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } });
     chatInput.addEventListener('input', () => { chatInput.style.height=''; chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px'; });
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  GROUP CHATS
+    // ════════════════════════════════════════════════════════════════════════
+
+    // ── localStorage helpers ──────────────────────────────────────────────────
+    function groupsKey()         { return `uesl_groups_v1__${myUid}`; }
+    function gchatKey(groupId)   { return `uesl_gchat_v1__${groupId}`; }
+
+    function groupsLoad() {
+      try { return JSON.parse(localStorage.getItem(groupsKey())) || []; } catch(e) { return []; }
+    }
+    function groupsSave(arr) { localStorage.setItem(groupsKey(), JSON.stringify(arr)); }
+
+    function gchatLoadAll(groupId) {
+      try { return JSON.parse(localStorage.getItem(gchatKey(groupId))) || []; } catch(e) { return []; }
+    }
+    function gchatAppend(groupId, msg) {
+      const msgs = gchatLoadAll(groupId);
+      msgs.push(msg);
+      if (msgs.length > 500) msgs.splice(0, msgs.length - 500);
+      try { localStorage.setItem(gchatKey(groupId), JSON.stringify(msgs)); }
+      catch(e) { alert('Storage full — try clearing some messages.'); }
+    }
+
+    // ── Render group list in sidebar ──────────────────────────────────────────
+    function renderGroupList() {
+      const groupListEl = document.getElementById('group-list');
+      if (!groupListEl) return;
+      const groups = groupsLoad();
+      groupListEl.innerHTML = '';
+      if (!groups.length) {
+        groupListEl.innerHTML = '<p style="padding:12px 18px;color:var(--muted);font-size:.85rem;">No groups yet — hit <strong>＋</strong> to create one!</p>';
+        return;
+      }
+      groups.forEach(group => {
+        const item = document.createElement('div');
+        item.className = 'friend-item' + (activeGroup?.id === group.id ? ' active' : '');
+        item.setAttribute('role', 'listitem'); item.setAttribute('tabindex', '0');
+        const memberPreview = group.members.map(m => m.name.split(' ')[0]).join(', ');
+        item.innerHTML = `
+          <div class="gi-avatar">${group.members.length}</div>
+          <div class="fi-info">
+            <div class="fi-name">${esc(group.name)}</div>
+            <div class="fi-preview">${esc(memberPreview)}</div>
+          </div>
+          <button class="fi-remove-btn" title="Leave group" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:6px;opacity:.5;flex-shrink:0;" onmouseenter="this.style.opacity='1';this.style.color='#ff6b6b'" onmouseleave="this.style.opacity='.5';this.style.color='var(--muted)'">✕</button>`;
+        item.querySelector('.fi-remove-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          groupsSave(groupsLoad().filter(g => g.id !== group.id));
+          if (activeGroup?.id === group.id) {
+            activeGroup = null;
+            stopPoll();
+            chatEmpty.style.display = '';
+            chatHeader.style.display = chatMsgs.style.display = chatInputRow.style.display = 'none';
+            document.getElementById('emoji-picker').style.display = 'none';
+          }
+          renderGroupList();
+        });
+        item.addEventListener('click', () => openGroupChat(group));
+        item.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') openGroupChat(group); });
+        groupListEl.appendChild(item);
+      });
+    }
+
+    // ── Open group chat ───────────────────────────────────────────────────────
+    function openGroupChat(group) {
+      activeFriend = null;
+      activeGroup  = group;
+      stopPoll();
+      renderFriendList();
+      renderGroupList();
+
+      const avatarEl = $('chat-friend-avatar');
+      avatarEl.textContent = group.members.length;
+      avatarEl.style.background = 'linear-gradient(135deg, var(--cyan), var(--purple))';
+      avatarEl.style.fontSize = '.85rem';
+      $('chat-friend-name').textContent = group.name;
+      $('chat-friend-status').innerHTML =
+        `<span style="color:var(--muted);font-size:.74rem;">${esc(group.members.map(m => m.name).join(', '))}</span>`;
+
+      chatEmpty.style.display = 'none';
+      chatHeader.style.display = 'flex';
+      chatMsgs.style.display = 'flex';
+      chatInputRow.style.display = 'flex';
+      document.getElementById('emoji-picker').style.display = 'none';
+      chatMsgs.innerHTML = '';
+      lastMsgTs = '';
+      fetchGroupMessages(true);
+      groupPollTimer = setInterval(() => fetchGroupMessages(false), 2000);
+      chatInput.focus();
+    }
+
+    // ── Group message fetch / render ──────────────────────────────────────────
+    function fetchGroupMessages(initial) {
+      if (!activeGroup) return;
+      const all = gchatLoadAll(activeGroup.id);
+      if (initial) {
+        chatMsgs.innerHTML = '';
+        if (!all.length) {
+          chatMsgs.innerHTML = '<div class="msg-day-label">Today</div><p style="text-align:center;color:var(--muted);font-size:.85rem;margin-top:12px;">Group created! Say hello 👋</p>';
+          return;
+        }
+        all.forEach(msg => appendGroupMessage(msg));
+        if (all.length) lastMsgTs = all[all.length - 1].created_at;
+        return;
+      }
+      const newMsgs = lastMsgTs ? all.filter(m => m.created_at > lastMsgTs) : all;
+      newMsgs.forEach(msg => appendGroupMessage(msg));
+      if (newMsgs.length) lastMsgTs = newMsgs[newMsgs.length - 1].created_at;
+    }
+
+    function appendGroupMessage(msg) {
+      const isMine = String(msg.sender_uid) === String(myUid);
+      const senderName = msg.sender_name || '?';
+      const text = msg.text || '';
+      const ts   = msg.created_at || '';
+      const row  = document.createElement('div');
+      row.className = 'msg-row' + (isMine ? ' me' : '');
+      let contentHtml;
+      if (msg.type === 'image' && msg.image) {
+        contentHtml = `<img class="msg-img" src="${msg.image}" alt="photo">`;
+      } else {
+        contentHtml = `<div class="msg-bubble">${esc(text)}</div>`;
+      }
+      row.innerHTML = `
+        <div class="msg-bubble-avatar" style="background:${colorFor(senderName)}">${initials(senderName)}</div>
+        <div>
+          ${!isMine ? `<div class="msg-sender-name">${esc(senderName)}</div>` : ''}
+          ${contentHtml}
+          <div class="msg-time">${fmtTime(ts)}</div>
+        </div>`;
+      if (msg.type === 'image') {
+        const imgEl = row.querySelector('.msg-img');
+        if (imgEl) imgEl.addEventListener('click', () => {
+          document.getElementById('img-lightbox-img').src = msg.image;
+          document.getElementById('img-lightbox').classList.add('open');
+        });
+      }
+      chatMsgs.appendChild(row);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+    }
+
+    // ── Send group message ────────────────────────────────────────────────────
+    function sendGroupMsg() {
+      const text = chatInput.value.trim();
+      if (!text || !activeGroup) return;
+      chatInput.value = '';
+      chatInput.style.height = '';
+      const msg = {
+        id:          Date.now() + '_' + Math.random().toString(36).slice(2),
+        sender_uid:  String(myUid),
+        sender_name: myName,
+        text,
+        created_at:  new Date().toISOString()
+      };
+      gchatAppend(activeGroup.id, msg);
+      // Mirror group membership into each member's group list so they see it
+      activeGroup.members.forEach(m => {
+        if (String(m.uid) !== String(myUid)) {
+          try {
+            const key = `uesl_groups_v1__${m.uid}`;
+            const mGroups = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!mGroups.find(g => g.id === activeGroup.id)) {
+              mGroups.push(activeGroup);
+              localStorage.setItem(key, JSON.stringify(mGroups));
+            }
+          } catch(e) {}
+        }
+      });
+      appendGroupMessage(msg);
+      lastMsgTs = msg.created_at;
+    }
+
+    // ── Create Group modal ────────────────────────────────────────────────────
+    document.getElementById('open-create-group').addEventListener('click', () => {
+      const checkboxes = document.getElementById('cgm-friend-checkboxes');
+      checkboxes.innerHTML = '';
+      const friends = lsLoad();
+      if (!friends.length) {
+        checkboxes.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:8px 4px;">Add some friends first!</p>';
+      } else {
+        friends.forEach(f => {
+          const label = document.createElement('label');
+          label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-radius:8px;transition:background .15s;';
+          label.innerHTML = `
+            <input type="checkbox" value="${esc(String(f.uid))}" data-name="${esc(f.name)}" style="width:16px;height:16px;accent-color:var(--cyan);flex-shrink:0;">
+            <div style="width:30px;height:30px;border-radius:50%;background:${colorFor(f.name)};display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#000;flex-shrink:0;">${initials(f.name)}</div>
+            <span style="font-size:.88rem;font-weight:600;color:var(--text);">${esc(f.name)}</span>`;
+          checkboxes.appendChild(label);
+        });
+      }
+      document.getElementById('cgm-name-input').value = '';
+      document.getElementById('cgm-msg').style.display = 'none';
+      document.getElementById('create-group-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('cgm-cancel-btn').addEventListener('click', () => {
+      document.getElementById('create-group-modal').classList.add('hidden');
+    });
+
+    document.getElementById('cgm-create-btn').addEventListener('click', () => {
+      const name = document.getElementById('cgm-name-input').value.trim();
+      const msgEl = document.getElementById('cgm-msg');
+      if (!name) {
+        msgEl.textContent = 'Please enter a group name.'; msgEl.style.display = 'block'; return;
+      }
+      const checked = [...document.querySelectorAll('#cgm-friend-checkboxes input:checked')];
+      if (!checked.length) {
+        msgEl.textContent = 'Select at least one friend.'; msgEl.style.display = 'block'; return;
+      }
+      msgEl.style.display = 'none';
+      const members = [
+        { uid: String(myUid), name: myName },
+        ...checked.map(cb => ({ uid: cb.value, name: cb.dataset.name }))
+      ];
+      const groupId = 'grp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const group = { id: groupId, name, members, createdAt: new Date().toISOString() };
+
+      // Save to my groups
+      const myGroups = groupsLoad();
+      myGroups.push(group);
+      groupsSave(myGroups);
+
+      // Mirror into each member's group list (works when members share the same browser)
+      members.forEach(m => {
+        if (String(m.uid) !== String(myUid)) {
+          try {
+            const key = `uesl_groups_v1__${m.uid}`;
+            const mGroups = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!mGroups.find(g => g.id === groupId)) {
+              mGroups.push(group);
+              localStorage.setItem(key, JSON.stringify(mGroups));
+            }
+          } catch(e) {}
+        }
+      });
+
+      document.getElementById('create-group-modal').classList.add('hidden');
+      renderGroupList();
+      openGroupChat(group);
+    });
 
     // ── Emoji picker ─────────────────────────────────────────────────────────
     try {
@@ -2386,7 +2738,7 @@
       if (imgUploadBtn) {
         imgUploadBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          if (!activeFriend) { alert('Select a friend chat first.'); return; }
+          if (!activeFriend && !activeGroup) { alert('Select a chat first.'); return; }
           if (imgFileInput) imgFileInput.click();
         });
       }
@@ -2413,9 +2765,10 @@
                 type: 'image', image: compressed, text: '',
                 created_at: new Date().toISOString()
               };
-              try { chatAppendStore(myUid, activeFriend.uid, msg); }
-              catch(e) { alert('Storage full — try a smaller image.'); return; }
-              appendMessage(msg);
+              try {
+                if (activeGroup) { gchatAppend(activeGroup.id, msg); appendGroupMessage(msg); }
+                else { chatAppendStore(myUid, activeFriend.uid, msg); appendMessage(msg); }
+              } catch(e) { alert('Storage full — try a smaller image.'); return; }
               lastMsgTs = msg.created_at;
             };
             original.src = ev.target.result;

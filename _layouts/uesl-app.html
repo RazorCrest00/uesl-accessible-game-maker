@@ -116,6 +116,22 @@
     }
     .nav-signin-btn:hover { opacity: .88; transform: scale(1.04); }
 
+    /* Logged-in user chip in nav */
+    #nav-user-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 14px 5px 5px; border-radius: 30px;
+      background: rgba(0,212,255,.1); border: 1.5px solid rgba(0,212,255,.35);
+      cursor: pointer; transition: background .2s, border-color .2s;
+    }
+    #nav-user-chip:hover { background: rgba(0,212,255,.2); border-color: var(--cyan); }
+    #nav-user-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; color: #fff;
+    }
+    #nav-user-name { font-size: .85rem; font-weight: 700; color: var(--cyan); white-space: nowrap; }
+
     /* Page body offset for fixed nav */
     #uesl-app-content { padding-top: var(--nav-h); }
     body.embed #nav { display: none; }
@@ -187,8 +203,12 @@
         <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
            class="nav-donate" target="_blank" rel="noopener">Donate</a>
       </li>
-      <li>
+      <li id="nav-auth-item">
         <button id="nav-signin-btn" class="nav-signin-btn" aria-label="Sign In or Create Account">Sign Up</button>
+        <div id="nav-user-chip" style="display:none;">
+          <div id="nav-user-avatar"></div>
+          <span id="nav-user-name"></span>
+        </div>
       </li>
     </ul>
     <button id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -511,7 +531,42 @@
       document.getElementById('slm-overlay').classList.remove('open');
       document.body.style.overflow = '';
       if (typeof _AUTH.onSuccess === 'function') _AUTH.onSuccess();
+      // After successful login, fetch identity and update nav
+      _fetchAndShowNavUser();
     }
+
+    // ── Nav user chip helpers ────────────────────────────────────────────────
+    function _navInitials(name) {
+      if (!name) return '?';
+      return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    function _showNavUser(name, uid) {
+      const signUpBtn = document.getElementById('nav-signin-btn');
+      const chip      = document.getElementById('nav-user-chip');
+      const avatar    = document.getElementById('nav-user-avatar');
+      const nameEl    = document.getElementById('nav-user-name');
+      if (!chip) return;
+      signUpBtn.style.display = 'none';
+      avatar.textContent = _navInitials(name || uid);
+      nameEl.textContent  = name || uid || 'You';
+      chip.style.display  = 'inline-flex';
+    }
+
+    async function _fetchAndShowNavUser() {
+      try {
+        const r = await fetch(`${_AUTH.PYTHON_URI}/api/id`, { credentials: 'include' });
+        if (r.ok) {
+          const u = await r.json();
+          const name = u.name || u.username || '';
+          const uid  = u.uid  || u.id  || '';
+          if (uid || name) _showNavUser(name, uid);
+        }
+      } catch(e) { /* not logged in — leave Sign Up button visible */ }
+    }
+
+    // Check login on page load
+    _fetchAndShowNavUser();
   </script>
 </body>
 </html>
