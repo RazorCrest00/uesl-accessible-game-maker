@@ -3471,9 +3471,9 @@ function generateStepCode(currentStep) {
         // Inject UESL Coach if enabled in settings
         if (typeof gbSettings !== 'undefined' && gbSettings.coach) {
             const coachImport = `import UESLCoach from '${baseUrl}/assets/js/GameEnginev1.2/UESLCoach.js';\n`;
-            const chaseSpeed  = gbSettings.coachChaseSpeed  ?? 2.5;
-            const patrolSpeed = gbSettings.coachPatrolSpeed ?? 1.2;
-            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', SCALE_FACTOR:6, ANIMATION_RATE:80, pixels:{width:512,height:384}, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:${chaseSpeed}, patrolSpeed:${patrolSpeed}, tauntInterval:4500 } }`;
+            const chaseSpeed  = gbSettings.coachChaseSpeed  ?? 1.0;
+            const patrolSpeed = gbSettings.coachPatrolSpeed ?? 0.8;
+            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', src: path + '/images/gamify/chillguy.png', SCALE_FACTOR:5, ANIMATION_RATE:50, pixels:{width:512,height:384}, INIT_POSITION:{ x: width * 0.8, y: height - (height / 5) }, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, right:{row:1,start:0,columns:3}, left:{row:2,start:0,columns:3}, up:{row:3,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:${chaseSpeed}, patrolSpeed:${patrolSpeed}, tauntInterval:4500, walkingArea:{ xMin: width * 0.3, xMax: width - 60 } } }`;
             code = coachImport + code;
             code = code.replace(/this\.classes\s*=\s*\[/, `this.classes = [\n      ${coachEntry},`);
         }

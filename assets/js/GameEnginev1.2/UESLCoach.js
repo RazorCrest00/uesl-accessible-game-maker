@@ -9,26 +9,40 @@ import { pythonURI, fetchOptions } from '../api/config.js';
  *  - Patrols left/right while the player is outside chaseRange.
  *  - Switches to active chase when the player enters chaseRange.
  *  - Taunts the player with live AI-generated trash-talk (speech bubbles).
- *  - On contact: delivers an AI "caught you" taunt, then restarts the level.
+ *  - On contact: removes one heart from the player's health bar.
+ *    A 2-second invincibility window prevents instant multi-hit.
+ *    When all hearts are gone the level restarts.
  *
  * Sprite data config (beyond standard Character fields):
- *   chaseRange   {number}  px radius at which coach starts chasing  (default: 300)
- *   chaseSpeed   {number}  px/frame in chase mode                   (default: 2.5)
- *   patrolSpeed  {number}  px/frame while patrolling                (default: 1.2)
- *   walkingArea  {object}  { xMin, xMax, yMin, yMax } patrol zone
- *   tauntInterval{number}  ms between AI taunts while chasing       (default: 4500)
+ *   chaseRange    {number}  px radius at which coach starts chasing  (default: 300)
+ *   chaseSpeed    {number}  px/frame in chase mode                   (default: 1.0)
+ *   patrolSpeed   {number}  px/frame while patrolling                (default: 0.8)
+ *   walkingArea   {object}  { xMin, xMax, yMin, yMax } patrol zone
+ *   tauntInterval {number}  ms between AI taunts while chasing       (default: 4500)
+ *   maxHearts     {number}  starting hearts                          (default: 3)
+ *   invincibleMs  {number}  ms of invincibility after a hit          (default: 2000)
  */
 class UESLCoach extends Enemy {
     constructor(data = null, gameEnv = null) {
         super(data, gameEnv);
 
         this.chaseRange    = data?.chaseRange    ?? 300;
-        this.chaseSpeed    = data?.chaseSpeed    ?? 2.5;
-        this.patrolSpeed   = data?.patrolSpeed   ?? 1.2;
+        this.chaseSpeed    = data?.chaseSpeed    ?? 1.0;
+        this.patrolSpeed   = data?.patrolSpeed   ?? 0.8;
         this.walkingArea   = data?.walkingArea   ?? null;
         this.tauntInterval = data?.tauntInterval ?? 4500;
 
+        // ── health ────────────────────────────────────────────────────────────
+        this._maxHearts      = data?.maxHearts    ?? 3;
+        this._currentHearts  = this._maxHearts;
+        this._invincibleMs   = data?.invincibleMs ?? 2000;
+        this._isInvincible   = false;
+        this._invincibleTimer = null;
+        this._flashInterval  = null;
+
+        // ── AI state ──────────────────────────────────────────────────────────
         this._patrolDir      = 1;
+        this.direction       = 'right'; // match initial patrol direction so sprite renders immediately
         this._caughtHandled  = false;
         this._isChasing      = false;
         this._tauntTimer     = null;
@@ -36,7 +50,11 @@ class UESLCoach extends Enemy {
         this._bubbleTimeout  = null;
         this._fetchingTaunt  = false;
 
+        // ── HUD ───────────────────────────────────────────────────────────────
+        this._heartHUD = null;
+
         this._injectStyles();
+        this._createHeartHUD();
     }
 
     // ─── game loop ─────────────────────────────────────────────────────────────
@@ -52,17 +70,14 @@ class UESLCoach extends Enemy {
         // Barrier collision — test new position, then try axis-by-axis sliding
         this._syncPos();
         if (this._isBlockedByBarrier()) {
-            // Try X-only slide (move X but keep Y)
             this.position.x = newX;
             this.position.y = prevY;
             this._syncPos();
             if (this._isBlockedByBarrier()) {
-                // Try Y-only slide (keep X but move Y)
                 this.position.x = prevX;
                 this.position.y = newY;
                 this._syncPos();
                 if (this._isBlockedByBarrier()) {
-                    // Fully blocked — revert and flip patrol direction
                     this.position.x = prevX;
                     this.position.y = prevY;
                     this._patrolDir *= -1;
@@ -72,7 +87,7 @@ class UESLCoach extends Enemy {
 
         this.draw();
 
-        if (!this._caughtHandled && this.collisionChecks()) {
+        if (!this._caughtHandled && !this._isInvincible && this._isTouchingPlayer()) {
             this.handleCollisionEvent();
         }
 
@@ -80,7 +95,7 @@ class UESLCoach extends Enemy {
         this._updateBubblePosition();
     }
 
-    /** Lightweight canvas position sync (no redraw) used during barrier probing. */
+    /** Lightweight canvas position sync used during barrier probing. */
     _syncPos() {
         if (this.canvas) {
             this.canvas.style.left = `${this.position.x}px`;
@@ -88,7 +103,30 @@ class UESLCoach extends Enemy {
         }
     }
 
-    /** Returns true if the coach's current canvas rect overlaps any Barrier object. */
+    /**
+     * Game-space AABB overlap check against the player.
+     * Uses position + size directly — no getBoundingClientRect, no DOM lag.
+     */
+    _isTouchingPlayer() {
+        const player = this._findPlayer();
+        if (!player) return false;
+
+        // Shrink both hitboxes slightly so the coach has to actually walk INTO the player
+        const shrink = 0.25;
+        const cL = this.position.x   + this.width   * shrink;
+        const cR = this.position.x   + this.width   * (1 - shrink);
+        const cT = this.position.y   + this.height  * shrink;
+        const cB = this.position.y   + this.height;
+
+        const pL = player.position.x + player.width  * shrink;
+        const pR = player.position.x + player.width  * (1 - shrink);
+        const pT = player.position.y + player.height * shrink;
+        const pB = player.position.y + player.height;
+
+        return cL < pR && cR > pL && cT < pB && cB > pT;
+    }
+
+    /** Returns true if the coach's canvas rect overlaps any Barrier object. */
     _isBlockedByBarrier() {
         for (const obj of (this.gameEnv?.gameObjects ?? [])) {
             if (obj === this || !obj.canvas) continue;
@@ -155,22 +193,92 @@ class UESLCoach extends Enemy {
         }
     }
 
-    // ─── collision ─────────────────────────────────────────────────────────────
+    // ─── collision / health ────────────────────────────────────────────────────
 
     handleCollisionEvent() {
-        if (this._caughtHandled) return;
-        this._caughtHandled = true;
+        if (this._caughtHandled || this._isInvincible) return;
 
-        this.velocity.x = 0;
-        this.velocity.y = 0;
-        this._stopTaunting();
-        this._clearBubble();
+        this._currentHearts -= 1;
+        this._renderHearts();
+        this._startInvincibility();
+        this._triggerTaunt('hit');
 
-        this._fetchTaunt('caught').then(taunt => {
-            this._showCaughtOverlay(taunt, () => {
-                this.gameEnv.gameControl.currentLevel.restart = true;
+        if (this._currentHearts <= 0) {
+            // All hearts gone — game over
+            this._caughtHandled = true;
+            this._stopTaunting();
+            this._clearBubble();
+            this._stopFlash();
+
+            // Capture reference before the level tears down
+            const gameControl = this.gameEnv.gameControl;
+            this._fetchTaunt('caught').then(taunt => {
+                this._showCaughtOverlay(taunt, () => {
+                    // transitionToLevel() re-creates the current level in-place — a true restart
+                    gameControl.transitionToLevel();
+                });
             });
-        });
+        }
+    }
+
+    /** Grant brief invincibility and make the player flash to signal a hit. */
+    _startInvincibility() {
+        this._isInvincible = true;
+
+        // Flash the player sprite on/off to show damage
+        const player = this._findPlayer();
+        if (player?.canvas) {
+            let visible = true;
+            this._flashInterval = setInterval(() => {
+                visible = !visible;
+                player.canvas.style.opacity = visible ? '1' : '0.2';
+            }, 120);
+        }
+
+        this._invincibleTimer = setTimeout(() => {
+            this._isInvincible = false;
+            this._stopFlash();
+        }, this._invincibleMs);
+    }
+
+    _stopFlash() {
+        if (this._flashInterval) {
+            clearInterval(this._flashInterval);
+            this._flashInterval = null;
+        }
+        // Restore player opacity
+        const player = this._findPlayer();
+        if (player?.canvas) player.canvas.style.opacity = '1';
+    }
+
+    // ─── hearts HUD ────────────────────────────────────────────────────────────
+
+    _createHeartHUD() {
+        // Remove any stale HUD from a previous level run
+        document.getElementById('uesl-heart-hud')?.remove();
+
+        const hud = document.createElement('div');
+        hud.id = 'uesl-heart-hud';
+        document.body.appendChild(hud);
+        this._heartHUD = hud;
+
+        this._renderHearts();
+    }
+
+    _renderHearts() {
+        if (!this._heartHUD) return;
+        const hearts = [];
+        for (let i = 0; i < this._maxHearts; i++) {
+            hearts.push(i < this._currentHearts ? '❤️' : '🖤');
+        }
+        this._heartHUD.textContent = hearts.join(' ');
+    }
+
+    _destroyHeartHUD() {
+        if (this._heartHUD) {
+            this._heartHUD.remove();
+            this._heartHUD = null;
+        }
     }
 
     // ─── taunt system ──────────────────────────────────────────────────────────
@@ -202,7 +310,7 @@ class UESLCoach extends Enemy {
 
     async _fetchTaunt(context = 'chasing') {
         try {
-            const payload = { context, ...this._getGameState() };
+            const payload = { context, heartsLeft: this._currentHearts, ...this._getGameState() };
             const res = await fetch(`${pythonURI}/api/ainpc/coach-taunt`, {
                 ...fetchOptions,
                 method: 'POST',
@@ -215,15 +323,10 @@ class UESLCoach extends Enemy {
         }
     }
 
-    /**
-     * Gather current game-state context to enrich the AI taunt.
-     * Returns starsLeft, totalStars, and levelName when available.
-     */
     _getGameState() {
         const state = {};
         const objects = this.gameEnv?.gameObjects ?? [];
 
-        // Count collectible star objects in the scene
         const stars = objects.filter(o => o.constructor?.name === 'Star');
         if (stars.length > 0) {
             const collected = stars.filter(s => s.collected || s._collected || !s.canvas).length;
@@ -231,7 +334,6 @@ class UESLCoach extends Enemy {
             state.starsLeft  = stars.length - collected;
         }
 
-        // Pull level name from gameControl if available
         const levelName =
             this.gameEnv?.gameControl?.currentLevel?.name ??
             this.gameEnv?.gameControl?.currentLevel?.constructor?.name ??
@@ -249,6 +351,13 @@ class UESLCoach extends Enemy {
                 "Nowhere left to run!",
                 "Speed won't save you!",
                 "I ALWAYS catch my players!",
+            ],
+            hit: [
+                "That's one heart gone!",
+                "You're slowing down!",
+                "I felt that — did you?",
+                "Hearts don't last forever!",
+                "Tick tock, running out of time!",
             ],
             caught:  ["Got you. Game over.", "Did you really think you'd win?", "Back to the start!"],
             nearby:  ["I see you…", "Oh, you're close.", "Found you."],
@@ -275,12 +384,10 @@ class UESLCoach extends Enemy {
     _updateBubblePosition() {
         if (!this._bubble || !this.canvas) return;
 
-        const rect   = this.canvas.getBoundingClientRect();
-        const scaleX = rect.width  / (this.gameEnv.innerWidth  || 1);
-        const scaleY = rect.height / (this.gameEnv.innerHeight || 1);
-
-        const screenX = rect.left + this.position.x * scaleX + (this.width  * scaleX) / 2;
-        const screenY = rect.top  + this.position.y * scaleY - 14;
+        // rect is already the on-screen position of the coach canvas — use it directly.
+        const rect    = this.canvas.getBoundingClientRect();
+        const screenX = rect.left + rect.width / 2;   // center of the coach sprite
+        const screenY = rect.top  - 14;               // just above the sprite
 
         this._bubble.style.left = `${screenX}px`;
         this._bubble.style.top  = `${screenY}px`;
@@ -309,8 +416,11 @@ class UESLCoach extends Enemy {
             minWidth: '320px', animation: 'coachSlideIn 0.4s ease-out',
         });
 
+        // Show final hearts state (all empty)
+        const emptyHearts = Array(this._maxHearts).fill('🖤').join(' ');
+
         overlay.innerHTML = `
-            <div style="font-size:3rem;margin-bottom:6px;">🎮</div>
+            <div style="font-size:2rem;margin-bottom:4px;">${emptyHearts}</div>
             <div style="font-size:1.4rem;font-weight:bold;color:#a78bfa;margin-bottom:10px;">
                 UESL Coach caught you!
             </div>
@@ -331,6 +441,22 @@ class UESLCoach extends Enemy {
         const style = document.createElement('style');
         style.id = 'uesl-coach-styles';
         style.textContent = `
+            #uesl-heart-hud {
+                position: fixed;
+                top: 16px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 1.8rem;
+                line-height: 1;
+                z-index: 9999;
+                pointer-events: none;
+                text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+                animation: hudFadeIn 0.4s ease-out;
+            }
+            @keyframes hudFadeIn {
+                from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+                to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
             .uesl-coach-bubble {
                 position: fixed; transform: translateX(-50%);
                 background: rgba(20,10,60,0.92); border: 2px solid #6366f1;
@@ -367,6 +493,9 @@ class UESLCoach extends Enemy {
     destroy() {
         this._stopTaunting();
         this._clearBubble();
+        this._stopFlash();
+        if (this._invincibleTimer) { clearTimeout(this._invincibleTimer); this._invincibleTimer = null; }
+        this._destroyHeartHUD();
         super.destroy();
     }
 
