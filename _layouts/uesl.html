@@ -103,6 +103,17 @@
     }
     .nav-social-btn:hover { background: rgba(0,212,255,.18); border-color: var(--cyan); transform: scale(1.04); }
     .nav-social-btn svg { flex-shrink: 0; }
+
+    /* Sign In / Sign Up nav button */
+    .nav-signin-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border: none; border-radius: 30px;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      color: #000; font-size: .88rem; font-weight: 700; cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      white-space: nowrap;
+    }
+    .nav-signin-btn:hover { opacity: .88; transform: scale(1.04); }
     .nav-social-btn .invite-dot {
       display: none; width: 9px; height: 9px; border-radius: 50%;
       background: #ff4444; margin-left: 2px; flex-shrink: 0;
@@ -1086,6 +1097,9 @@
       <li>
         <a href="https://www.paypal.com/donate/?hosted_button_id=UYQT933YT3S32"
            class="nav-donate" target="_blank" rel="noopener">Donate</a>
+      </li>
+      <li>
+        <button id="nav-signin-btn" class="nav-signin-btn" aria-label="Sign in or create an account">Sign Up</button>
       </li>
     </ul>
     <button id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -2599,6 +2613,11 @@
       scanInvites(); // immediate first scan
       invitePollTimer = setInterval(scanInvites, 4000);
     }
+
+    // ── Sign In button — delegates to the Social button handler ─────────────
+    $('nav-signin-btn').addEventListener('click', () => {
+      $('nav-social-btn').click();
+    });
 
     // ── Open / close overlay ─────────────────────────────────────────────────
     $('nav-social-btn').addEventListener('click', async () => {
