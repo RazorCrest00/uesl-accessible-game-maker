@@ -57,7 +57,7 @@ permalink: /gamebuilderv1-2
   inset: 0;
   pointer-events: none; /* never intercepts events — game-frame handles mousedown */
   z-index: 50;
-  overflow: hidden;
+  overflow: visible; /* must be visible so SVG route lines and dots aren't clipped */
 }
 /* Drawn rectangle previews and confirmed walls */
 .draw-rect {
@@ -101,6 +101,81 @@ permalink: /gamebuilderv1-2
   background: #312e81;
   border-color: #6366f1;
   color: #a5b4fc;
+}
+/* ── Route/Attack NPC path visualisation layer ──────────────────────────────
+   Uses position:fixed so it sits above everything, immune to overflow:hidden
+   on any ancestor. JavaScript repositions it over the game-frame each render. */
+#route-vis-layer {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  overflow: visible;
+  top: 0; left: 0;
+  width: 0; height: 0;          /* sized dynamically by JS */
+}
+#route-vis-layer.game-running {
+  display: none;                 /* hidden while game plays */
+}
+/* Dots are inside the fixed layer so they are always visible */
+.route-npc-dot {
+  position: absolute;
+  width: 13px; height: 13px;
+  background: #10b981;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 0 6px rgba(16,185,129,0.7);
+}
+.route-npc-dot.start {
+  background: #059669;
+  width: 16px; height: 16px;
+  border-color: #a7f3d0;
+}
+.route-npc-label {
+  position: absolute;
+  font-size: 10px; font-weight: 700;
+  color: #a7f3d0;
+  background: rgba(5,36,28,0.85);
+  border: 1px solid #10b981;
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 61;
+}
+/* Attack NPC overlay elements */
+.attack-npc-dot {
+  position: absolute;
+  width: 13px; height: 13px;
+  background: #ef4444;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 60;
+  pointer-events: auto;
+  box-shadow: 0 0 6px rgba(239,68,68,0.7);
+}
+.attack-npc-dot.start {
+  background: #b91c1c;
+  width: 16px; height: 16px;
+  border-color: #fca5a5;
+}
+.attack-npc-label {
+  position: absolute;
+  font-size: 10px; font-weight: 700;
+  color: #fca5a5;
+  background: rgba(36,5,5,0.85);
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 61;
 }
 /* Embed mode: hide nav/header/footer when ?embed=1 is in URL */
 .embed-mode #side-nav,
@@ -413,6 +488,10 @@ permalink: /gamebuilderv1-2
                         <button id="toggle-walls-game" class="draw-btn">Show Walls (Game)</button>
                         <button id="draw-barrier" class="draw-btn">Draw Collision Wall</button>
                         <button id="draw-star" class="draw-btn">⭐ Place Stars</button>
+                        <button id="draw-route-npc" class="draw-btn">🧍 Route NPC</button>
+                        <button id="finish-route-npc" class="draw-btn" style="display:none;background:#065f46;border-color:#10b981;color:#a7f3d0;">✓ Finish Route</button>
+                        <button id="draw-attack-npc" class="draw-btn">⚔️ Attack NPC</button>
+                        <button id="finish-attack-npc" class="draw-btn" style="display:none;background:#7f1d1d;border-color:#ef4444;color:#fca5a5;">✓ Finish Attack</button>
                         <button id="draw-clear" class="draw-btn">Clear All Walls</button>
                     </div>
                     <div id="drawn-barriers-list" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
@@ -479,6 +558,9 @@ permalink: /gamebuilderv1-2
                     <div id="draw-overlay" class="draw-overlay"></div>
                 </div>
             </div>
+            <!-- Fixed-position layer for route/attack NPC path lines.
+                 Lives outside the game-frame so overflow:hidden on ancestors can't clip it. -->
+            <div id="route-vis-layer"></div>
             <!-- code panel: live JS editor with highlight -->
             <div class="glass-panel code-panel panel-code">
                 <div class="panel-header">
@@ -811,8 +893,13 @@ document.addEventListener('DOMContentLoaded', () => {
         drawOverlay: document.getElementById('draw-overlay'),
         drawBarrierBtn: document.getElementById('draw-barrier'),
         drawStarBtn: document.getElementById('draw-star'),
+        routeVisLayer: document.getElementById('route-vis-layer'),
+        drawRouteNpcBtn: document.getElementById('draw-route-npc'),
+        finishRouteNpcBtn: document.getElementById('finish-route-npc'),
+        drawAttackNpcBtn: document.getElementById('draw-attack-npc'),
+        finishAttackNpcBtn: document.getElementById('finish-attack-npc'),
         drawClearBtn: document.getElementById('draw-clear'),
-        drawState: { mode: null, isDrawing: false, startX: 0, startY: 0, activeBarrier: null },
+        drawState: { mode: null, isDrawing: false, startX: 0, startY: 0, activeBarrier: null, activeRoute: null, activeAttackRoute: null },
         drawShapes: [],
         toggleWallsGameBtn: document.getElementById('toggle-walls-game'),
         gameWallsVisible: true,
@@ -888,16 +975,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const gf = document.querySelector('.game-frame');
         if (gf) gf.classList.toggle('drawing-active', !!mode);
         if (ui.drawStarBtn)    ui.drawStarBtn.classList.toggle('active', mode === 'star');
+        if (ui.drawRouteNpcBtn)  ui.drawRouteNpcBtn.classList.toggle('active',  mode === 'routeNpc');
+        if (ui.drawAttackNpcBtn) ui.drawAttackNpcBtn.classList.toggle('active', mode === 'attackNpc');
         if (ui.drawOverlay) {
             ui.drawOverlay.classList.toggle('active', !!mode);
-            ui.drawOverlay.classList.toggle('mode-barrier', mode === 'barrier');
-            ui.drawOverlay.classList.toggle('mode-star', mode === 'star');
+            ui.drawOverlay.classList.toggle('mode-barrier',   mode === 'barrier');
+            ui.drawOverlay.classList.toggle('mode-star',      mode === 'star');
+            ui.drawOverlay.classList.toggle('mode-routeNpc',  mode === 'routeNpc');
+            ui.drawOverlay.classList.toggle('mode-attackNpc', mode === 'attackNpc');
+        }
+        // If leaving routeNpc mode, finish any in-progress route
+        if (!mode && ui.drawState.activeRoute) {
+            finishActiveRoute();
+        }
+        // If leaving attackNpc mode, finish any in-progress attack route
+        if (!mode && ui.drawState.activeAttackRoute) {
+            finishActiveAttackRoute();
+        }
+        // Show/hide the "Finish Route" button
+        if (ui.finishRouteNpcBtn) {
+            ui.finishRouteNpcBtn.style.display = (mode === 'routeNpc') ? '' : 'none';
+        }
+        // Show/hide the "Finish Attack" button
+        if (ui.finishAttackNpcBtn) {
+            ui.finishAttackNpcBtn.style.display = (mode === 'attackNpc') ? '' : 'none';
         }
         if (!mode) removePreview();
     }
     if (ui.drawBarrierBtn) ui.drawBarrierBtn.addEventListener('click', () => { state.lastEdited = 'walls'; setDrawMode('barrier'); });
     if (ui.drawStarBtn)    ui.drawStarBtn.addEventListener('click', () => { state.lastEdited = 'background'; setDrawMode('star'); });
-    if (ui.drawClearBtn) ui.drawClearBtn.addEventListener('click', () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); });
+    if (ui.drawRouteNpcBtn)  ui.drawRouteNpcBtn.addEventListener('click',  () => { state.lastEdited = 'background'; setDrawMode('routeNpc'); });
+    if (ui.finishRouteNpcBtn) ui.finishRouteNpcBtn.addEventListener('click', () => { finishActiveRoute(); setDrawMode(null); });
+    if (ui.drawAttackNpcBtn) ui.drawAttackNpcBtn.addEventListener('click',  () => { state.lastEdited = 'background'; setDrawMode('attackNpc'); });
+    if (ui.finishAttackNpcBtn) ui.finishAttackNpcBtn.addEventListener('click', () => { finishActiveAttackRoute(); setDrawMode(null); });
+    if (ui.drawClearBtn) ui.drawClearBtn.addEventListener('click', () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.drawState.activeRoute = null; ui.drawState.activeAttackRoute = null; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); });
 
     // show/hide overlay per game walls visibility
     function updateOverlayVisibility() {
@@ -955,19 +1066,37 @@ document.addEventListener('DOMContentLoaded', () => {
             frag.appendChild(el);
         });
         ui.drawOverlay.appendChild(frag);
+        // Route/attack NPC paths are rendered into the fixed #route-vis-layer
+        // (immune to overflow:hidden on ancestors) — see renderRoutePaths() below
+        renderRoutePaths();
 
         // Render sidebar barriers list
         const listEl = document.getElementById('drawn-barriers-list');
         if (!listEl) return;
         listEl.innerHTML = '';
         if (ui.drawShapes.length === 0) return;
-        let starCount = 0, wallCount = 0;
+        let starCount = 0, wallCount = 0, routeCount = 0, attackCount = 0;
         ui.drawShapes.forEach((shape, idx) => {
-            const isStar = shape.type === 'star';
-            const label  = isStar ? `⭐ Star ${++starCount}` : `🧱 Wall ${++wallCount}`;
+            const isStar   = shape.type === 'star';
+            const isRoute  = shape.type === 'routeNpc';
+            const isAttack = shape.type === 'attackNpc';
+            const label    = isAttack ? `⚔️ ${shape.id || `AttackNPC_${++attackCount}`}`
+                           : isRoute  ? `🧍 ${shape.id || `RouteNPC_${++routeCount}`}`
+                           : isStar   ? `⭐ Star ${++starCount}`
+                           : `🧱 Wall ${++wallCount}`;
             const row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 6px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:.78rem;';
-            row.innerHTML = `
+            row.innerHTML = isAttack ? `
+                <span style="font-size:15px;flex-shrink:0;">⚔️</span>
+                <span style="flex:1;color:#fca5a5;">${label} <span style="color:#6b7280;font-size:.72rem;">(${(shape.waypoints||[]).length} pts)</span></span>
+                <button class="atk-edit-btn" title="Edit attack NPC" style="background:#7f1d1d;border:none;border-radius:5px;color:#fca5a5;padding:2px 7px;cursor:pointer;font-size:.8rem;">✏️</button>
+                <button title="Delete attack NPC" style="background:#450a0a;border:none;border-radius:5px;color:#fff;padding:2px 7px;cursor:pointer;font-size:.8rem;">🗑</button>
+            ` : isRoute ? `
+                <span style="font-size:15px;flex-shrink:0;">🧍</span>
+                <span style="flex:1;color:#a7f3d0;">${label} <span style="color:#6b7280;font-size:.72rem;">(${(shape.waypoints||[]).length} pts)</span></span>
+                <button class="rte-edit-btn" title="Edit route NPC" style="background:#065f46;border:none;border-radius:5px;color:#a7f3d0;padding:2px 7px;cursor:pointer;font-size:.8rem;">✏️</button>
+                <button title="Delete route NPC" style="background:#7f1d1d;border:none;border-radius:5px;color:#fff;padding:2px 7px;cursor:pointer;font-size:.8rem;">🗑</button>
+            ` : `
                 ${isStar ? `<span style="font-size:16px;flex-shrink:0;">⭐</span>` : `<input type="color" value="${shape.color || '#4466ff'}" title="Change color" style="width:24px;height:20px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0;">`}
                 <span style="flex:1;color:${isStar ? '#FFD700' : '#cbd5e1'};">${label}</span>
                 <label style="display:flex;align-items:center;gap:3px;color:#94a3b8;cursor:pointer;white-space:nowrap;">
@@ -975,26 +1104,369 @@ document.addEventListener('DOMContentLoaded', () => {
                 </label>
                 <button title="Delete this ${isStar ? 'star' : 'wall'}" style="background:#7f1d1d;border:none;border-radius:5px;color:#fff;padding:2px 7px;cursor:pointer;font-size:.8rem;">🗑</button>
             `;
-            const colorInput = row.querySelector('input[type=color]');
-            const visibleInput = row.querySelector('input[type=checkbox]');
-            const deleteBtn = row.querySelector('button');
-            if (colorInput) colorInput.addEventListener('input', () => {
-                shape.color = colorInput.value;
-                renderDrawShapes();
-                syncFromControlsIfFreestyle();
-            });
-            visibleInput.addEventListener('change', () => {
-                shape.visible = visibleInput.checked;
-                renderDrawShapes();
-                syncFromControlsIfFreestyle();
-            });
-            deleteBtn.addEventListener('click', () => {
-                ui.drawShapes.splice(idx, 1);
-                renderDrawShapes();
-                syncFromControlsIfFreestyle();
-            });
+            if (isAttack) {
+                const editBtn   = row.querySelector('.atk-edit-btn');
+                const deleteBtn = row.querySelector('button:last-child');
+                if (editBtn) editBtn.addEventListener('click', () => showAttackNpcEditor(shape, idx));
+                if (deleteBtn) deleteBtn.addEventListener('click', () => {
+                    if (ui.drawState.activeAttackRoute === shape) ui.drawState.activeAttackRoute = null;
+                    ui.drawShapes.splice(idx, 1);
+                    renderDrawShapes(); syncFromControlsIfFreestyle();
+                });
+            } else if (isRoute) {
+                const editBtn   = row.querySelector('.rte-edit-btn');
+                const deleteBtn = row.querySelector('button:last-child');
+                if (editBtn) editBtn.addEventListener('click', () => showRouteNpcEditor(shape, idx));
+                if (deleteBtn) deleteBtn.addEventListener('click', () => {
+                    if (ui.drawState.activeRoute === shape) ui.drawState.activeRoute = null;
+                    ui.drawShapes.splice(idx, 1);
+                    renderDrawShapes(); syncFromControlsIfFreestyle();
+                });
+            } else {
+                const colorInput  = row.querySelector('input[type=color]');
+                const visibleInput = row.querySelector('input[type=checkbox]');
+                const deleteBtn   = row.querySelector('button');
+                if (colorInput) colorInput.addEventListener('input', () => {
+                    shape.color = colorInput.value;
+                    renderDrawShapes(); syncFromControlsIfFreestyle();
+                });
+                if (visibleInput) visibleInput.addEventListener('change', () => {
+                    shape.visible = visibleInput.checked;
+                    renderDrawShapes(); syncFromControlsIfFreestyle();
+                });
+                if (deleteBtn) deleteBtn.addEventListener('click', () => {
+                    ui.drawShapes.splice(idx, 1);
+                    renderDrawShapes(); syncFromControlsIfFreestyle();
+                });
+            }
             listEl.appendChild(row);
         });
+    }
+
+    /**
+     * Renders route/attack NPC path lines and dots into the fixed-position
+     * #route-vis-layer element. Because it uses position:fixed it sits above
+     * all ancestors and is immune to overflow:hidden clipping.
+     * The layer is repositioned to exactly cover the game-frame each call.
+     */
+    function renderRoutePaths() {
+        const layer = ui.routeVisLayer;
+        if (!layer) return;
+
+        // Clear previous contents
+        layer.innerHTML = '';
+
+        const gameFrame = document.querySelector('.game-frame');
+        if (!gameFrame) return;
+
+        // Position the fixed layer exactly over the game-frame viewport
+        const fr = gameFrame.getBoundingClientRect();
+        layer.style.left   = fr.left + 'px';
+        layer.style.top    = fr.top  + 'px';
+        layer.style.width  = fr.width  + 'px';
+        layer.style.height = fr.height + 'px';
+
+        const routeShapes  = ui.drawShapes.filter(s => s.type === 'routeNpc');
+        const attackShapes = ui.drawShapes.filter(s => s.type === 'attackNpc');
+
+        // Helper: build one SVG line element
+        function makeLine(x1, y1, x2, y2, stroke, width, dash, opacity) {
+            const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+            l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+            l.setAttribute('stroke', stroke);
+            l.setAttribute('stroke-width', width);
+            if (dash)    l.setAttribute('stroke-dasharray', dash);
+            if (opacity) l.setAttribute('opacity', opacity);
+            return l;
+        }
+
+        // Helper: create and return an SVG element sized to the layer
+        function makeSvg() {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
+            return svg;
+        }
+
+        // ── Route NPC paths (green) ──────────────────────────────────────────
+        if (routeShapes.length > 0) {
+            const svg = makeSvg();
+            layer.appendChild(svg);
+            routeShapes.forEach(route => {
+                const pts = route.waypoints || [];
+                if (pts.length < 2) return;
+                for (let i = 0; i < pts.length - 1; i++) {
+                    svg.appendChild(makeLine(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y, '#10b981', '2', '7,3', null));
+                }
+                svg.appendChild(makeLine(pts[pts.length-1].x, pts[pts.length-1].y, pts[0].x, pts[0].y, '#10b981', '1.5', '3,7', '0.45'));
+            });
+            routeShapes.forEach(route => {
+                const pts = route.waypoints || [];
+                pts.forEach((pt, ptIdx) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'route-npc-dot' + (ptIdx === 0 ? ' start' : '');
+                    dot.style.cssText = `position:absolute;left:${pt.x}px;top:${pt.y}px;`;
+                    dot.title = `${route.id} — waypoint ${ptIdx + 1} (click to remove)`;
+                    dot.style.pointerEvents = 'auto';
+                    dot.addEventListener('click', (e) => {
+                        if (ui.drawState.mode === 'routeNpc') {
+                            route.waypoints.splice(ptIdx, 1);
+                            if (route.waypoints.length === 0) {
+                                ui.drawShapes.splice(ui.drawShapes.indexOf(route), 1);
+                                if (ui.drawState.activeRoute === route) ui.drawState.activeRoute = null;
+                            }
+                            renderDrawShapes(); e.stopPropagation(); return;
+                        }
+                        e.stopPropagation();
+                        showRouteNpcEditor(route, ui.drawShapes.indexOf(route));
+                    });
+                    layer.appendChild(dot);
+                });
+                if (pts.length > 0) {
+                    const lbl = document.createElement('div');
+                    lbl.className = 'route-npc-label';
+                    lbl.style.cssText = `position:absolute;left:${pts[0].x}px;top:${pts[0].y - 20}px;`;
+                    lbl.textContent = `🧍 ${route.id}`;
+                    layer.appendChild(lbl);
+                }
+            });
+        }
+
+        // ── Attack NPC paths (red) ───────────────────────────────────────────
+        if (attackShapes.length > 0) {
+            const svg = makeSvg();
+            layer.appendChild(svg);
+            attackShapes.forEach(route => {
+                const pts = route.waypoints || [];
+                if (pts.length < 2) return;
+                for (let i = 0; i < pts.length - 1; i++) {
+                    svg.appendChild(makeLine(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y, '#ef4444', '2', '7,3', null));
+                }
+                svg.appendChild(makeLine(pts[pts.length-1].x, pts[pts.length-1].y, pts[0].x, pts[0].y, '#ef4444', '1.5', '3,7', '0.45'));
+            });
+            attackShapes.forEach(route => {
+                const pts = route.waypoints || [];
+                pts.forEach((pt, ptIdx) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'attack-npc-dot' + (ptIdx === 0 ? ' start' : '');
+                    dot.style.cssText = `position:absolute;left:${pt.x}px;top:${pt.y}px;`;
+                    dot.title = `${route.id} — waypoint ${ptIdx + 1} (click to remove)`;
+                    dot.style.pointerEvents = 'auto';
+                    dot.addEventListener('click', (e) => {
+                        if (ui.drawState.mode === 'attackNpc') {
+                            route.waypoints.splice(ptIdx, 1);
+                            if (route.waypoints.length === 0) {
+                                ui.drawShapes.splice(ui.drawShapes.indexOf(route), 1);
+                                if (ui.drawState.activeAttackRoute === route) ui.drawState.activeAttackRoute = null;
+                            }
+                            renderDrawShapes(); e.stopPropagation(); return;
+                        }
+                        e.stopPropagation();
+                        showAttackNpcEditor(route, ui.drawShapes.indexOf(route));
+                    });
+                    layer.appendChild(dot);
+                });
+                if (pts.length > 0) {
+                    const lbl = document.createElement('div');
+                    lbl.className = 'attack-npc-label';
+                    lbl.style.cssText = `position:absolute;left:${pts[0].x}px;top:${pts[0].y - 20}px;`;
+                    lbl.textContent = `⚔️ ${route.id}`;
+                    layer.appendChild(lbl);
+                }
+            });
+        }
+    }
+
+    /** Called when user presses Enter / Finish Route button / Escape while in route mode. */
+    function finishActiveRoute() {
+        const route = ui.drawState.activeRoute;
+        ui.drawState.activeRoute = null;
+        if (!route || (route.waypoints || []).length === 0) return;
+        // Drop routes with < 2 waypoints (they won't loop anywhere useful)
+        if (route.waypoints.length < 2) return;
+        showRouteNpcEditor(route, ui.drawShapes.indexOf(route));
+    }
+
+    // ── sprite catalog ────────────────────────────────────────────────────────
+    // Known character sprites with their spritesheet metadata.
+    // w/h = spritesheet pixel dimensions, rows/cols = animation grid.
+    const SPRITE_CATALOG = [
+        { name:'Sword',        file:'sword',        w:500,  h:500,  rows:1, cols:1 },
+        { name:'Fireball',     file:'fireball_10',  w:256,  h:256,  rows:1, cols:1 },
+        { name:'Chill Guy',    file:'chillguy',     w:512,  h:384,  rows:3, cols:4 },
+        { name:'R2D2',         file:'r2_idle',      w:505,  h:223,  rows:1, cols:3 },
+        { name:'Tux',          file:'tux',          w:256,  h:352,  rows:4, cols:2 },
+        { name:'Alex',         file:'Alex',         w:128,  h:256,  rows:4, cols:2 },
+        { name:'Octocat',      file:'octocat',      w:801,  h:301,  rows:1, cols:3 },
+        { name:'Creeper',      file:'creepa',       w:1600, h:1200, rows:6, cols:8 },
+        { name:'Enderman',     file:'enderman',     w:574,  h:1504, rows:8, cols:2 },
+        { name:'Chicken',      file:'chicken',      w:400,  h:400,  rows:2, cols:2 },
+        { name:'Hist. Prof',   file:'historyProf',  w:559,  h:263,  rows:1, cols:3 },
+        { name:'Sinatra',      file:'frankSinatra', w:280,  h:281,  rows:1, cols:1 },
+        { name:'Miku',         file:'miku',         w:189,  h:316,  rows:4, cols:1 },
+        { name:'Robot',        file:'robot',        w:627,  h:316,  rows:3, cols:6 },
+        { name:'Nezuko',       file:'nezuko',       w:189,  h:316,  rows:4, cols:1 },
+        { name:'Villager',     file:'villager',     w:700,  h:1400, rows:4, cols:1 },
+    ];
+
+    /** Render a sprite-picker grid HTML string for use inside an editor panel. */
+    function _buildSpritePicker(selectedFile, pickerIdPrefix, basePath) {
+        const path = basePath || ('{{ site.baseurl }}' + '/images/gamify');
+        let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:160px;overflow-y:auto;padding:4px 0;">`;
+        SPRITE_CATALOG.forEach(sp => {
+            const sel = selectedFile === sp.file ? 'border-color:#6366f1;background:#1e1b4b;' : 'border-color:#334155;background:#0f172a;';
+            html += `<div data-file="${sp.file}" data-w="${sp.w}" data-h="${sp.h}" data-rows="${sp.rows}" data-cols="${sp.cols}"
+                style="cursor:pointer;border:2px solid;border-radius:6px;padding:3px;text-align:center;${sel}transition:border-color .15s;">
+                <img src="${path}/${sp.file}.png" style="width:100%;height:40px;object-fit:contain;image-rendering:pixelated;" draggable="false">
+                <div style="font-size:9px;color:#94a3b8;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${sp.name}</div>
+            </div>`;
+        });
+        html += `</div>`;
+        return html;
+    }
+
+    /** Wire click events on a sprite picker grid; calls onChange(spriteObj) on selection. */
+    function _wireSpritePicker(container, onChange) {
+        container.querySelectorAll('[data-file]').forEach(el => {
+            el.addEventListener('click', () => {
+                container.querySelectorAll('[data-file]').forEach(e => {
+                    e.style.borderColor = '#334155'; e.style.background = '#0f172a';
+                });
+                el.style.borderColor = '#6366f1'; el.style.background = '#1e1b4b';
+                onChange({
+                    file: el.dataset.file,
+                    w: parseInt(el.dataset.w),
+                    h: parseInt(el.dataset.h),
+                    rows: parseInt(el.dataset.rows),
+                    cols: parseInt(el.dataset.cols),
+                });
+            });
+        });
+    }
+
+    /** Popup editor for a route NPC's properties (id, speed, greeting, sprite). */
+    function showRouteNpcEditor(route, idx) {
+        document.getElementById('gb-route-editor')?.remove();
+        const panel = document.createElement('div');
+        panel.id = 'gb-route-editor';
+        panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0f172a;border:2px solid #10b981;border-radius:14px;padding:22px 26px;z-index:9999;color:#e2e8f0;font-family:sans-serif;min-width:320px;max-width:400px;box-shadow:0 0 28px rgba(16,185,129,.35);';
+        const imgBase = ('{{ site.baseurl }}') + '/images/gamify';
+        panel.innerHTML = `
+            <div style="font-weight:700;font-size:1rem;margin-bottom:14px;color:#a7f3d0;">🧍 Route NPC — ${(route.waypoints||[]).length} waypoints</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Name / ID
+                    <input id="grte-id" type="text" value="${route.id || ''}" style="flex:1;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                </label>
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Speed
+                    <input id="grte-speed" type="number" min="0.2" max="10" step="0.1" value="${route.speed || 1.5}" style="width:60px;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                    <span style="color:#6b7280;font-size:.75rem;">px/frame</span>
+                </label>
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Scale
+                    <input id="grte-scale" type="number" min="3" max="20" step="1" value="${route.scale || 8}" style="width:55px;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                </label>
+                <label style="font-size:.83rem;display:flex;flex-direction:column;gap:4px;">
+                    Greeting / dialogue
+                    <textarea id="grte-greeting" rows="2" style="padding:5px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;resize:vertical;">${route.greeting || 'Hello, traveler!'}</textarea>
+                </label>
+                <div style="font-size:.83rem;color:#94a3b8;margin-bottom:2px;">Character sprite</div>
+                <div id="grte-sprite-picker">${_buildSpritePicker(route.spriteFile || 'chillguy', 'grte', imgBase)}</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button id="grte-save" style="flex:1;padding:8px;background:#059669;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;">✓ Save</button>
+                <button id="grte-delete" style="padding:8px 12px;background:#7f1d1d;border:none;border-radius:8px;color:#fff;cursor:pointer;">🗑</button>
+                <button id="grte-cancel" style="padding:8px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#94a3b8;cursor:pointer;">✕</button>
+            </div>
+        `;
+        document.body.appendChild(panel);
+        let _rteSprite = SPRITE_CATALOG.find(s => s.file === (route.spriteFile || 'chillguy')) || SPRITE_CATALOG[0];
+        _wireSpritePicker(panel.querySelector('#grte-sprite-picker'), sp => { _rteSprite = sp; });
+        document.getElementById('grte-save').onclick = () => {
+            route.id         = document.getElementById('grte-id').value.trim() || route.id;
+            route.speed      = parseFloat(document.getElementById('grte-speed').value) || 1.5;
+            route.scale      = parseInt(document.getElementById('grte-scale').value)   || 8;
+            route.greeting   = document.getElementById('grte-greeting').value.trim() || 'Hello, traveler!';
+            route.spriteFile = _rteSprite.file;
+            route.spriteW    = _rteSprite.w;
+            route.spriteH    = _rteSprite.h;
+            route.spriteRows = _rteSprite.rows;
+            route.spriteCols = _rteSprite.cols;
+            panel.remove(); renderDrawShapes(); syncFromControlsIfFreestyle();
+        };
+        document.getElementById('grte-delete').onclick = () => {
+            if (idx >= 0) ui.drawShapes.splice(idx, 1);
+            panel.remove(); renderDrawShapes(); syncFromControlsIfFreestyle();
+        };
+        document.getElementById('grte-cancel').onclick = () => panel.remove();
+    }
+
+    /** Called when user presses Enter / Finish Attack button / Escape while in attackNpc mode. */
+    function finishActiveAttackRoute() {
+        const route = ui.drawState.activeAttackRoute;
+        ui.drawState.activeAttackRoute = null;
+        if (!route || (route.waypoints || []).length === 0) return;
+        if (route.waypoints.length < 2) return;
+        showAttackNpcEditor(route, ui.drawShapes.indexOf(route));
+    }
+
+    /** Popup editor for an Attack NPC's properties (id, speed, scale, hearts). */
+    function showAttackNpcEditor(route, idx) {
+        document.getElementById('gb-attack-editor')?.remove();
+        const panel = document.createElement('div');
+        panel.id = 'gb-attack-editor';
+        panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0f172a;border:2px solid #ef4444;border-radius:14px;padding:22px 26px;z-index:9999;color:#e2e8f0;font-family:sans-serif;min-width:320px;max-width:400px;box-shadow:0 0 28px rgba(239,68,68,.35);';
+        const imgBaseA = ('{{ site.baseurl }}') + '/images/gamify';
+        panel.innerHTML = `
+            <div style="font-weight:700;font-size:1rem;margin-bottom:14px;color:#fca5a5;">⚔️ Attack NPC — ${(route.waypoints||[]).length} waypoints</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Name / ID
+                    <input id="gatk-id" type="text" value="${route.id || ''}" style="flex:1;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                </label>
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Speed
+                    <input id="gatk-speed" type="number" min="0.2" max="10" step="0.1" value="${route.speed || 2.0}" style="width:60px;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                    <span style="color:#6b7280;font-size:.75rem;">px/frame</span>
+                </label>
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Scale
+                    <input id="gatk-scale" type="number" min="3" max="30" step="1" value="${route.scale || 14}" style="width:55px;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                </label>
+                <label style="font-size:.83rem;display:flex;align-items:center;gap:8px;">
+                    Hearts (player health)
+                    <input id="gatk-hearts" type="number" min="1" max="10" step="1" value="${route.maxHearts || 3}" style="width:55px;padding:4px 7px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.83rem;">
+                </label>
+                <div style="font-size:.83rem;color:#94a3b8;margin-bottom:2px;">Character sprite</div>
+                <div id="gatk-sprite-picker">${_buildSpritePicker(route.spriteFile || 'sword', 'gatk', imgBaseA)}</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button id="gatk-save" style="flex:1;padding:8px;background:#b91c1c;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;">✓ Save</button>
+                <button id="gatk-delete" style="padding:8px 12px;background:#450a0a;border:none;border-radius:8px;color:#fff;cursor:pointer;">🗑</button>
+                <button id="gatk-cancel" style="padding:8px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#94a3b8;cursor:pointer;">✕</button>
+            </div>
+        `;
+        document.body.appendChild(panel);
+        let _atkSprite = SPRITE_CATALOG.find(s => s.file === (route.spriteFile || 'sword')) || SPRITE_CATALOG[0];
+        _wireSpritePicker(panel.querySelector('#gatk-sprite-picker'), sp => { _atkSprite = sp; });
+        document.getElementById('gatk-save').onclick = () => {
+            route.id         = document.getElementById('gatk-id').value.trim() || route.id;
+            route.speed      = parseFloat(document.getElementById('gatk-speed').value) || 2.0;
+            route.scale      = parseInt(document.getElementById('gatk-scale').value)   || 14;
+            route.maxHearts  = parseInt(document.getElementById('gatk-hearts').value)  || 3;
+            route.spriteFile = _atkSprite.file;
+            route.spriteW    = _atkSprite.w;
+            route.spriteH    = _atkSprite.h;
+            route.spriteRows = _atkSprite.rows;
+            route.spriteCols = _atkSprite.cols;
+            panel.remove(); renderDrawShapes(); syncFromControlsIfFreestyle();
+        };
+        document.getElementById('gatk-delete').onclick = () => {
+            if (idx >= 0) ui.drawShapes.splice(idx, 1);
+            panel.remove(); renderDrawShapes(); syncFromControlsIfFreestyle();
+        };
+        document.getElementById('gatk-cancel').onclick = () => panel.remove();
     }
 
     function showDrawnShapeEditor(shape, idx) {
@@ -1076,6 +1548,57 @@ document.addEventListener('DOMContentLoaded', () => {
         let cy = Math.min(Math.max(0, clientY - bounds.top), bounds.height);
         removePreview();
 
+        // Route NPC: each click adds a waypoint to the active route
+        if (mode === 'routeNpc') {
+            const pt = { x: Math.round(x), y: Math.round(y) };
+            if (!ui.drawState.activeRoute) {
+                const routeIdx = ui.drawShapes.filter(s => s.type === 'routeNpc').length + 1;
+                ui.drawState.activeRoute = {
+                    type: 'routeNpc',
+                    id: `RouteNPC_${routeIdx}`,
+                    waypoints: [],
+                    speed: 1.5,
+                    sprite: 'chillguy',
+                    greeting: 'Hello, traveler!',
+                    scale: 8,
+                    visible: true
+                };
+                ui.drawShapes.push(ui.drawState.activeRoute);
+            }
+            ui.drawState.activeRoute.waypoints.push(pt);
+            ui.overlayConfirmed = false;
+            renderDrawShapes();
+            state.lastEdited = 'background';
+            syncFromControlsIfFreestyle();
+            return; // stay in routeNpc mode for continuous placement
+        }
+
+        // Attack NPC: each click adds a waypoint to the active attack route
+        if (mode === 'attackNpc') {
+            const pt = { x: Math.round(x), y: Math.round(y) };
+            if (!ui.drawState.activeAttackRoute) {
+                const attackIdx = ui.drawShapes.filter(s => s.type === 'attackNpc').length + 1;
+                ui.drawState.activeAttackRoute = {
+                    type: 'attackNpc',
+                    id: `AttackNPC_${attackIdx}`,
+                    waypoints: [],
+                    speed: 2.0,
+                    scale: 14,
+                    maxHearts: 3,
+                    spriteFile: 'sword',
+                    spriteW: 500, spriteH: 500, spriteRows: 1, spriteCols: 1,
+                    visible: true
+                };
+                ui.drawShapes.push(ui.drawState.activeAttackRoute);
+            }
+            ui.drawState.activeAttackRoute.waypoints.push(pt);
+            ui.overlayConfirmed = false;
+            renderDrawShapes();
+            state.lastEdited = 'background';
+            syncFromControlsIfFreestyle();
+            return; // stay in attackNpc mode for continuous placement
+        }
+
         // Stars: single-click placement (no drag required)
         if (mode === 'star') {
             const sx = Math.max(0, Math.round(x - 12));
@@ -1119,6 +1642,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.drawState.startY = localY;
         });
     }
+    // Reposition route-vis-layer whenever the viewport is resized
+    window.addEventListener('resize', () => {
+        if (ui.routeVisLayer && !ui.routeVisLayer.classList.contains('game-running')) {
+            renderRoutePaths();
+        }
+    });
+
     window.addEventListener('mousemove', (e) => {
         if (!ui.drawState.isDrawing) return;
         updatePreview(e.clientX, e.clientY);
@@ -1132,7 +1662,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            if (ui.drawState.mode === 'routeNpc' && ui.drawState.activeRoute) {
+                finishActiveRoute();
+            }
+            if (ui.drawState.mode === 'attackNpc' && ui.drawState.activeAttackRoute) {
+                finishActiveAttackRoute();
+            }
             setDrawMode(null);
+        }
+        // Enter: finish the in-progress route without leaving route mode
+        if (e.key === 'Enter' && ui.drawState.mode === 'routeNpc' && ui.drawState.activeRoute) {
+            finishActiveRoute();
+        }
+        // Enter: finish the in-progress attack route
+        if (e.key === 'Enter' && ui.drawState.mode === 'attackNpc' && ui.drawState.activeAttackRoute) {
+            finishActiveAttackRoute();
         }
     });
 
@@ -3427,6 +3971,9 @@ function generateStepCode(currentStep) {
         (window.__mpPosIntervals || []).forEach(id => clearInterval(id));
         window.__mpPosIntervals = [];
 
+        // Restore route/attack path lines (hidden during gameplay)
+        if (ui.routeVisLayer) ui.routeVisLayer.classList.remove('game-running');
+
     }
 
     // Run only the current single level in the preview (used when switching tabs).
@@ -3456,6 +4003,9 @@ function generateStepCode(currentStep) {
         stopRunner();
         if (!code || !code.trim()) return;
 
+        // Hide route/attack path lines while the game is running
+        if (ui.routeVisLayer) ui.routeVisLayer.classList.add('game-running');
+
 
         const path = '{{ site.baseurl }}';
         const baseUrl = window.location.origin + path;
@@ -3476,6 +4026,103 @@ function generateStepCode(currentStep) {
             const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', src: path + '/images/gamify/chillguy.png', SCALE_FACTOR:5, ANIMATION_RATE:50, pixels:{width:512,height:384}, INIT_POSITION:{ x: width * 0.8, y: height - (height / 5) }, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, right:{row:1,start:0,columns:3}, left:{row:2,start:0,columns:3}, up:{row:3,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:${chaseSpeed}, patrolSpeed:${patrolSpeed}, tauntInterval:4500, walkingArea:{ xMin: width * 0.3, xMax: width - 60 } } }`;
             code = coachImport + code;
             code = code.replace(/this\.classes\s*=\s*\[/, `this.classes = [\n      ${coachEntry},`);
+        }
+
+        // Inject route NPCs — inlined directly into this.classes so width/height are in scope
+        const routeNpcShapes = (ui.drawShapes || []).filter(s => s.type === 'routeNpc' && s.waypoints && s.waypoints.length >= 2);
+        if (routeNpcShapes.length > 0) {
+            const overlayRect = ui.drawOverlay?.getBoundingClientRect() || {};
+            const ow = Math.max(1, overlayRect.width  || 900);
+            const oh = Math.max(1, overlayRect.height || 600);
+
+            let routeEntries = '';
+            routeNpcShapes.forEach((route, i) => {
+                const npcId    = (route.id || `RouteNPC_${i + 1}`).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const greeting = (route.greeting || 'Hello, traveler!').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const speed    = parseFloat(route.speed) || 1.5;
+                const scale    = parseInt(route.scale)   || 8;
+                const spFile   = route.spriteFile || 'chillguy';
+                const spW      = route.spriteW    || 512;
+                const spH      = route.spriteH    || 384;
+                const spRows   = route.spriteRows || 3;
+                const spCols   = route.spriteCols || 4;
+                const dirCols  = Math.max(1, spCols - 1); // animation columns per row
+                const firstFx  = (route.waypoints[0].x / ow).toFixed(4);
+                const firstFy  = (route.waypoints[0].y / oh).toFixed(4);
+                const wpCode   = route.waypoints.map(pt =>
+                    `{x:Math.round(width*${(pt.x/ow).toFixed(4)}),y:Math.round(height*${(pt.y/oh).toFixed(4)})}`
+                ).join(',');
+                routeEntries +=
+`\n      { class: Npc, data: {
+        id: '${npcId}', greeting: '${greeting}',
+        src: path + '/images/gamify/${spFile}.png',
+        SCALE_FACTOR: ${scale}, ANIMATION_RATE: 50,
+        pixels: {width:${spW},height:${spH}},
+        INIT_POSITION: {x:Math.round(width*${firstFx}),y:Math.round(height*${firstFy})},
+        orientation: {rows:${spRows},columns:${spCols}},
+        down:{row:0,start:0,columns:${dirCols}}, right:{row:Math.min(1,${spRows}-1),start:0,columns:${dirCols}},
+        left:{row:Math.min(2,${spRows}-1),start:0,columns:${dirCols}}, up:{row:Math.min(3,${spRows}-1),start:0,columns:${dirCols}},
+        hitbox:{widthPercentage:0.1,heightPercentage:0.2},
+        waypoints:[${wpCode}], speed:${speed},
+      }},`;
+            });
+
+            // Ensure Npc is imported (templates usually already have it)
+            if (!/import\s+Npc\s+from/.test(code)) {
+                code = `import Npc from '${baseUrl}/assets/js/GameEnginev1.2/essentials/Npc.js';\n` + code;
+            }
+            // Use a function replacement so any $ in routeEntries is never mis-read as a back-reference
+            code = code.replace(/this\.classes\s*=\s*\[/, m => `this.classes = [${routeEntries}`);
+        }
+
+        // Inject attack NPCs — follow a drawn route and damage the player on contact
+        const attackNpcShapes = (ui.drawShapes || []).filter(s => s.type === 'attackNpc' && s.waypoints && s.waypoints.length >= 2);
+        if (attackNpcShapes.length > 0) {
+            const overlayRect2 = ui.drawOverlay?.getBoundingClientRect() || {};
+            const ow2 = Math.max(1, overlayRect2.width  || 900);
+            const oh2 = Math.max(1, overlayRect2.height || 600);
+
+            // maxHearts comes from the first attack NPC's setting (shared pool)
+            const firstMaxHearts = parseInt(attackNpcShapes[0].maxHearts) || 3;
+
+            let attackEntries = '';
+            attackNpcShapes.forEach((route, i) => {
+                const npcId   = (route.id || `AttackNPC_${i + 1}`).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const speed   = parseFloat(route.speed) || 2.0;
+                const scale   = parseInt(route.scale)   || 14;
+                const hearts  = i === 0 ? firstMaxHearts : 3;
+                const spFile  = route.spriteFile || 'sword';
+                const spW     = route.spriteW    || 500;
+                const spH     = route.spriteH    || 500;
+                const spRows  = route.spriteRows || 1;
+                const spCols  = route.spriteCols || 1;
+                const dirCols = Math.max(1, spCols - 1);
+                const firstFx = (route.waypoints[0].x / ow2).toFixed(4);
+                const firstFy = (route.waypoints[0].y / oh2).toFixed(4);
+                const wpCode  = route.waypoints.map(pt =>
+                    `{x:Math.round(width*${(pt.x/ow2).toFixed(4)}),y:Math.round(height*${(pt.y/oh2).toFixed(4)})}`
+                ).join(',');
+                // For single-frame sprites (like sword) add a spin so they look dynamic
+                const isSingleFrame = (spRows === 1 && spCols === 1);
+                const spinProp = isSingleFrame ? `\n        down:{row:0,start:0,columns:1,spin:true}, right:{row:0,start:0,columns:1,spin:true},\n        left:{row:0,start:0,columns:1,spin:true}, up:{row:0,start:0,columns:1,spin:true},` : `\n        down:{row:0,start:0,columns:${dirCols}}, right:{row:Math.min(1,${spRows}-1),start:0,columns:${dirCols}},\n        left:{row:Math.min(2,${spRows}-1),start:0,columns:${dirCols}}, up:{row:Math.min(3,${spRows}-1),start:0,columns:${dirCols}},`;
+                attackEntries +=
+`\n      { class: AttackNpc, data: {
+        id: '${npcId}',
+        src: path + '/images/gamify/${spFile}.png',
+        SCALE_FACTOR: ${scale}, ANIMATION_RATE: 50,
+        pixels: {width:${spW},height:${spH}},
+        INIT_POSITION: {x:Math.round(width*${firstFx}),y:Math.round(height*${firstFy})},
+        orientation: {rows:${spRows},columns:${spCols}},${spinProp}
+        hitbox:{widthPercentage:0.2,heightPercentage:0.2},
+        waypoints:[${wpCode}], speed:${speed}, maxHearts:${hearts},
+      }},`;
+            });
+
+            // Ensure AttackNpc is imported
+            if (!/import\s+AttackNpc\s+from/.test(code)) {
+                code = `import AttackNpc from '${baseUrl}/assets/js/GameEnginev1.2/AttackNpc.js';\n` + code;
+            }
+            code = code.replace(/this\.classes\s*=\s*\[/, m => `this.classes = [${attackEntries}`);
         }
 
         // Ensure absolute import URLs

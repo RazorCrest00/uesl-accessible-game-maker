@@ -18,6 +18,7 @@ class Npc extends Character {
         this.walkingArea = data?.walkingArea || null;
         this.speed = data?.speed || 1;
         this.moveDirection = data?.moveDirection || { x: 1, y: 1 };
+        this.waypoints = data?.waypoints || null; // array of {x,y} game-space coords
 
         // IMPORTANT: Create a unique ID for each NPC to avoid conflicts
         // Sanitize id to remove/replace spaces (spaces are not valid in DOM tokens)
@@ -51,8 +52,10 @@ class Npc extends Character {
     }
 
     update() {
-        // General patrol logic for any NPC with walkingArea
-        if (this.walkingArea) {
+        // Waypoint route takes priority over rectangle patrol
+        if (this.waypoints && this.waypoints.length > 0) {
+            this.waypointPatrol();
+        } else if (this.walkingArea) {
             this.patrol();
         }
         this.draw();
@@ -63,6 +66,38 @@ class Npc extends Character {
         // Reset interaction state if player moved away
         if (players.length === 0 && this.isInteracting) {
             this.isInteracting = false;
+        }
+    }
+
+    /**
+     * Follow a list of waypoints in order, looping back to the start.
+     * Waypoints are { x, y } in game-space coordinates.
+     */
+    waypointPatrol() {
+        if (!this.waypoints || this.waypoints.length === 0) return;
+        if (this._wpIndex === undefined) this._wpIndex = 0;
+
+        const target = this.waypoints[this._wpIndex % this.waypoints.length];
+        const dx = target.x - this.position.x;
+        const dy = target.y - this.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Arrived — advance to next waypoint
+        if (dist < 8) {
+            this._wpIndex = (this._wpIndex + 1) % this.waypoints.length;
+            return;
+        }
+
+        const speed = this.speed || 1.5;
+        const norm  = speed / dist;
+        this.position.x += dx * norm;
+        this.position.y += dy * norm;
+
+        // Pick animation direction from dominant axis
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            this.direction = dx > 0 ? 'right' : 'left';
+        } else {
+            this.direction = dy > 0 ? 'down' : 'up';
         }
     }
 
