@@ -1,8 +1,14 @@
 [
-    { "name": "Astronaut", "src": "astro.png", "rows": 4, "cols": 4, "mirrorLeft": true },
-    { "name": "Kirby", "src": "kirby.png", "rows": 1, "cols": 13 },
-    { "name": "Pew", "src": "pew.png", "rows": 4, "cols": 4 },
-    { "name": "Slime", "src": "slime.png", "rows": 4, "cols": 4 },
-    { "name": "Ufos", "src": "ufos.png", "rows": 4, "cols": 3 }
-
+    { "name": "⚡ Iron Man",         "src": "ironman.png",         "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "🕷 Spider-Man",        "src": "spiderman.png",       "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "🛡 Captain America",   "src": "captain_america.png", "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "🦇 Batman",            "src": "batman.png",          "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "🦸 Superman",          "src": "superman.png",        "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "⚔ Wonder Woman",       "src": "wonder_woman.png",    "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "🔨 Thor",              "src": "thor.png",            "rows": 1, "cols": 1, "w": 96,  "h": 132 },
+    { "name": "Astronaut",            "src": "astro.png",           "rows": 4, "cols": 4, "mirrorLeft": true },
+    { "name": "Kirby",                "src": "kirby.png",           "rows": 1, "cols": 13 },
+    { "name": "Pew",                  "src": "pew.png",             "rows": 4, "cols": 4 },
+    { "name": "Slime",                "src": "slime.png",           "rows": 4, "cols": 4 },
+    { "name": "Ufos",                 "src": "ufos.png",            "rows": 4, "cols": 3 }
 ]

@@ -36,6 +36,9 @@ class AttackNpc extends Npc {
     constructor(data = null, gameEnv = null) {
         super(data, gameEnv);
 
+        // AttackNpc never talks — kill the dialogue system the parent created
+        this.dialogueSystem = null;
+
         const maxHearts   = data?.maxHearts    ?? 3;
         const invincibleMs = data?.invincibleMs ?? 2000;
 
@@ -72,6 +75,11 @@ class AttackNpc extends Npc {
         }
         this._heartHUD.textContent = hearts.join(' ');
     }
+
+    // ─── no dialogue ─────────────────────────────────────────────────────────
+    // Override parent key handlers so interaction keys (E/U) do nothing
+    handleKeyDown(event) {}
+    handleKeyUp(event)   {}
 
     // ─── game loop ───────────────────────────────────────────────────────────
 

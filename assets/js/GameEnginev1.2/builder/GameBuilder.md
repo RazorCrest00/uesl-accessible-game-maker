@@ -77,14 +77,9 @@ permalink: /gamebuilderv1-2
   background: rgba(239, 68, 68, 0.2);
 }
 /* Draw toolbar button styles */
-.draw-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
+.draw-toolbar { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 .draw-btn {
-  padding: 5px 10px;
+  padding: 6px 10px;
   font-size: 0.78rem;
   background: #1e293b;
   border: 1px solid #334155;
@@ -92,15 +87,64 @@ permalink: /gamebuilderv1-2
   color: #94a3b8;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+  text-align: left;
+  width: 100%;
 }
-.draw-btn:hover {
-  background: #273449;
-  color: #e2e8f0;
+.draw-btn:hover { background: #273449; color: #e2e8f0; }
+.draw-btn.active { background: #312e81; border-color: #6366f1; color: #a5b4fc; }
+/* Row of two paired buttons (draw + finish) */
+.draw-btn-pair {
+  display: flex;
+  gap: 4px;
 }
-.draw-btn.active {
-  background: #312e81;
-  border-color: #6366f1;
-  color: #a5b4fc;
+.draw-btn-pair .draw-btn { flex: 1; }
+.draw-btn-pair .draw-btn.finish-btn { flex: 0 0 auto; width: auto; padding: 6px 10px; }
+/* Danger / clear button */
+.draw-btn.draw-btn-danger {
+  border-color: #4c1d1d;
+  color: #f87171;
+}
+.draw-btn.draw-btn-danger:hover { background: #3b0e0e; border-color: #ef4444; color: #fca5a5; }
+/* Section divider label inside toolbar */
+.draw-section-label {
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #475569;
+  font-weight: 700;
+  padding: 6px 2px 2px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 2px;
+}
+.draw-section-label:first-child { border-top: none; padding-top: 2px; }
+
+/* ── Left panel resize handle ───────────────────────────────────────────── */
+.col-asset { position: relative; }
+#left-panel-resize {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#left-panel-resize::after {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 40px;
+  background: #334155;
+  border-radius: 3px;
+  transition: background 0.15s, height 0.15s;
+}
+#left-panel-resize:hover::after,
+#left-panel-resize.dragging::after {
+  background: #6366f1;
+  height: 60px;
 }
 /* ── Route/Attack NPC path visualisation layer ──────────────────────────────
    Uses position:fixed so it sits above everything, immune to overflow:hidden
@@ -302,7 +346,9 @@ permalink: /gamebuilderv1-2
 
 <!-- main builder layout: left (assets) + right (code and game) -->
 <div class="creator-layout">
-    <div class="col-asset">
+    <div class="col-asset" id="col-asset">
+        <!-- Drag this handle to resize the left panel -->
+        <div id="left-panel-resize" title="Drag to resize panel"></div>
         <!-- assets panel: background, player, NPCs, and walls inputs -->
         <div class="glass-panel creator-panel" style="position: relative;">
             <div class="panel-header">
@@ -354,8 +400,19 @@ permalink: /gamebuilderv1-2
                     <label>Sprite</label>
                     <select id="player-select">
                         <option value="" selected disabled>Select sprite…</option>
+                        <optgroup label="Superheroes">
+                        <option value="ironman">Iron Man</option>
+                        <option value="spiderman">Spider-Man</option>
+                        <option value="captain_america">Captain America</option>
+                        <option value="batman">Batman</option>
+                        <option value="superman">Superman</option>
+                        <option value="wonder_woman">Wonder Woman</option>
+                        <option value="thor">Thor</option>
+                        </optgroup>
+                        <optgroup label="Other">
                         <option value="chillguy">Chill Guy</option>
                         <option value="tux">Tux</option>
+                        </optgroup>
                     </select>
                     <div class="upload-instructions" style="margin-top:6px;">
                         <button id="sprite-instructions-btn" class="btn btn-sm">Upload Instructions ▸</button>
@@ -481,20 +538,47 @@ permalink: /gamebuilderv1-2
                 </div>
                 <div class="asset-group">
                     <!-- walls: toggle visibility, draw barriers, clear shapes -->
-                    <div class="group-title">
-                        <span>WALLS</span>
-                    </div>
+                    <div class="group-title"><span>WALLS &amp; OBJECTS</span></div>
                     <div class="draw-toolbar">
-                        <button id="toggle-walls-game" class="draw-btn">Show Walls (Game)</button>
-                        <button id="draw-barrier" class="draw-btn">Draw Collision Wall</button>
-                        <button id="draw-star" class="draw-btn">⭐ Place Stars</button>
-                        <button id="draw-route-npc" class="draw-btn">🧍 Route NPC</button>
-                        <button id="finish-route-npc" class="draw-btn" style="display:none;background:#065f46;border-color:#10b981;color:#a7f3d0;">✓ Finish Route</button>
-                        <button id="draw-attack-npc" class="draw-btn">⚔️ Attack NPC</button>
-                        <button id="finish-attack-npc" class="draw-btn" style="display:none;background:#7f1d1d;border-color:#ef4444;color:#fca5a5;">✓ Finish Attack</button>
-                        <button id="draw-clear" class="draw-btn">Clear All Walls</button>
+
+                        <!-- Visibility -->
+                        <div class="draw-section-label">Visibility</div>
+                        <button id="toggle-walls-game" class="draw-btn">👁 Show Walls in Game</button>
+
+                        <!-- Drawing -->
+                        <div class="draw-section-label">Drawing</div>
+                        <button id="draw-barrier" class="draw-btn">🧱 Draw Collision Wall</button>
+                        <button id="draw-star"    class="draw-btn">⭐ Place Stars</button>
+
+                        <!-- NPCs -->
+                        <div class="draw-section-label">NPCs</div>
+                        <div class="draw-btn-pair">
+                            <button id="draw-route-npc"  class="draw-btn">🧍 Route NPC</button>
+                            <button id="finish-route-npc" class="draw-btn finish-btn" style="display:none;background:#065f46;border-color:#10b981;color:#a7f3d0;">✓ Done</button>
+                        </div>
+                        <div class="draw-btn-pair">
+                            <button id="draw-attack-npc"  class="draw-btn">⚔️ Attack NPC</button>
+                            <button id="finish-attack-npc" class="draw-btn finish-btn" style="display:none;background:#7f1d1d;border-color:#ef4444;color:#fca5a5;">✓ Done</button>
+                        </div>
+
+                        <!-- Game Settings -->
+                        <div class="draw-section-label">Game Settings</div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;gap:8px;">
+                            <label for="global-max-hearts" style="font-size:.78rem;color:#94a3b8;white-space:nowrap;">❤️ Player Hearts</label>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <button id="hearts-dec" style="width:24px;height:24px;background:#1e293b;border:1px solid #334155;border-radius:5px;color:#e2e8f0;cursor:pointer;font-size:.9rem;line-height:1;padding:0;">−</button>
+                                <input type="number" id="global-max-hearts" min="1" max="10" value="3"
+                                       style="width:42px;text-align:center;padding:3px 4px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:.85rem;">
+                                <button id="hearts-inc" style="width:24px;height:24px;background:#1e293b;border:1px solid #334155;border-radius:5px;color:#e2e8f0;cursor:pointer;font-size:.9rem;line-height:1;padding:0;">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Clear -->
+                        <div class="draw-section-label">Actions</div>
+                        <button id="draw-clear" class="draw-btn draw-btn-danger">🗑 Clear All Walls</button>
+
                     </div>
-                    <div id="drawn-barriers-list" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+                    <div id="drawn-barriers-list" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
                     <div id="walls-container"></div>
                 </div>
                 <!-- ── SETTINGS ─────────────────────────────────────── -->
@@ -902,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawAttackNpcBtn: document.getElementById('draw-attack-npc'),
         finishAttackNpcBtn: document.getElementById('finish-attack-npc'),
         drawClearBtn: document.getElementById('draw-clear'),
+        globalMaxHeartsInput: document.getElementById('global-max-hearts'),
         drawState: { mode: null, isDrawing: false, startX: 0, startY: 0, activeBarrier: null, activeRoute: null, activeAttackRoute: null },
         drawShapes: [],
         toggleWallsGameBtn: document.getElementById('toggle-walls-game'),
@@ -1012,6 +1097,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ui.drawAttackNpcBtn) ui.drawAttackNpcBtn.addEventListener('click',  () => { state.lastEdited = 'background'; setDrawMode('attackNpc'); });
     if (ui.finishAttackNpcBtn) ui.finishAttackNpcBtn.addEventListener('click', () => { finishActiveAttackRoute(); setDrawMode(null); });
     if (ui.drawClearBtn) ui.drawClearBtn.addEventListener('click', () => { state.lastEdited = 'walls'; ui.drawShapes = []; ui.drawState.activeRoute = null; ui.drawState.activeAttackRoute = null; ui.overlayConfirmed = false; renderDrawShapes(); syncFromControlsIfFreestyle(); });
+
+    // ── Hearts +/− stepper ──────────────────────────────────────────────────
+    document.getElementById('hearts-dec')?.addEventListener('click', () => {
+        const inp = ui.globalMaxHeartsInput;
+        if (!inp) return;
+        inp.value = Math.max(1, (parseInt(inp.value) || 3) - 1);
+    });
+    document.getElementById('hearts-inc')?.addEventListener('click', () => {
+        const inp = ui.globalMaxHeartsInput;
+        if (!inp) return;
+        inp.value = Math.min(10, (parseInt(inp.value) || 3) + 1);
+    });
 
     // show/hide overlay per game walls visibility
     function updateOverlayVisibility() {
@@ -1294,6 +1391,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Known character sprites with their spritesheet metadata.
     // w/h = spritesheet pixel dimensions, rows/cols = animation grid.
     const SPRITE_CATALOG = [
+        { name:'Iron Man',       file:'ironman',         w:96,  h:132, rows:1, cols:1 },
+        { name:'Spider-Man',     file:'spiderman',       w:96,  h:132, rows:1, cols:1 },
+        { name:'Captain America',file:'captain_america', w:96,  h:132, rows:1, cols:1 },
+        { name:'Batman',         file:'batman',          w:96,  h:132, rows:1, cols:1 },
+        { name:'Superman',       file:'superman',        w:96,  h:132, rows:1, cols:1 },
+        { name:'Wonder Woman',   file:'wonder_woman',    w:96,  h:132, rows:1, cols:1 },
+        { name:'Thor',           file:'thor',            w:96,  h:132, rows:1, cols:1 },
         { name:'Sword',        file:'sword',        w:500,  h:500,  rows:1, cols:1 },
         { name:'Fireball',     file:'fireball_10',  w:256,  h:256,  rows:1, cols:1 },
         { name:'Chill Guy',    file:'chillguy',     w:512,  h:384,  rows:3, cols:4 },
@@ -3566,7 +3670,7 @@ function generateStepCode(currentStep) {
                 if (ui.pDownRightRow) ui.pDownRightRow.value = clamp(1);
                 if (ui.pUpLeftRow) ui.pUpLeftRow.value = clamp(2);
                 if (ui.pDownLeftRow) ui.pDownLeftRow.value = clamp(0);
-                if (ui.pDirCols && !ui.pDirCols.value) ui.pDirCols.value = 3;
+                if (ui.pDirCols) ui.pDirCols.value = Math.max(1, Math.min(3, spr.cols ?? 1));
             }
         } finally {
             state.lastEdited = 'player';
@@ -4085,15 +4189,15 @@ function generateStepCode(currentStep) {
             const ow2 = Math.max(1, overlayRect2.width  || 900);
             const oh2 = Math.max(1, overlayRect2.height || 600);
 
-            // maxHearts comes from the first attack NPC's setting (shared pool)
-            const firstMaxHearts = parseInt(attackNpcShapes[0].maxHearts) || 3;
+            // maxHearts: global setting overrides per-NPC value (shared heart pool)
+            const firstMaxHearts = parseInt(ui.globalMaxHeartsInput?.value) || parseInt(attackNpcShapes[0].maxHearts) || 3;
 
             let attackEntries = '';
             attackNpcShapes.forEach((route, i) => {
                 const npcId   = (route.id || `AttackNPC_${i + 1}`).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 const speed   = parseFloat(route.speed) || 2.0;
                 const scale   = parseInt(route.scale)   || 14;
-                const hearts  = i === 0 ? firstMaxHearts : 3;
+                const hearts  = firstMaxHearts; // same pool for all attack NPCs
                 const spFile  = route.spriteFile || 'sword';
                 const spW     = route.spriteW    || 500;
                 const spH     = route.spriteH    || 500;
@@ -5257,5 +5361,56 @@ document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
 (function() {
   const urlRoom = new URLSearchParams(location.search).get('room');
   if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom, false); mpShowRoom(urlRoom); _enableMpMode(); }
+})();
+
+// ── Left panel horizontal resize ────────────────────────────────────────────
+(function() {
+    const handle   = document.getElementById('left-panel-resize');
+    const colAsset = document.getElementById('col-asset');
+    const layout   = colAsset?.closest('.creator-layout');
+    if (!handle || !colAsset) return;
+
+    const MIN_W = 180;
+    const MAX_W = 520;
+    const STORAGE_KEY = 'gb-left-panel-width';
+
+    // Restore saved width
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        const w = parseInt(saved, 10);
+        if (w >= MIN_W && w <= MAX_W) {
+            colAsset.style.width = w + 'px';
+            colAsset.style.flex  = 'none';
+        }
+    }
+
+    let dragging = false, startX = 0, startW = 0;
+
+    handle.addEventListener('mousedown', e => {
+        dragging = true;
+        startX   = e.clientX;
+        startW   = colAsset.getBoundingClientRect().width;
+        handle.classList.add('dragging');
+        document.body.style.cursor     = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const newW = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
+        colAsset.style.width = newW + 'px';
+        colAsset.style.flex  = 'none';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        handle.classList.remove('dragging');
+        document.body.style.cursor     = '';
+        document.body.style.userSelect = '';
+        // Persist the chosen width
+        localStorage.setItem(STORAGE_KEY, parseInt(colAsset.style.width, 10));
+    });
 })();
 </script>

@@ -167,6 +167,13 @@
   flex: 1;
   overflow-y: auto;
   padding: $padding;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+
+  &::-webkit-scrollbar       { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb:hover { background: #475569; }
 }
 
 @mixin form-section-group($padding: 14px, $margin-bottom: 15px) {
