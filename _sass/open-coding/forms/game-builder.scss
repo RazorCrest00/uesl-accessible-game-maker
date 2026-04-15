@@ -11,21 +11,39 @@
 // Three-Panel Layout Mixins
 // ===========================
 
-@mixin three-panel-layout($gap: 10px, $padding: 10px, $height: 92vh) {
+@mixin three-panel-layout($gap: 10px, $padding: 10px, $height: calc(100vh - 68px)) {
   display: flex;
   gap: $gap;
   padding: $padding;
+  // 68px accounts for the site header (~62px) + a small buffer so no scrollbar appears
   height: $height;
+  max-height: $height;
   box-sizing: border-box;
+  overflow: hidden;
+
+  @media (max-width: 1200px) {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  @media (max-width: 1000px) {
+    gap: 5px;
+    padding: 5px;
+  }
 
   @media (max-width: 768px) {
     flex-direction: column;
     height: auto;
+    max-height: none;
+    overflow: visible;
+    gap: 6px;
+    padding: 6px;
   }
 }
 
 @mixin asset-panel($flex-basis: 20%) {
-  flex: 0 0 $flex-basis;
+  // clamp keeps the panel at 20% of container but never below 165px or above 300px
+  flex: 0 0 clamp(165px, #{$flex-basis}, 300px);
   display: flex;
   flex-direction: column;
 
@@ -40,11 +58,12 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   position: relative;
 
   @media (max-width: 768px) {
     flex: none;
-    min-height: 600px;
+    min-height: 70vh;
   }
 }
 
@@ -56,6 +75,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;    // let flex children shrink below content size
+
+  @media (max-width: 1000px) {
+    border-radius: 8px;
+  }
 }
 
 @mixin panel-header-bar($padding: 16px) {
@@ -64,11 +88,19 @@
   border-bottom: 1px solid rgba(255,255,255,0.1);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.9em;
-  letter-spacing: 1px;
+  font-size: clamp(0.72em, 0.9vw, 0.9em);
+  letter-spacing: clamp(0.3px, 0.08em, 1px);
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  @media (max-width: 1200px) {
+    padding: 12px 14px;
+  }
+
+  @media (max-width: 1000px) {
+    padding: 8px 10px;
+  }
 }
 
 @mixin view-mode-controls {
@@ -79,6 +111,12 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 4px;
+
+  @media (max-width: 1000px) {
+    margin-bottom: 6px;
+    padding: 3px;
+    gap: 3px;
+  }
 
   @media (max-width: 768px) {
     display: none;
@@ -93,11 +131,20 @@
   background: transparent;
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  font-size: 0.78em;
+  font-size: clamp(0.68em, 0.8vw, 0.78em);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   transition: all 0.18s ease;
+
+  @media (max-width: 1200px) {
+    padding: 6px 10px;
+  }
+
+  @media (max-width: 1000px) {
+    padding: 5px 7px;
+    letter-spacing: 0.03em;
+  }
 
   &.active {
     background: var(--pref-accent-color, #4CAFEF);
@@ -130,14 +177,18 @@
   padding: 20px;
   box-sizing: border-box;
   font-family: 'Fira Code', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: clamp(10px, 1.05vw, 13px);
+  line-height: clamp(16px, 1.65vw, 20px);
   border: none;
   resize: none;
   outline: none;
   z-index: 2;
   white-space: pre;
   overflow: auto;
+
+  @media (max-width: 1000px) {
+    padding: 12px;
+  }
 }
 
 @mixin code-highlight-layer {
@@ -150,6 +201,10 @@
   box-sizing: border-box;
   pointer-events: none;
   z-index: 1;
+
+  @media (max-width: 1000px) {
+    padding: 12px;
+  }
 }
 
 @mixin preview-frame {
@@ -170,6 +225,14 @@
   scrollbar-width: thin;
   scrollbar-color: #334155 transparent;
 
+  @media (max-width: 1200px) {
+    padding: 11px;
+  }
+
+  @media (max-width: 1000px) {
+    padding: 8px;
+  }
+
   &::-webkit-scrollbar       { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -182,15 +245,30 @@
   border-radius: 8px;
   padding: $padding;
   margin-bottom: $margin-bottom;
+
+  @media (max-width: 1200px) {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  @media (max-width: 1000px) {
+    padding: 7px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+  }
 }
 
 @mixin section-group-title {
-  font-size: 0.8em;
+  font-size: clamp(0.72em, 0.85vw, 0.8em);
   font-weight: bold;
   margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  @media (max-width: 1000px) {
+    margin-bottom: 8px;
+  }
 }
 
 @mixin icon-button-tooltip($size: 32px) {
@@ -220,12 +298,13 @@
 
 .gamebuilder-title {
   text-align: center;
-  font-size: 2em;
+  font-size: clamp(1.1em, 2.5vw, 2em);
   font-weight: bold;
-  letter-spacing: 2px;
+  letter-spacing: clamp(0.5px, 0.2vw, 2px);
 
   @media (max-width: 768px) {
-    font-size: 1.2em;
+    font-size: 1.1em;
+    letter-spacing: 0.5px;
   }
 }
 
@@ -294,6 +373,10 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+
+  @media (max-width: 1000px) {
+    gap: 6px;
+  }
 }
 
 .glass-panel {
@@ -308,10 +391,26 @@
   display: flex;
   gap: 8px;
   align-items: center;
+
+  @media (max-width: 1000px) {
+    gap: 5px;
+  }
 }
 
 .icon-btn {
   @include icon-button-tooltip;
+
+  @media (max-width: 1200px) {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 5px !important;
+  }
+
+  @media (max-width: 1000px) {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 3px !important;
+  }
 
   &.staged {
     box-shadow: 0 0 10px rgba(0,200,0,0.9);
@@ -320,7 +419,7 @@
 }
 
 .step-indicator {
-  font-size: 11px;
+  font-size: clamp(9px, 0.9vw, 11px);
   color: var(--text-muted);
   margin-right: 4px;
 }
@@ -347,17 +446,21 @@
 .creator-layout {
   label {
     display: block;
-    font-size: 0.7em;
+    font-size: clamp(0.62em, 0.75vw, 0.7em);
     margin-bottom: 5px;
+
+    @media (max-width: 1000px) {
+      margin-bottom: 3px;
+    }
   }
 
   select,
   input {
     width: 100%;
-    padding: 8px !important;
+    padding: clamp(4px, 0.5vw, 8px) !important;
     border-radius: 4px;
-    font-size: 0.85em;
-    margin-bottom: 10px;
+    font-size: clamp(0.75em, 0.9vw, 0.85em);
+    margin-bottom: clamp(5px, 0.7vw, 10px);
     color: var(--pref-text-color, #fff);
     background: var(--pref-bg-color, #000);
     border: 1px solid rgba(255,255,255,0.2);
@@ -382,7 +485,7 @@
 
 .creator-layout {
   .btn {
-    padding: 12px;
+    padding: clamp(7px, 0.8vw, 12px);
     border-radius: 6px;
     border: none;
     background: var(--pref-bg-color);
@@ -392,7 +495,7 @@
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
-    font-size: 0.85em;
+    font-size: clamp(0.75em, 0.85vw, 0.85em);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -407,7 +510,11 @@
   .btn-sm {
     padding: 6px;
     border-radius: 4px;
-    font-size: 0.7em;
+    font-size: clamp(0.62em, 0.72vw, 0.7em);
+
+    @media (max-width: 1000px) {
+      padding: 4px;
+    }
   }
 
   .btn-confirm {
@@ -436,7 +543,7 @@
   padding: 12px;
   max-width: 300px;
   z-index: 100;
-  font-size: 0.85em;
+  font-size: clamp(0.75em, 0.85vw, 0.85em);
   line-height: 1.4;
 
   &.active {
@@ -539,6 +646,11 @@
   padding: 10px;
   border-radius: 8px;
   background: rgba(0,0,0,0.08);
+
+  @media (max-width: 1000px) {
+    padding: 7px;
+    margin-top: 5px;
+  }
 }
 
 .wall-fields {

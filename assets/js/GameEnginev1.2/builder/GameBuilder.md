@@ -39,9 +39,16 @@ permalink: /gamebuilderv1-2
 <!-- Minimal page-specific overrides only -->
 <style>
 /* Remove default page wrapper constraints for full-width layout */
+.page-content {
+  padding: 0 !important;
+  overflow: hidden;
+}
 .page-content .wrapper {
   max-width: 100% !important;
   padding: 0 !important;
+}
+.opencs_root {
+  overflow: hidden;
 }
 
 /* ── Draw overlay: visual layer on top of the game frame ── */
@@ -80,7 +87,7 @@ permalink: /gamebuilderv1-2
 .draw-toolbar { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 .draw-btn {
   padding: 6px 10px;
-  font-size: 0.78rem;
+  font-size: clamp(0.68rem, 0.8vw, 0.78rem);
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 7px;
@@ -89,6 +96,13 @@ permalink: /gamebuilderv1-2
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   text-align: left;
   width: 100%;
+}
+@media (max-width: 1200px) {
+  .draw-btn { padding: 5px 8px; }
+}
+@media (max-width: 1000px) {
+  .draw-btn { padding: 4px 7px; font-size: 0.68rem; }
+  .draw-toolbar { gap: 3px; }
 }
 .draw-btn:hover { background: #273449; color: #e2e8f0; }
 .draw-btn.active { background: #312e81; border-color: #6366f1; color: #a5b4fc; }
@@ -99,6 +113,9 @@ permalink: /gamebuilderv1-2
 }
 .draw-btn-pair .draw-btn { flex: 1; }
 .draw-btn-pair .draw-btn.finish-btn { flex: 0 0 auto; width: auto; padding: 6px 10px; }
+@media (max-width: 1000px) {
+  .draw-btn-pair .draw-btn.finish-btn { padding: 4px 7px; }
+}
 /* Danger / clear button */
 .draw-btn.draw-btn-danger {
   border-color: #4c1d1d;
@@ -107,7 +124,7 @@ permalink: /gamebuilderv1-2
 .draw-btn.draw-btn-danger:hover { background: #3b0e0e; border-color: #ef4444; color: #fca5a5; }
 /* Section divider label inside toolbar */
 .draw-section-label {
-  font-size: 0.67rem;
+  font-size: clamp(0.58rem, 0.65vw, 0.67rem);
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: #475569;
@@ -117,6 +134,9 @@ permalink: /gamebuilderv1-2
   margin-top: 2px;
 }
 .draw-section-label:first-child { border-top: none; padding-top: 2px; }
+@media (max-width: 1000px) {
+  .draw-section-label { padding: 4px 2px 1px; margin-top: 1px; }
+}
 
 /* ── Left panel resize handle ───────────────────────────────────────────── */
 .col-asset { position: relative; }
@@ -261,13 +281,17 @@ permalink: /gamebuilderv1-2
   border-radius: 7px 7px 0 0;
   border-bottom: none;
   color: #94a3b8;
-  font-size: 0.75rem;
+  font-size: clamp(0.65rem, 0.75vw, 0.75rem);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s, color 0.12s;
   user-select: none;
   min-width: 0;
   flex-shrink: 0;
+}
+@media (max-width: 1000px) {
+  .level-tab { padding: 3px 7px; gap: 3px; }
+  .level-tabs-bar { padding: 4px 6px 0; gap: 3px; }
 }
 .level-tab:hover { background: #273449; color: #e2e8f0; }
 .level-tab.active {
@@ -5370,19 +5394,36 @@ document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
     const layout   = colAsset?.closest('.creator-layout');
     if (!handle || !colAsset) return;
 
-    const MIN_W = 180;
-    const MAX_W = 520;
+    const MIN_W      = 165;
+    const MAX_W      = 520;
     const STORAGE_KEY = 'gb-left-panel-width';
 
-    // Restore saved width
+    // Returns the maximum width the panel should occupy given current window size
+    // (cap at 40% of the layout width so the right panel always has room)
+    function maxAllowed() {
+        const layoutW = layout ? layout.getBoundingClientRect().width : window.innerWidth;
+        return Math.min(MAX_W, Math.floor(layoutW * 0.40));
+    }
+
+    // Apply a width, clamping it to the current window-based limit
+    function applyWidth(w) {
+        const clamped = Math.min(maxAllowed(), Math.max(MIN_W, w));
+        colAsset.style.width = clamped + 'px';
+        colAsset.style.flex  = 'none';
+        return clamped;
+    }
+
+    // Restore saved width (clamped to current window)
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         const w = parseInt(saved, 10);
-        if (w >= MIN_W && w <= MAX_W) {
-            colAsset.style.width = w + 'px';
-            colAsset.style.flex  = 'none';
-        }
+        if (w >= MIN_W) applyWidth(w);
     }
+
+    // Re-clamp on window resize so the panel never overflows
+    window.addEventListener('resize', () => {
+        if (colAsset.style.width) applyWidth(parseInt(colAsset.style.width, 10));
+    });
 
     let dragging = false, startX = 0, startW = 0;
 
@@ -5398,9 +5439,7 @@ document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
 
     document.addEventListener('mousemove', e => {
         if (!dragging) return;
-        const newW = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
-        colAsset.style.width = newW + 'px';
-        colAsset.style.flex  = 'none';
+        applyWidth(startW + (e.clientX - startX));
     });
 
     document.addEventListener('mouseup', () => {
@@ -5409,7 +5448,6 @@ document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
         handle.classList.remove('dragging');
         document.body.style.cursor     = '';
         document.body.style.userSelect = '';
-        // Persist the chosen width
         localStorage.setItem(STORAGE_KEY, parseInt(colAsset.style.width, 10));
     });
 })();
