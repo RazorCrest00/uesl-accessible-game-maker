@@ -53,36 +53,15 @@ class AttackNpc extends Npc {
     // ─── styles ──────────────────────────────────────────────────────────────
 
     _injectStyles() {
-        if (document.getElementById('attack-npc-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'attack-npc-styles';
-        style.textContent = `
-            #uesl-heart-hud {
-                position: fixed;
-                top: 16px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 1.8rem;
-                z-index: 9999;
-                pointer-events: none;
-                text-shadow: 0 2px 6px rgba(0,0,0,.6);
-                letter-spacing: 4px;
-            }
-        `;
-        document.head.appendChild(style);
+        // Styles are no longer needed — the HUD is a static span in the panel header
     }
 
     // ─── heart HUD ───────────────────────────────────────────────────────────
 
     _initHeartHUD() {
-        // Reuse an existing HUD (UESLCoach or prior AttackNpc may have created it)
-        let hud = document.getElementById('uesl-heart-hud');
-        if (!hud) {
-            hud = document.createElement('div');
-            hud.id = 'uesl-heart-hud';
-            document.body.appendChild(hud);
-        }
-        this._heartHUD = hud;
+        // The HUD span is baked into the "Game Viewer" panel header in the HTML.
+        // Just grab it — no dynamic creation needed.
+        this._heartHUD = document.getElementById('uesl-heart-hud');
     }
 
     _renderHearts() {
@@ -178,8 +157,8 @@ class AttackNpc extends Npc {
     _onGameOver() {
         this._stopFlash();
 
-        // Remove HUD immediately so it doesn't flash the wrong state
-        this._heartHUD?.remove();
+        // Clear hearts display on game over (span stays, just blank it)
+        if (this._heartHUD) this._heartHUD.textContent = '';
         this._heartHUD = null;
 
         // Reset shared state so next level run starts fresh
@@ -208,8 +187,8 @@ class AttackNpc extends Npc {
         _caughtHandled    = false;
         if (_flashInterval) { clearInterval(_flashInterval); _flashInterval = null; }
 
-        // Remove the HUD so it doesn't linger after the game stops
-        this._heartHUD?.remove();
+        // Clear the heart display (the span stays in the DOM, just blank it)
+        if (this._heartHUD) this._heartHUD.textContent = '';
         this._heartHUD = null;
 
         super.destroy();

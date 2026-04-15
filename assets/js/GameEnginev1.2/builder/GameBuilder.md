@@ -547,7 +547,10 @@ permalink: /gamebuilderv1-2
         <div class="main-content">
             <!-- game panel + drawing overlay -->
             <div class="glass-panel panel-game">
-                <div class="panel-header">Game Viewer</div>
+                <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <span>Game Viewer</span>
+                    <span id="uesl-heart-hud" style="font-size:1.3rem;letter-spacing:3px;pointer-events:none;"></span>
+                </div>
                 <div class="game-frame">
                     <div class="game-output"
                         id="game-output-builder">
