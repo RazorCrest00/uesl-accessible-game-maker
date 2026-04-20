@@ -433,9 +433,15 @@ permalink: /gamebuilderv1-2
                         <option value="wonder_woman">Wonder Woman</option>
                         <option value="thor">Thor</option>
                         </optgroup>
-                        <optgroup label="Other">
                         <option value="chillguy">Chill Guy</option>
                         <option value="tux">Tux</option>
+                        <optgroup label="Pokémon">
+                        <option value="pikachu">Pikachu</option>
+                        <option value="charizard">Charizard</option>
+                        <option value="mewtwo">Mewtwo</option>
+                        <option value="eevee">Eevee</option>
+                        <option value="gengar">Gengar</option>
+                        <option value="lucario">Lucario</option>
                         </optgroup>
                     </select>
                     <div class="upload-instructions" style="margin-top:6px;">
@@ -838,9 +844,27 @@ document.addEventListener('DOMContentLoaded', () => {
             maze: { type: 'maze', h: 600, w: 900 }
         },
         sprites: {
-            tux: { src: "/images/gamify/tux.png", h:256, w:352, rows:8, cols:11 },
-            chillguy: { src: "/images/gamify/chillguy.png", h:512, w:384, rows:4, cols:3 },
-            r2d2: { src: "/images/gamify/r2_idle.png", h:223, w:505, rows:1, cols:3 }
+            // Adventure
+            chillguy:        { src: "/images/gamify/chillguy.png",           h:384, w:512,  rows:3, cols:4 },
+            tux:             { src: "/images/gamify/tux.png",                h:256, w:352,  rows:8, cols:11 },
+            r2d2:            { src: "/images/gamify/r2_idle.png",            h:223, w:505,  rows:1, cols:3 },
+            octocat:         { src: "/images/gamify/octocat.png",            h:301, w:801,  rows:1, cols:9 },
+            robot:           { src: "/images/gamify/robot.png",              h:316, w:627,  rows:3, cols:6 },
+            // Superheroes
+            ironman:         { src: "/images/gamify/ironman.png",            h:132, w:96,   rows:1, cols:1 },
+            spiderman:       { src: "/images/gamify/spiderman.png",          h:132, w:96,   rows:1, cols:1 },
+            captain_america: { src: "/images/gamify/captain_america.png",    h:132, w:96,   rows:1, cols:1 },
+            batman:          { src: "/images/gamify/batman.png",             h:132, w:96,   rows:1, cols:1 },
+            superman:        { src: "/images/gamify/superman.png",           h:132, w:96,   rows:1, cols:1 },
+            wonder_woman:    { src: "/images/gamify/wonder_woman.png",       h:132, w:96,   rows:1, cols:1 },
+            thor:            { src: "/images/gamify/thor.png",               h:132, w:96,   rows:1, cols:1 },
+            // Pokémon
+            pikachu:         { src: "/images/gamify/pokemon/pikachu.png",   h:475, w:475,  rows:1, cols:1 },
+            charizard:       { src: "/images/gamify/pokemon/charizard.png", h:475, w:475,  rows:1, cols:1 },
+            mewtwo:          { src: "/images/gamify/pokemon/mewtwo.png",    h:475, w:475,  rows:1, cols:1 },
+            eevee:           { src: "/images/gamify/pokemon/eevee.png",     h:475, w:475,  rows:1, cols:1 },
+            gengar:          { src: "/images/gamify/pokemon/gengar.png",    h:475, w:475,  rows:1, cols:1 },
+            lucario:         { src: "/images/gamify/pokemon/lucario.png",   h:475, w:475,  rows:1, cols:1 },
         }
     };
     const GB_BG_DIRS = ['/images/gamebuilder/bg'];
@@ -1485,29 +1509,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // Known character sprites with their spritesheet metadata.
     // w/h = spritesheet pixel dimensions, rows/cols = animation grid.
     const SPRITE_CATALOG = [
-        { name:'Iron Man',       file:'ironman',         w:96,  h:132, rows:1, cols:1 },
-        { name:'Spider-Man',     file:'spiderman',       w:96,  h:132, rows:1, cols:1 },
-        { name:'Captain America',file:'captain_america', w:96,  h:132, rows:1, cols:1 },
-        { name:'Batman',         file:'batman',          w:96,  h:132, rows:1, cols:1 },
-        { name:'Superman',       file:'superman',        w:96,  h:132, rows:1, cols:1 },
-        { name:'Wonder Woman',   file:'wonder_woman',    w:96,  h:132, rows:1, cols:1 },
-        { name:'Thor',           file:'thor',            w:96,  h:132, rows:1, cols:1 },
-        { name:'Sword',        file:'sword',        w:500,  h:500,  rows:1, cols:1 },
-        { name:'Fireball',     file:'fireball_10',  w:256,  h:256,  rows:1, cols:1 },
-        { name:'Chill Guy',    file:'chillguy',     w:512,  h:384,  rows:3, cols:4 },
-        { name:'R2D2',         file:'r2_idle',      w:505,  h:223,  rows:1, cols:3 },
-        { name:'Tux',          file:'tux',          w:256,  h:352,  rows:4, cols:2 },
-        { name:'Alex',         file:'Alex',         w:128,  h:256,  rows:4, cols:2 },
-        { name:'Octocat',      file:'octocat',      w:801,  h:301,  rows:1, cols:3 },
-        { name:'Creeper',      file:'creepa',       w:1600, h:1200, rows:6, cols:8 },
-        { name:'Enderman',     file:'enderman',     w:574,  h:1504, rows:8, cols:2 },
-        { name:'Chicken',      file:'chicken',      w:400,  h:400,  rows:2, cols:2 },
-        { name:'Hist. Prof',   file:'historyProf',  w:559,  h:263,  rows:1, cols:3 },
-        { name:'Sinatra',      file:'frankSinatra', w:280,  h:281,  rows:1, cols:1 },
-        { name:'Miku',         file:'miku',         w:189,  h:316,  rows:4, cols:1 },
-        { name:'Robot',        file:'robot',        w:627,  h:316,  rows:3, cols:6 },
-        { name:'Nezuko',       file:'nezuko',       w:189,  h:316,  rows:4, cols:1 },
-        { name:'Villager',     file:'villager',     w:700,  h:1400, rows:4, cols:1 },
+        // ── Superheroes ──
+        { name:'Iron Man',        file:'ironman',           w:96,  h:132, rows:1, cols:1 },
+        { name:'Spider-Man',      file:'spiderman',         w:96,  h:132, rows:1, cols:1 },
+        { name:'Captain America', file:'captain_america',   w:96,  h:132, rows:1, cols:1 },
+        { name:'Batman',          file:'batman',            w:96,  h:132, rows:1, cols:1 },
+        { name:'Superman',        file:'superman',          w:96,  h:132, rows:1, cols:1 },
+        { name:'Wonder Woman',    file:'wonder_woman',      w:96,  h:132, rows:1, cols:1 },
+        { name:'Thor',            file:'thor',              w:96,  h:132, rows:1, cols:1 },
+        // ── Pokémon ──
+        { name:'Pikachu',         file:'pokemon/pikachu',   w:475, h:475, rows:1, cols:1 },
+        { name:'Charizard',       file:'pokemon/charizard', w:475, h:475, rows:1, cols:1 },
+        { name:'Mewtwo',          file:'pokemon/mewtwo',    w:475, h:475, rows:1, cols:1 },
+        { name:'Eevee',           file:'pokemon/eevee',     w:475, h:475, rows:1, cols:1 },
+        { name:'Gengar',          file:'pokemon/gengar',    w:475, h:475, rows:1, cols:1 },
+        { name:'Lucario',         file:'pokemon/lucario',   w:475, h:475, rows:1, cols:1 },
+        // ── Adventure / Tech ──
+        { name:'Chill Guy',       file:'chillguy',          w:512, h:384, rows:3, cols:4 },
+        { name:'R2D2',            file:'r2_idle',           w:505, h:223, rows:1, cols:3 },
+        { name:'Tux',             file:'tux',               w:352, h:256, rows:8, cols:11 },
+        { name:'Alex',            file:'Alex',              w:128, h:256, rows:1, cols:1 },
+        { name:'Octocat',         file:'octocat',           w:801, h:301, rows:1, cols:9 },
+        { name:'Robot',           file:'robot',             w:627, h:316, rows:3, cols:6 },
+        { name:'Miku',            file:'miku',              w:189, h:316, rows:4, cols:1 },
+        { name:'Nezuko',          file:'nezuko',            w:189, h:316, rows:4, cols:1 },
+        // ── Other ──
+        { name:'Sword',           file:'sword',             w:500, h:500, rows:1, cols:1 },
+        { name:'Fireball',        file:'fireball_10',       w:256, h:256, rows:1, cols:1 },
+        { name:'Creeper',         file:'creepa',            w:1600,h:1200,rows:6, cols:8 },
+        { name:'Enderman',        file:'enderman',          w:574, h:1504,rows:8, cols:2 },
+        { name:'Chicken',         file:'chicken',           w:400, h:400, rows:2, cols:2 },
+        { name:'Hist. Prof',      file:'historyProf',       w:559, h:263, rows:1, cols:3 },
+        { name:'Sinatra',         file:'frankSinatra',      w:280, h:281, rows:1, cols:1 },
+        { name:'Villager',        file:'villager',          w:700, h:1400,rows:4, cols:1 },
     ];
 
     /** Render a sprite-picker grid HTML string for use inside an editor panel. */

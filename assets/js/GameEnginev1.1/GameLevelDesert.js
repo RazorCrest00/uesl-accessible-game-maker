@@ -34,17 +34,16 @@ class GameLevelDesert {
    };
 
 
-   // Player data for Chillguy
-   const sprite_src_chillguy = path + "/images/gamify/chillguy.png"; // be sure to include the path
+   // Default player — overridden below if a character was selected
    const CHILLGUY_SCALE_FACTOR = 5;
    const sprite_data_chillguy = {
        id: 'Chill Guy',
        greeting: "Hi I am Chill Guy, the desert wanderer. I am looking for wisdom and adventure!",
-       src: sprite_src_chillguy,
+       src: path + "/images/gamify/chillguy.png",
        SCALE_FACTOR: CHILLGUY_SCALE_FACTOR,
        STEP_FACTOR: 1000,
        ANIMATION_RATE: 50,
-       INIT_POSITION: { x: 0.0, y: 0.9 },  // 0% from left, 90% from top (near bottom)
+       INIT_POSITION: { x: 0.0, y: 0.9 },
        pixels: {height: 384, width: 512},
        orientation: {rows: 3, columns: 4 },
        down: {row: 0, start: 0, columns: 3 },
@@ -56,8 +55,21 @@ class GameLevelDesert {
        upLeft: {row: 2, start: 0, columns: 3, rotate: Math.PI/16 },
        upRight: {row: 1, start: 0, columns: 3, rotate: -Math.PI/16 },
        hitbox: { widthPercentage: 0.45, heightPercentage: 0.4 },
-       keypress: { up: 87, left: 65, down: 83, right: 68 } // W, A, S, D
+       keypress: { up: 87, left: 65, down: 83, right: 68 }
    };
+
+   // Override with character chosen on the select screen (if any)
+   let sprite_data_player = sprite_data_chillguy;
+   try {
+       const saved = localStorage.getItem('selectedCharacter');
+       if (saved) {
+           const parsed = JSON.parse(saved);
+           if (parsed && parsed.src) {
+               parsed.src = parsed.src.replace(/^.*\/images\/gamify\//, path + '/images/gamify/');
+           }
+           sprite_data_player = Object.assign({ keypress: { up: 87, left: 65, down: 83, right: 68 } }, parsed);
+       }
+   } catch (_) {}
 
 
    const sprite_data_coin = {
@@ -938,7 +950,7 @@ class GameLevelDesert {
 // List of objects defnitions for this level
      this.classes = [
          { class: GamEnvBackground, data: image_data_desert },
-         { class: Player, data: sprite_data_chillguy },
+         { class: Player, data: sprite_data_player },
          { class: Coin, data: sprite_data_coin },
          { class: Clicker, data: sprite_data_clicker },
          { class: Npc, data: sprite_data_tux },

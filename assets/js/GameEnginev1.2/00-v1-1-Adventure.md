@@ -4,41 +4,46 @@ title: Adventure Game
 permalink: /gamify/adventureGamev1-1
 ---
 
-<div id="gameContainer">
+<!-- Character selection screen (shown first) -->
+<div id="characterSelectContainer"></div>
+
+<!-- Game (hidden until character is chosen) -->
+<div id="gameContainer" style="display:none">
     <div id="promptDropDown" class="promptDropDown" style="z-index: 9999"></div>
     <canvas id='gameCanvas'></canvas>
 </div>
 
 <script type="module">
-
-    // Adnventure Game assets locations
-    import Game from "{{site.baseurl}}/assets/js/GameEnginev1.1/essentials/Game.js";
-    import GameLevelWater from "{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelWater.js";
-    import GameLevelDesert from "{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelDesert.js";
-    import GameLevelEnd from "{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelEnd.js";
-    import GameLevelOverworld from "{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelOverworld.js";
-    import Leaderboard from "{{site.baseurl}}/assets/js/GameEnginev1.1/essentials/Leaderboard.js";
+    import CharacterSelect from '{{site.baseurl}}/assets/js/GameEnginev1.2/essentials/CharacterSelect.js';
+    import Game from '{{site.baseurl}}/assets/js/GameEnginev1.1/essentials/Game.js';
+    import GameLevelWater from '{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelWater.js';
+    import GameLevelDesert from '{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelDesert.js';
+    import GameLevelEnd from '{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelEnd.js';
+    import GameLevelOverworld from '{{site.baseurl}}/assets/js/GameEnginev1.1/GameLevelOverworld.js';
+    import Leaderboard from '{{site.baseurl}}/assets/js/GameEnginev1.1/essentials/Leaderboard.js';
     import { pythonURI, javaURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
 
-    const gameLevelClasses = [ GameLevelDesert, GameLevelWater, GameLevelEnd, GameLevelOverworld ];
+    const selectContainer = document.getElementById('characterSelectContainer');
+    const gameContainer   = document.getElementById('gameContainer');
 
-    // Web Server Environment data
-    const environment = {
-        path:"{{site.baseurl}}",
-        pythonURI: pythonURI,
-        javaURI: javaURI,
-        fetchOptions: fetchOptions,
-        gameContainer: document.getElementById("gameContainer"),
-        gameCanvas: document.getElementById("gameCanvas"),
-        gameLevelClasses: gameLevelClasses,
-        leaderboardClass: Leaderboard,
-        leaderboardOptions: {
-            // Change to 'on' to show leaderboard by default.
-            initialVisibility: 'off'
+    new CharacterSelect(selectContainer, {
+        path: '{{site.baseurl}}',
+        onSelect: (characterData) => {
+            localStorage.setItem('selectedCharacter', JSON.stringify(characterData));
+            selectContainer.style.display = 'none';
+            gameContainer.style.display   = 'block';
+
+            Game.main({
+                path: '{{site.baseurl}}',
+                pythonURI:    pythonURI,
+                javaURI:      javaURI,
+                fetchOptions: fetchOptions,
+                gameContainer: gameContainer,
+                gameCanvas:    document.getElementById('gameCanvas'),
+                gameLevelClasses: [GameLevelDesert, GameLevelWater, GameLevelEnd, GameLevelOverworld],
+                leaderboardClass: Leaderboard,
+                leaderboardOptions: { initialVisibility: 'off' },
+            });
         }
-
-    }
-    // Launch Adventure Game and keep the returned Game instance
-    const game = Game.main(environment);
-
+    });
 </script>

@@ -1,0 +1,238 @@
+/* ────────────────────────────────────────────────────────────────────────────
+   character-select.css  –  Character selection screen styles
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Screen wrapper ────────────────────────────────────────────────────────── */
+.cs-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background: linear-gradient(160deg, #0d0d1a 0%, #0a1628 60%, #0d0d1a 100%);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e8e8f0;
+    box-sizing: border-box;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.cs-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.cs-title {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.4rem;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.cs-subtitle {
+    margin: 0;
+    font-size: 1rem;
+    color: #94a3b8;
+}
+
+/* ── Categories container ──────────────────────────────────────────────────── */
+.cs-categories {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* ── Single category accordion ─────────────────────────────────────────────── */
+.cs-category {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.cs-category--open {
+    border-color: rgba(167, 139, 250, 0.4);
+}
+
+/* ── Category header button ─────────────────────────────────────────────────── */
+.cs-category-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #e8e8f0;
+    text-align: left;
+    transition: background 0.2s;
+}
+
+.cs-category-header:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.cs-category-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.cs-category-label {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.cs-category-count {
+    font-size: 0.8rem;
+    background: rgba(167, 139, 250, 0.2);
+    color: #a78bfa;
+    border-radius: 999px;
+    padding: 0.15em 0.6em;
+    font-weight: 600;
+}
+
+.cs-category-chevron {
+    font-size: 0.75rem;
+    color: #64748b;
+    transition: transform 0.2s;
+}
+
+.cs-category--open .cs-category-chevron {
+    transform: rotate(90deg);
+}
+
+/* ── Collapsible body ────────────────────────────────────────────────────────── */
+.cs-category-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease;
+}
+
+.cs-category-body--open {
+    max-height: 800px;
+    padding: 0.25rem 1rem 1rem;
+}
+
+/* ── Character card grid ─────────────────────────────────────────────────────── */
+.cs-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+/* ── Individual character card ────────────────────────────────────────────────── */
+.cs-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    user-select: none;
+}
+
+.cs-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(96, 165, 250, 0.08);
+    box-shadow: 0 4px 16px rgba(96, 165, 250, 0.15);
+}
+
+.cs-card--selected {
+    border-color: #a78bfa;
+    background: rgba(167, 139, 250, 0.15);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3), 0 4px 20px rgba(167, 139, 250, 0.2);
+}
+
+.cs-card--selected:hover {
+    border-color: #c4b5fd;
+}
+
+/* ── Card image ──────────────────────────────────────────────────────────────── */
+.cs-card-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+    transition: transform 0.15s;
+}
+
+.cs-card:hover .cs-card-img {
+    transform: scale(1.1);
+}
+
+.cs-card--selected .cs-card-img {
+    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.7));
+}
+
+/* ── Card label ──────────────────────────────────────────────────────────────── */
+.cs-card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    text-align: center;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cs-card--selected .cs-card-label {
+    color: #c4b5fd;
+}
+
+/* ── Play button ─────────────────────────────────────────────────────────────── */
+.cs-play-btn {
+    margin-top: 2.5rem;
+    padding: 0.85rem 3.5rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(124, 58, 237, 0.5);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+
+.cs-play-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.65);
+    filter: brightness(1.1);
+}
+
+.cs-play-btn:active {
+    transform: scale(0.98);
+}
+
+/* ── Responsive tweaks ───────────────────────────────────────────────────────── */
+@media (max-width: 500px) {
+    .cs-card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    }
+
+    .cs-card-img {
+        width: 56px;
+        height: 56px;
+    }
+}
