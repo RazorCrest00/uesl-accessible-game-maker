@@ -680,6 +680,7 @@ permalink: /gamebuilderv1-2
                         <button id="btn-code-play" class="icon-btn" data-tooltip="Run Code">▶</button>
                         <button id="btn-code-stop" class="icon-btn" data-tooltip="Stop Game">■</button>
                         <button id="btn-export" class="icon-btn" data-tooltip="Export Code">⤓</button>
+                        <button id="gb-save-btn" title="Save / Load Games" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.85rem;">💾</button>
                         <button id="gb-mp-btn" title="Multiplayer" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.85rem;">👥</button>
                     </div>
                 </div>
@@ -695,6 +696,47 @@ permalink: /gamebuilderv1-2
             </div>
         </div>
     </div>
+</div>
+
+<!-- My Games Modal -->
+<div id="gb-save-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="position:relative;background:linear-gradient(160deg,#0f1729 0%,#0e1117 100%);border:1px solid #334455;border-radius:18px;padding:28px 28px 24px;min-width:340px;max-width:480px;width:92%;color:#e2e8f0;font-family:sans-serif;box-shadow:0 24px 60px rgba(0,0,0,.7);">
+    <button id="gb-save-close" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,.07);border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;">×</button>
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+      <div style="width:38px;height:38px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">💾</div>
+      <div>
+        <h3 style="margin:0;color:#7dd3fc;font-size:1.05rem;">My Games</h3>
+        <div style="font-size:.72rem;color:#64748b;">Save &amp; load your game projects</div>
+      </div>
+    </div>
+
+    <!-- Not logged in notice -->
+    <div id="gb-save-login-msg" style="display:none;background:#1e2030;border:1px solid #f59e0b;border-radius:10px;padding:14px 16px;font-size:.85rem;color:#fbbf24;text-align:center;margin-bottom:12px;">
+      ⚠ You must be logged in to save or load games.<br>
+      <a href="https://uesl.opencodingsociety.com/login" target="_blank" rel="noopener" style="color:#60a5fa;margin-top:6px;display:inline-block;">Log in to UESL →</a>
+    </div>
+
+    <!-- Save current game -->
+    <div id="gb-save-form" style="display:none;margin-bottom:16px;">
+      <div style="display:flex;gap:8px;">
+        <input id="gb-save-name" placeholder="Game name…" maxlength="120"
+          style="flex:1;padding:9px 12px;background:#1a2035;border:1px solid #2d3a55;border-radius:9px;color:#e2e8f0;font-size:.9rem;outline:none;">
+        <button id="gb-save-confirm" style="padding:9px 16px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:9px;color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;white-space:nowrap;">Save</button>
+      </div>
+      <div id="gb-save-status" style="min-height:18px;font-size:.78rem;color:#64748b;margin-top:5px;"></div>
+    </div>
+
+    <!-- Saved games list -->
+    <div id="gb-save-list-wrap" style="display:none;">
+      <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Saved Games</div>
+      <div id="gb-save-list" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;"></div>
+      <p id="gb-save-empty" style="display:none;font-size:.82rem;color:#475569;margin:8px 0 0;text-align:center;">No saved games yet. Build something and hit Save!</p>
+    </div>
+
+    <div id="gb-save-loading" style="display:none;font-size:.85rem;color:#64748b;text-align:center;padding:16px 0;">Loading…</div>
+  </div>
 </div>
 
 <!-- Multiplayer Modal -->
@@ -4824,6 +4866,17 @@ function generateStepCode(currentStep) {
         } catch (_) {}
         return ui.editor.value || '';
     };
+
+    // Expose level state for the save/load module
+    window.__gb_getLevels  = () => _levels;
+    window.__gb_loadLevels = function(data) {
+        if (!Array.isArray(data) || data.length === 0) return;
+        _levels = data;
+        _activeLevel = 0;
+        _restoreLevelState(_levels[0]);
+        _saveLevels();
+        _renderLevelTabs();
+    };
 });
 </script>
 
@@ -5069,12 +5122,230 @@ function _createRemoteOverlay(isHost) {
   _renderLoop();
 }
 
+// ── Shared backend URI (used by save/load and multiplayer) ───────────────────
+const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
+
+// ── Save / Load games ────────────────────────────────────────────────────────
+(function () {
+  const API = PYTHON_URI + '/api/gamebuilder';
+
+  async function apiGetUser() {
+    try {
+      const r = await fetch(PYTHON_URI + '/api/id', { credentials: 'include' });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d && d.id ? d : null;
+    } catch (_) { return null; }
+  }
+
+  async function apiList() {
+    const r = await fetch(API, { credentials: 'include' });
+    if (!r.ok) throw new Error(await apiErrorMsg(r));
+    return r.json();
+  }
+
+  async function apiErrorMsg(r) {
+    try { const d = await r.json(); return `HTTP ${r.status}: ${d.message || d.error || JSON.stringify(d)}`; }
+    catch (_) { return `HTTP ${r.status}`; }
+  }
+
+  async function apiSave(name, data) {
+    const r = await fetch(API, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data })
+    });
+    if (!r.ok) throw new Error(await apiErrorMsg(r));
+    return r.json();
+  }
+
+  async function apiUpdate(id, name, data) {
+    const r = await fetch(API + '/' + id, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data })
+    });
+    if (!r.ok) throw new Error(await apiErrorMsg(r));
+    return r.json();
+  }
+
+  async function apiDelete(id) {
+    const r = await fetch(API + '/' + id, { method: 'DELETE', credentials: 'include' });
+    if (r.status !== 200 && r.status !== 204) throw new Error('Delete failed');
+  }
+
+  function saveStatus(msg, color) {
+    const el = document.getElementById('gb-save-status');
+    if (el) { el.textContent = msg; el.style.color = color || '#64748b'; }
+  }
+
+  function renderSavedGames(projects) {
+    const list  = document.getElementById('gb-save-list');
+    const empty = document.getElementById('gb-save-empty');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!projects || projects.length === 0) {
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    projects.forEach(proj => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#1a2035;border:1px solid #2d3a55;border-radius:9px;padding:9px 12px;';
+      const nameEl = document.createElement('span');
+      nameEl.textContent = proj.name;
+      nameEl.style.cssText = 'flex:1;font-size:.88rem;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+      const dateEl = document.createElement('span');
+      const d = proj.updated_at ? new Date(proj.updated_at) : null;
+      dateEl.textContent = d ? d.toLocaleDateString() : '';
+      dateEl.style.cssText = 'font-size:.72rem;color:#475569;white-space:nowrap;';
+
+      const loadBtn = document.createElement('button');
+      loadBtn.textContent = '↓ Load';
+      loadBtn.style.cssText = 'padding:5px 10px;background:#0ea5e9;border:none;border-radius:7px;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;';
+      loadBtn.onclick = () => loadProject(proj);
+
+      const overBtn = document.createElement('button');
+      overBtn.textContent = '⟳';
+      overBtn.title = 'Overwrite with current game';
+      overBtn.style.cssText = 'padding:5px 8px;background:#1e293b;border:1px solid #334155;border-radius:7px;color:#94a3b8;font-size:.78rem;cursor:pointer;';
+      overBtn.onclick = () => overwriteProject(proj.id, proj.name);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑';
+      delBtn.title = 'Delete';
+      delBtn.style.cssText = 'padding:5px 8px;background:none;border:1px solid #4c1d1d;border-radius:7px;color:#f87171;font-size:.78rem;cursor:pointer;';
+      delBtn.onclick = () => deleteProject(proj.id);
+
+      row.appendChild(nameEl);
+      row.appendChild(dateEl);
+      row.appendChild(loadBtn);
+      row.appendChild(overBtn);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+  }
+
+  function getCurrentLevels() {
+    return typeof window.__gb_getLevels === 'function' ? window.__gb_getLevels() : [];
+  }
+
+  function loadProject(proj) {
+    if (!proj.data || !Array.isArray(proj.data) || proj.data.length === 0) {
+      saveStatus('This project has no level data.', '#f87171');
+      return;
+    }
+    if (typeof window.__gb_loadLevels === 'function') {
+      window.__gb_loadLevels(proj.data);
+    }
+    document.getElementById('gb-save-overlay').style.display = 'none';
+    saveStatus('');
+  }
+
+  async function overwriteProject(id, name) {
+    try {
+      await apiUpdate(id, name, getCurrentLevels());
+      saveStatus('Overwritten ✓', '#4ade80');
+      await refreshList();
+    } catch (e) {
+      saveStatus('Error: ' + e.message, '#f87171');
+    }
+  }
+
+  async function deleteProject(id) {
+    if (!confirm('Delete this saved game?')) return;
+    try {
+      await apiDelete(id);
+      await refreshList();
+    } catch (e) {
+      saveStatus('Error: ' + e.message, '#f87171');
+    }
+  }
+
+  async function refreshList() {
+    const loading = document.getElementById('gb-save-loading');
+    const wrap    = document.getElementById('gb-save-list-wrap');
+    if (loading) loading.style.display = 'block';
+    if (wrap)    wrap.style.display    = 'none';
+    try {
+      const projects = await apiList();
+      renderSavedGames(projects);
+      if (loading) loading.style.display = 'none';
+      if (wrap)    wrap.style.display    = 'block';
+    } catch (e) {
+      if (loading) loading.style.display = 'none';
+      saveStatus('Could not load saved games.', '#f87171');
+    }
+  }
+
+  async function openModal() {
+    const overlay   = document.getElementById('gb-save-overlay');
+    const loginMsg  = document.getElementById('gb-save-login-msg');
+    const saveForm  = document.getElementById('gb-save-form');
+    const listWrap  = document.getElementById('gb-save-list-wrap');
+    const loading   = document.getElementById('gb-save-loading');
+    if (!overlay) return;
+
+    overlay.style.display = 'flex';
+    if (loginMsg)  loginMsg.style.display  = 'none';
+    if (saveForm)  saveForm.style.display  = 'none';
+    if (listWrap)  listWrap.style.display  = 'none';
+    if (loading)   loading.style.display   = 'block';
+    saveStatus('');
+
+    const user = await apiGetUser();
+    if (loading) loading.style.display = 'none';
+
+    if (!user) {
+      if (loginMsg) loginMsg.style.display = 'block';
+      return;
+    }
+
+    if (saveForm) saveForm.style.display = 'block';
+    await refreshList();
+  }
+
+  // Open button
+  document.getElementById('gb-save-btn')?.addEventListener('click', openModal);
+
+  // Close button
+  document.getElementById('gb-save-close')?.addEventListener('click', () => {
+    document.getElementById('gb-save-overlay').style.display = 'none';
+  });
+  document.getElementById('gb-save-overlay')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('gb-save-overlay'))
+      document.getElementById('gb-save-overlay').style.display = 'none';
+  });
+
+  // Save new game
+  document.getElementById('gb-save-confirm')?.addEventListener('click', async () => {
+    const nameInput = document.getElementById('gb-save-name');
+    const name = (nameInput?.value || '').trim() || 'My Game';
+    saveStatus('Saving…', '#64748b');
+    try {
+      await apiSave(name, getCurrentLevels());
+      if (nameInput) nameInput.value = '';
+      saveStatus('Saved ✓', '#4ade80');
+      await refreshList();
+    } catch (e) {
+      saveStatus('Error: ' + e.message, '#f87171');
+    }
+  });
+
+  // Allow Enter key in name input
+  document.getElementById('gb-save-name')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('gb-save-confirm')?.click();
+  });
+})();
+
 // ── Multiplayer ──────────────────────────────────────────────────────────────
 let _socket = null;
 let _mpRoom  = null;
 let _mpPlayerCount = 1;
-const PYTHON_URI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
