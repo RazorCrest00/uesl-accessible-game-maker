@@ -154,7 +154,6 @@ class UESLCoach extends Enemy {
             if (!this._isChasing) {
                 this._isChasing = true;
                 this._startTaunting();
-                this._triggerTaunt('nearby');
             }
             this._chase(dx, dy, dist);
         } else {
@@ -198,24 +197,35 @@ class UESLCoach extends Enemy {
     handleCollisionEvent() {
         if (this._caughtHandled || this._isInvincible) return;
 
+        // Set invincibility FIRST before anything else — prevents re-entry on the same frame
+        this._isInvincible = true;
         this._currentHearts -= 1;
         this._renderHearts();
         this._startInvincibility();
         this._triggerTaunt('hit');
 
         if (this._currentHearts <= 0) {
-            // All hearts gone — game over
+            // Set caught flag immediately to block any further collision or taunt calls
             this._caughtHandled = true;
             this._stopTaunting();
             this._clearBubble();
             this._stopFlash();
+            if (this._invincibleTimer) {
+                clearTimeout(this._invincibleTimer);
+                this._invincibleTimer = null;
+            }
 
-            // Capture reference before the level tears down
             const gameControl = this.gameEnv.gameControl;
+            // Freeze the game loop NOW so the old level stops rendering while the
+            // overlay is visible — prevents the "duplicated game" visual glitch.
+            if (gameControl) gameControl.isPaused = true;
+
             this._fetchTaunt('caught').then(taunt => {
                 this._showCaughtOverlay(taunt, () => {
-                    // transitionToLevel() re-creates the current level in-place — a true restart
-                    gameControl.transitionToLevel();
+                    if (gameControl) {
+                        gameControl.isPaused = false;
+                        gameControl.transitionToLevel();
+                    }
                 });
             });
         }
@@ -254,14 +264,9 @@ class UESLCoach extends Enemy {
     // ─── hearts HUD ────────────────────────────────────────────────────────────
 
     _createHeartHUD() {
-        // Remove any stale HUD from a previous level run
-        document.getElementById('uesl-heart-hud')?.remove();
-
-        const hud = document.createElement('div');
-        hud.id = 'uesl-heart-hud';
-        document.body.appendChild(hud);
-        this._heartHUD = hud;
-
+        // Re-use the static span already baked into the panel header so
+        // hearts stay in the designated area and don't float above the game.
+        this._heartHUD = document.getElementById('uesl-heart-hud');
         this._renderHearts();
     }
 
@@ -275,8 +280,9 @@ class UESLCoach extends Enemy {
     }
 
     _destroyHeartHUD() {
+        // Clear the text but leave the span in the DOM — it belongs to the panel header.
         if (this._heartHUD) {
-            this._heartHUD.remove();
+            this._heartHUD.textContent = '';
             this._heartHUD = null;
         }
     }
@@ -360,7 +366,6 @@ class UESLCoach extends Enemy {
                 "Tick tock, running out of time!",
             ],
             caught:  ["Got you. Game over.", "Did you really think you'd win?", "Back to the start!"],
-            nearby:  ["I see you…", "Oh, you're close.", "Found you."],
         };
         const opts = bank[context] || bank.chasing;
         return opts[Math.floor(Math.random() * opts.length)];
@@ -441,22 +446,6 @@ class UESLCoach extends Enemy {
         const style = document.createElement('style');
         style.id = 'uesl-coach-styles';
         style.textContent = `
-            #uesl-heart-hud {
-                position: fixed;
-                top: 16px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 1.8rem;
-                line-height: 1;
-                z-index: 9999;
-                pointer-events: none;
-                text-shadow: 0 2px 6px rgba(0,0,0,0.7);
-                animation: hudFadeIn 0.4s ease-out;
-            }
-            @keyframes hudFadeIn {
-                from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-                to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-            }
             .uesl-coach-bubble {
                 position: fixed; transform: translateX(-50%);
                 background: rgba(20,10,60,0.92); border: 2px solid #6366f1;

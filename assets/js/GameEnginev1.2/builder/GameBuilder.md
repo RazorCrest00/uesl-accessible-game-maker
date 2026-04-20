@@ -581,7 +581,7 @@ permalink: /gamebuilderv1-2
                             <button id="finish-route-npc" class="draw-btn finish-btn" style="display:none;background:#065f46;border-color:#10b981;color:#a7f3d0;">✓ Done</button>
                         </div>
                         <div class="draw-btn-pair">
-                            <button id="draw-attack-npc"  class="draw-btn">⚔️ Attack NPC</button>
+                            <button id="draw-attack-npc" class="draw-btn" title="Click to draw a patrol route. Click again after ✓ Done to add more.">⚔️ Attack NPC <span id="attack-npc-count" style="display:none;background:#ef4444;color:#fff;border-radius:9px;padding:0 5px;font-size:.7rem;font-weight:700;margin-left:2px;vertical-align:middle;"></span></button>
                             <button id="finish-attack-npc" class="draw-btn finish-btn" style="display:none;background:#7f1d1d;border-color:#ef4444;color:#fca5a5;">✓ Done</button>
                         </div>
 
@@ -627,11 +627,31 @@ permalink: /gamebuilderv1-2
                     <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
                       <input type="checkbox" id="gb-coach"> 🧑‍🏫 UESL Coach
                     </label>
-                    <div id="gb-coach-speed-panel" style="display:none;padding:2px 0 4px 22px;">
+                    <div id="gb-coach-speed-panel" style="display:none;flex-direction:column;gap:7px;padding:4px 0 6px 22px;">
                       <label style="font-size:.78rem;color:#94a3b8;display:flex;align-items:center;gap:6px;">
-                        Speed:
+                        👾 Character:
+                        <select id="gb-coach-char" style="flex:1;background:#0f172a;color:#c4b5fd;border:1px solid #3730a3;border-radius:6px;padding:2px 4px;font-size:.78rem;cursor:pointer;">
+                          <option value="chillguy">😎 Chill Guy</option>
+                          <option value="enderman">🖤 Enderman</option>
+                          <option value="creepa">💥 Creeper</option>
+                          <option value="robot">🤖 Robot</option>
+                          <option value="mzombie">🧟 Zombie</option>
+                        </select>
+                      </label>
+                      <label style="font-size:.78rem;color:#94a3b8;display:flex;align-items:center;gap:6px;">
+                        ⚡ Speed:
                         <input type="range" id="gb-coach-speed" min="0.5" max="8" step="0.5" value="2.5" style="width:80px;accent-color:#6366f1;">
                         <span id="gb-coach-speed-val" style="min-width:24px;color:#a5b4fc;">2.5</span>
+                      </label>
+                      <label style="font-size:.78rem;color:#94a3b8;display:flex;align-items:center;gap:6px;">
+                        ❤️ Hearts:
+                        <input type="range" id="gb-coach-hearts" min="1" max="5" step="1" value="3" style="width:80px;accent-color:#ef4444;">
+                        <span id="gb-coach-hearts-val" style="min-width:24px;color:#fca5a5;">3</span>
+                      </label>
+                      <label style="font-size:.78rem;color:#94a3b8;display:flex;align-items:center;gap:6px;">
+                        👁️ Chase Range:
+                        <input type="range" id="gb-coach-range" min="80" max="700" step="20" value="300" style="width:80px;accent-color:#f59e0b;">
+                        <span id="gb-coach-range-val" style="min-width:28px;color:#fcd34d;">300</span>px
                       </label>
                     </div>
                     <div id="gb-face-panel" style="display:none;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;margin-top:4px;">
@@ -1334,6 +1354,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const routeShapes  = ui.drawShapes.filter(s => s.type === 'routeNpc');
         const attackShapes = ui.drawShapes.filter(s => s.type === 'attackNpc');
+
+        // Update the Attack NPC count badge on the draw button
+        const atkBadge = document.getElementById('attack-npc-count');
+        if (atkBadge) {
+            const n = attackShapes.length;
+            atkBadge.textContent = n;
+            atkBadge.style.display = n > 0 ? 'inline' : 'none';
+        }
 
         // Helper: build one SVG line element
         function makeLine(x1, y1, x2, y2, stroke, width, dash, opacity) {
@@ -4194,9 +4222,21 @@ function generateStepCode(currentStep) {
         // Inject UESL Coach if enabled in settings
         if (typeof gbSettings !== 'undefined' && gbSettings.coach) {
             const coachImport = `import UESLCoach from '${baseUrl}/assets/js/GameEnginev1.2/UESLCoach.js';\n`;
-            const chaseSpeed  = gbSettings.coachChaseSpeed  ?? 1.0;
-            const patrolSpeed = gbSettings.coachPatrolSpeed ?? 0.8;
-            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', src: path + '/images/gamify/chillguy.png', SCALE_FACTOR:5, ANIMATION_RATE:50, pixels:{width:512,height:384}, INIT_POSITION:{ x: width * 0.8, y: height - (height / 5) }, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, right:{row:1,start:0,columns:3}, left:{row:2,start:0,columns:3}, up:{row:3,start:0,columns:3}, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:300, chaseSpeed:${chaseSpeed}, patrolSpeed:${patrolSpeed}, tauntInterval:4500, walkingArea:{ xMin: width * 0.3, xMax: width - 60 } } }`;
+            const chaseSpeed   = gbSettings.coachChaseSpeed  ?? 2.5;
+            const patrolSpeed  = gbSettings.coachPatrolSpeed ?? 1.2;
+            const maxHearts    = gbSettings.coachMaxHearts   ?? 3;
+            const chaseRange   = gbSettings.coachChaseRange  ?? 300;
+            // Per-character sprite sheet presets
+            const coachCharPresets = {
+                chillguy: `src: path + '/images/gamify/chillguy.png', SCALE_FACTOR:5, ANIMATION_RATE:50, pixels:{width:512,height:384}, orientation:{rows:3,columns:4}, down:{row:0,start:0,columns:3}, right:{row:1,start:0,columns:3}, left:{row:2,start:0,columns:3}, up:{row:0,start:0,columns:3}`,
+                enderman: `src: path + '/images/gamify/enderman.png', SCALE_FACTOR:10, ANIMATION_RATE:80, pixels:{width:574,height:1504}, orientation:{rows:1,columns:1}, down:{row:0,start:0,columns:1}, right:{row:0,start:0,columns:1}, left:{row:0,start:0,columns:1}, up:{row:0,start:0,columns:1}`,
+                creepa:   `src: path + '/images/gamify/creepa.png', SCALE_FACTOR:4, ANIMATION_RATE:40, pixels:{width:1600,height:1200}, orientation:{rows:1,columns:2}, down:{row:0,start:0,columns:2}, right:{row:0,start:0,columns:2}, left:{row:0,start:0,columns:2}, up:{row:0,start:0,columns:2}`,
+                robot:    `src: path + '/images/gamify/robot.png', SCALE_FACTOR:10, ANIMATION_RATE:100, pixels:{width:627,height:316}, orientation:{rows:3,columns:6}, down:{row:1,start:0,columns:6}, right:{row:1,start:0,columns:6}, left:{row:1,start:0,columns:6}, up:{row:1,start:0,columns:6}`,
+                mzombie:  `src: path + '/images/gamify/mzombie.png', SCALE_FACTOR:5, ANIMATION_RATE:60, pixels:{width:256,height:256}, orientation:{rows:1,columns:1}, down:{row:0,start:0,columns:1}, right:{row:0,start:0,columns:1}, left:{row:0,start:0,columns:1}, up:{row:0,start:0,columns:1}`,
+            };
+            const charKey     = gbSettings.coachChar ?? 'chillguy';
+            const charSprite  = coachCharPresets[charKey] || coachCharPresets.chillguy;
+            const coachEntry  = `{ class: UESLCoach, data: { id:'UESLCoach', ${charSprite}, INIT_POSITION:{ x: width * 0.8, y: height - (height / 5) }, hitbox:{widthPercentage:0.4,heightPercentage:0.4}, chaseRange:${chaseRange}, chaseSpeed:${chaseSpeed}, patrolSpeed:${patrolSpeed}, maxHearts:${maxHearts}, tauntInterval:4500, walkingArea:{ xMin: width * 0.3, xMax: width - 60 } } }`;
             code = coachImport + code;
             code = code.replace(/this\.classes\s*=\s*\[/, `this.classes = [\n      ${coachEntry},`);
         }
@@ -4899,7 +4939,9 @@ document.querySelector('.game-frame')?.addEventListener('click', () => {
 // ── Settings state ──────────────────────────────────────────────────────────
 const gbSettings = {
   slowMode: false, highContrast: false, largeSprites: false,
-  voice: false, face: false, coach: false, coachChaseSpeed: 2.5, coachPatrolSpeed: 1.2,
+  voice: false, face: false, coach: false,
+  coachChar: 'chillguy', coachChaseSpeed: 2.5, coachPatrolSpeed: 1.2,
+  coachMaxHearts: 3, coachChaseRange: 300,
 };
 
 // ── Slow Mode: throttle requestAnimationFrame to ~10 FPS ────────────────────
@@ -4956,13 +4998,24 @@ document.getElementById('gb-face')?.addEventListener('change', e => {
 });
 document.getElementById('gb-coach')?.addEventListener('change', e => {
   gbSettings.coach = e.target.checked;
-  document.getElementById('gb-coach-speed-panel').style.display = e.target.checked ? 'block' : 'none';
+  document.getElementById('gb-coach-speed-panel').style.display = e.target.checked ? 'flex' : 'none';
+});
+document.getElementById('gb-coach-char')?.addEventListener('change', e => {
+  gbSettings.coachChar = e.target.value;
 });
 document.getElementById('gb-coach-speed')?.addEventListener('input', e => {
   const v = parseFloat(e.target.value);
   gbSettings.coachChaseSpeed  = v;
   gbSettings.coachPatrolSpeed = Math.max(0.3, v * 0.48);
   document.getElementById('gb-coach-speed-val').textContent = v.toFixed(1);
+});
+document.getElementById('gb-coach-hearts')?.addEventListener('input', e => {
+  gbSettings.coachMaxHearts = parseInt(e.target.value, 10);
+  document.getElementById('gb-coach-hearts-val').textContent = e.target.value;
+});
+document.getElementById('gb-coach-range')?.addEventListener('input', e => {
+  gbSettings.coachChaseRange = parseInt(e.target.value, 10);
+  document.getElementById('gb-coach-range-val').textContent = e.target.value;
 });
 document.getElementById('gb-recalibrate')?.addEventListener('click', () => window.FaceTracker?.recalibrate?.());
 

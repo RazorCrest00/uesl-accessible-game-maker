@@ -173,12 +173,60 @@ class AttackNpc extends Npc {
         _sharedHearts = null;
 
         const gameControl = this.gameEnv?.gameControl;
-        if (gameControl) {
-            // Defer the transition so we don't restart the level from inside
-            // update() / gameLoop() — calling transitionToLevel() synchronously
-            // mid-frame leaves stale game-object references on the call stack.
-            setTimeout(() => gameControl.transitionToLevel(), 0);
+        if (!gameControl) return;
+
+        this._showGameOverPopup(() => gameControl.transitionToLevel());
+    }
+
+    _showGameOverPopup(onDone) {
+        document.getElementById('attacknpc-gameover')?.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'attacknpc-gameover';
+        Object.assign(overlay.style, {
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(20, 0, 0, 0.95)',
+            border: '3px solid #ef4444', borderRadius: '16px',
+            padding: '32px 40px', textAlign: 'center',
+            zIndex: '10000', fontFamily: 'Arial, sans-serif',
+            color: '#fef2f2', boxShadow: '0 0 52px rgba(239,68,68,0.65)',
+            minWidth: '300px', animation: 'attacknpcSlideIn 0.4s ease-out',
+        });
+
+        const maxH = this._maxHearts ?? 3;
+        const emptyHearts = Array(maxH).fill('🖤').join(' ');
+
+        overlay.innerHTML = `
+            <div style="font-size:2.2rem;margin-bottom:6px;">${emptyHearts}</div>
+            <div style="font-size:1.6rem;font-weight:bold;color:#f87171;margin-bottom:8px;">
+                💀 You Lose!
+            </div>
+            <div style="font-size:1rem;color:#fca5a5;margin-bottom:14px;">
+                All your hearts are gone.
+            </div>
+            <div style="font-size:0.85rem;color:#ef4444;letter-spacing:1px;">
+                Restarting level…
+            </div>
+        `;
+
+        if (!document.getElementById('attacknpc-gameover-style')) {
+            const style = document.createElement('style');
+            style.id = 'attacknpc-gameover-style';
+            style.textContent = `
+                @keyframes attacknpcSlideIn {
+                    from { opacity:0; transform:translate(-50%,-60%) scale(0.85); }
+                    to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+                }
+            `;
+            document.head.appendChild(style);
         }
+
+        document.body.appendChild(overlay);
+        setTimeout(() => {
+            overlay.remove();
+            if (onDone) onDone();
+        }, 2500);
     }
 
     // ─── cleanup ─────────────────────────────────────────────────────────────
