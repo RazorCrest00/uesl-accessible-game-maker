@@ -625,6 +625,9 @@ permalink: /gamebuilderv1-2
                       <input type="checkbox" id="gb-large-sprites"> 🔍 Large Sprites
                     </label>
                     <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+                      <input type="checkbox" id="gb-dpad-right" checked> 📱 D-pad on Right
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
                       <input type="checkbox" id="gb-voice"> 🎤 Voice Commands
                     </label>
                     <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
@@ -4462,6 +4465,9 @@ function generateStepCode(currentStep) {
             const topRun = document.getElementById('btn-run');
             if (topRun) topRun.classList.remove('staged');
         } catch (_) {}
+
+        // Apply dpad position preference after the game has had time to create touch controls
+        setTimeout(applyDpadPosition, 300);
     }
 
     // Expose runner globally so the multiplayer game_data handler can call it directly
@@ -4959,53 +4965,16 @@ document.querySelector('.game-frame')?.addEventListener('click', () => {
 // ── Settings state ──────────────────────────────────────────────────────────
 const gbSettings = {
   slowMode: false, highContrast: false, largeSprites: false,
-  voice: false, face: false, coach: false,
-  coachChar: 'chillguy', coachChaseSpeed: 2.5, coachPatrolSpeed: 1.2,
-  coachMaxHearts: 3, coachChaseRange: 300,
+  voice: false, face: false, coach: false, coachChaseSpeed: 2.5, coachPatrolSpeed: 1.2,
 };
 
-// ── Slow Mode: throttle requestAnimationFrame to ~10 FPS ────────────────────
-(function() {
-  const _realRAF = window.requestAnimationFrame.bind(window);
-  const _realCAF = window.cancelAnimationFrame.bind(window);
-  let _slowActive = false;
-  let _pending = new Map(); // fakeId → { realId, cb }
-  let _nextId = 1;
-
-  window.__setSlowMode = function(on) {
-    _slowActive = on;
-  };
-
-  window.requestAnimationFrame = function(cb) {
-    if (!_slowActive) return _realRAF(cb);
-    const fakeId = _nextId++;
-    const tid = setTimeout(() => {
-      _pending.delete(fakeId);
-      cb(performance.now());
-    }, 100); // ~10 FPS
-    _pending.set(fakeId, tid);
-    return fakeId;
-  };
-
-  window.cancelAnimationFrame = function(id) {
-    if (_pending.has(id)) {
-      clearTimeout(_pending.get(id));
-      _pending.delete(id);
-    } else {
-      _realCAF(id);
-    }
-  };
-})();
-
-document.getElementById('gb-slow-mode')?.addEventListener('change', e => {
-  gbSettings.slowMode = e.target.checked;
-  window.__setSlowMode(e.target.checked);
-});
+document.getElementById('gb-slow-mode')?.addEventListener('change', e => { gbSettings.slowMode = e.target.checked; });
 document.getElementById('gb-high-contrast')?.addEventListener('change', e => {
   gbSettings.highContrast = e.target.checked;
   document.body.style.filter = e.target.checked ? 'contrast(1.6) brightness(1.1)' : '';
 });
 document.getElementById('gb-large-sprites')?.addEventListener('change', e => { gbSettings.largeSprites = e.target.checked; });
+document.getElementById('gb-dpad-right')?.addEventListener('change', e => { gbSettings.dpadRight = e.target.checked; applyDpadPosition(); });
 
 document.getElementById('gb-voice')?.addEventListener('change', e => {
   gbSettings.voice = e.target.checked;

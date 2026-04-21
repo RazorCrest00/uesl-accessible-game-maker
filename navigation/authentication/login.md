@@ -698,7 +698,41 @@ function handleGoogleDispatch(response) {
 
     // ── Init ───────────────────────────────────────────────────────────────────
 
-    window.addEventListener('load', function() {
+    // Always reset form to clean state when the page is shown.
+    // This fixes the bfcache issue where the browser restores the page with the
+    // button disabled in the "Signing in..." state from a previous attempt.
+    window.addEventListener('pageshow', function() {
+        backToLoginStep1();
+        // Also reset signup send button if it got stuck
+        const suBtn = document.getElementById('suSendBtn');
+        if (suBtn) { suBtn.disabled = false; suBtn.textContent = 'Send Verification Code'; }
+        // Clear any leftover status messages
+        ['loginMsg', 'suEmailMsg'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.className = 'status-msg';
+        });
+    });
+
+    window.addEventListener('load', async function() {
         initDevModeBar();
+
+        // Check for an existing session so the user knows they're already signed in.
+        // This prevents the silent auto-login where pressing "Sign In" uses the cached
+        // cookie and redirects without the user realising it.
+        try {
+            const res = await fetch(`${pythonURI}/api/id`, { credentials: 'include', cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.name) {
+                    const wrapper = document.querySelector('.auth-wrapper');
+                    if (wrapper) {
+                        const notice = document.createElement('div');
+                        notice.style.cssText = 'width:100%;padding:0.9rem 1.2rem;background:#1a2a1a;border:1px solid #2d5a2d;border-radius:10px;color:#86efac;font-size:0.92rem;margin-bottom:0.5rem;';
+                        notice.innerHTML = `You are already signed in as <strong>${data.name}</strong>. <a href="{{site.baseurl}}/profile" style="color:#6ee7b7;text-decoration:underline;">Go to profile</a> &nbsp;·&nbsp; <a href="{{site.baseurl}}/logout" style="color:#fca5a5;text-decoration:underline;">Sign out</a> to switch accounts.`;
+                        wrapper.insertBefore(notice, wrapper.firstChild);
+                    }
+                }
+            }
+        } catch (_) {}
     });
 </script>
