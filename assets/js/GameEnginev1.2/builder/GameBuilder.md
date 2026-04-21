@@ -1508,22 +1508,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── sprite catalog ────────────────────────────────────────────────────────
     // Known character sprites with their spritesheet metadata.
     // w/h = spritesheet pixel dimensions, rows/cols = animation grid.
+    // NPC-only sprite catalog — Pokémon are player-only and intentionally excluded here
     const SPRITE_CATALOG = [
-        // ── Superheroes ──
-        { name:'Iron Man',        file:'ironman',           w:96,  h:132, rows:1, cols:1 },
-        { name:'Spider-Man',      file:'spiderman',         w:96,  h:132, rows:1, cols:1 },
-        { name:'Captain America', file:'captain_america',   w:96,  h:132, rows:1, cols:1 },
-        { name:'Batman',          file:'batman',            w:96,  h:132, rows:1, cols:1 },
-        { name:'Superman',        file:'superman',          w:96,  h:132, rows:1, cols:1 },
-        { name:'Wonder Woman',    file:'wonder_woman',      w:96,  h:132, rows:1, cols:1 },
-        { name:'Thor',            file:'thor',              w:96,  h:132, rows:1, cols:1 },
-        // ── Pokémon ──
-        { name:'Pikachu',         file:'pokemon/pikachu',   w:475, h:475, rows:1, cols:1 },
-        { name:'Charizard',       file:'pokemon/charizard', w:475, h:475, rows:1, cols:1 },
-        { name:'Mewtwo',          file:'pokemon/mewtwo',    w:475, h:475, rows:1, cols:1 },
-        { name:'Eevee',           file:'pokemon/eevee',     w:475, h:475, rows:1, cols:1 },
-        { name:'Gengar',          file:'pokemon/gengar',    w:475, h:475, rows:1, cols:1 },
-        { name:'Lucario',         file:'pokemon/lucario',   w:475, h:475, rows:1, cols:1 },
         // ── Adventure / Tech ──
         { name:'Chill Guy',       file:'chillguy',          w:512, h:384, rows:3, cols:4 },
         { name:'R2D2',            file:'r2_idle',           w:505, h:223, rows:1, cols:3 },
