@@ -1,9 +1,10 @@
-import Background from './essentials/Background.js';
 import Player from './essentials/Player.js';
 import Npc from './essentials/Npc.js';
 import GameControl from './essentials/GameControl.js';
 import GameLevelDesert from './GameLevelDesert.js';
 import Creeper from './Creeper.js';
+import TutorialBackground from './essentials/TutorialBackground.js';
+import TutorialOverlay from './essentials/TutorialOverlay.js';
 
 class GameLevelOverworld {
   constructor(gameEnv) {
@@ -1257,7 +1258,7 @@ class GameLevelOverworld {
     };
 
     this.classes = [
-      { class: Background, data: image_data_main },
+      { class: TutorialBackground, data: {} },
       { class: Player, data: sprite_data_player },
       { class: Npc, data: sprite_data_villager },
       { class: Creeper, data: sprite_data_creeper },
@@ -1265,6 +1266,13 @@ class GameLevelOverworld {
     ];
 
     this.gameEnv = gameEnv;
+    this._tutorialOverlay = null;
+  }
+
+  initialize() {
+    const bg = this.gameEnv?.gameObjects?.find(o => o instanceof TutorialBackground);
+    this._tutorialOverlay = new TutorialOverlay(bg);
+    this._tutorialOverlay.mount();
   }
 
   update() {

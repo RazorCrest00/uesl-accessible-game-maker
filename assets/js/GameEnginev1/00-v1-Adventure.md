@@ -14,6 +14,7 @@ permalink: /gamify/adventureGame
 
 <script type="module">
     import CharacterSelect from '{{site.baseurl}}/assets/js/GameEnginev1.2/essentials/CharacterSelect.js';
+    import WallPlacer from '{{site.baseurl}}/assets/js/GameEnginev1.2/essentials/WallPlacer.js';
     import Game from '{{site.baseurl}}/assets/js/GameEnginev1/essentials/Game.js';
     import GameLevelWater from '{{site.baseurl}}/assets/js/GameEnginev1/GameLevelWater.js';
     import GameLevelDesert from '{{site.baseurl}}/assets/js/GameEnginev1/GameLevelDesert.js';
@@ -31,7 +32,7 @@ permalink: /gamify/adventureGame
             selectContainer.style.display = 'none';
             gameContainer.style.display   = 'block';
 
-            Game.main({
+            const game = Game.main({
                 path: '{{site.baseurl}}',
                 pythonURI:    pythonURI,
                 javaURI:      javaURI,
@@ -39,6 +40,13 @@ permalink: /gamify/adventureGame
                 gameContainer: gameContainer,
                 gameLevelClasses: [GameLevelDesert, GameLevelWater, GameLevelEnd, GameLevelOverworld],
             });
+
+            const wp = new WallPlacer(
+                gameContainer,
+                '{{site.baseurl}}',
+                '{{site.baseurl}}/assets/js/GameEnginev1/essentials/Barrier.js'
+            );
+            wp.watchGame(game);
         }
     });
 </script>
