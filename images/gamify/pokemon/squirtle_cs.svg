@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Shell (drawn first, behind body) -->
+  <ellipse cx="100" cy="138" rx="56" ry="50" fill="#8B6914"/>
+  <ellipse cx="100" cy="138" rx="46" ry="42" fill="#C4A030"/>
+  <!-- Shell ridge lines -->
+  <line x1="100" y1="97"  x2="100" y2="178" stroke="#8B6914" stroke-width="3"   opacity="0.7"/>
+  <line x1="68"  y1="102" x2="86"  y2="178" stroke="#8B6914" stroke-width="2.5" opacity="0.6"/>
+  <line x1="132" y1="102" x2="114" y2="178" stroke="#8B6914" stroke-width="2.5" opacity="0.6"/>
+  <line x1="52"  y1="120" x2="76"  y2="178" stroke="#8B6914" stroke-width="2"   opacity="0.45"/>
+  <line x1="148" y1="120" x2="124" y2="178" stroke="#8B6914" stroke-width="2"   opacity="0.45"/>
+  <ellipse cx="100" cy="138" rx="18" ry="16" fill="#8B6914" opacity="0.45"/>
+  <line x1="58"  y1="138" x2="142" y2="138" stroke="#8B6914" stroke-width="2"   opacity="0.45"/>
+  <line x1="56"  y1="152" x2="144" y2="152" stroke="#8B6914" stroke-width="2"   opacity="0.45"/>
+  <line x1="58"  y1="122" x2="142" y2="122" stroke="#8B6914" stroke-width="2"   opacity="0.45"/>
+
+  <!-- Body (front) -->
+  <ellipse cx="100" cy="150" rx="44" ry="38" fill="#6AAFE6"/>
+  <!-- Belly -->
+  <ellipse cx="100" cy="157" rx="28" ry="26" fill="#C8ECFF"/>
+
+  <!-- Head -->
+  <ellipse cx="100" cy="86" rx="52" ry="50" fill="#6AAFE6"/>
+  <!-- Face lightened area -->
+  <ellipse cx="100" cy="92" rx="40" ry="38" fill="#8FC8F0"/>
+
+  <!-- Arms -->
+  <ellipse cx="45" cy="146" rx="17" ry="11" fill="#6AAFE6" transform="rotate(-28 45 146)"/>
+  <ellipse cx="155" cy="146" rx="17" ry="11" fill="#6AAFE6" transform="rotate(28 155 146)"/>
+
+  <!-- Legs -->
+  <ellipse cx="74" cy="185" rx="20" ry="13" fill="#6AAFE6"/>
+  <ellipse cx="126" cy="185" rx="20" ry="13" fill="#6AAFE6"/>
+
+  <!-- Curly tail -->
+  <path d="M 148 168 Q 172 162 175 146 Q 178 130 165 124 Q 153 118 149 128"
+    stroke="#6AAFE6" stroke-width="13" fill="none" stroke-linecap="round"/>
+
+  <!-- Left eye -->
+  <circle cx="78" cy="80" r="15" fill="#5A3A88"/>
+  <circle cx="84" cy="74" r="6"  fill="white"/>
+  <circle cx="83" cy="73" r="3"  fill="#111"/>
+
+  <!-- Right eye -->
+  <circle cx="122" cy="80" r="15" fill="#5A3A88"/>
+  <circle cx="128" cy="74" r="6"  fill="white"/>
+  <circle cx="127" cy="73" r="3"  fill="#111"/>
+
+  <!-- Eyebrow lines -->
+  <path d="M 66 66 Q 76 62 84 66" stroke="#4A8AC8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 116 66 Q 124 62 132 66" stroke="#4A8AC8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Nose -->
+  <ellipse cx="100" cy="95" rx="4" ry="3" fill="#4A8AC8"/>
+
+  <!-- Mouth -->
+  <path d="M 88 106 Q 100 118 112 106" stroke="#4A8AC8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Cheek bumps -->
+  <ellipse cx="60" cy="96" rx="10" ry="8" fill="#5A9ED4" opacity="0.55"/>
+  <ellipse cx="140" cy="96" rx="10" ry="8" fill="#5A9ED4" opacity="0.55"/>
+</svg>

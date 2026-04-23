@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Left ear -->
+  <ellipse cx="52" cy="44" rx="8" ry="15" fill="#F48CB4" transform="rotate(-26 52 44)"/>
+  <ellipse cx="52" cy="44" rx="4"  ry="8"  fill="#FBBAD0" transform="rotate(-26 52 44)"/>
+
+  <!-- Right ear -->
+  <ellipse cx="148" cy="44" rx="8" ry="15" fill="#F48CB4" transform="rotate(26 148 44)"/>
+  <ellipse cx="148" cy="44" rx="4"  ry="8"  fill="#FBBAD0" transform="rotate(26 148 44)"/>
+
+  <!-- Main round body + head (one big sphere) -->
+  <circle cx="100" cy="108" r="74" fill="#F8A8C8"/>
+
+  <!-- Belly highlight -->
+  <ellipse cx="100" cy="138" rx="40" ry="36" fill="#FBC8DC"/>
+
+  <!-- Arms -->
+  <ellipse cx="30"  cy="136" rx="19" ry="12" fill="#F8A8C8" transform="rotate(-14 30 136)"/>
+  <ellipse cx="170" cy="136" rx="19" ry="12" fill="#F8A8C8" transform="rotate(14 170 136)"/>
+
+  <!-- Feet -->
+  <ellipse cx="76"  cy="188" rx="20" ry="12" fill="#F8A8C8"/>
+  <ellipse cx="124" cy="188" rx="20" ry="12" fill="#F8A8C8"/>
+
+  <!-- Left eye -->
+  <circle cx="72"  cy="96" r="22" fill="#4AAAE8"/>
+  <circle cx="72"  cy="96" r="18" fill="#6ABCF4"/>
+  <circle cx="72"  cy="96" r="10" fill="#111"/>
+  <circle cx="78"  cy="89" r="5"  fill="white"/>
+
+  <!-- Right eye -->
+  <circle cx="128" cy="96" r="22" fill="#4AAAE8"/>
+  <circle cx="128" cy="96" r="18" fill="#6ABCF4"/>
+  <circle cx="128" cy="96" r="10" fill="#111"/>
+  <circle cx="134" cy="89" r="5"  fill="white"/>
+
+  <!-- Forehead curl -->
+  <path d="M 100 38 Q 86 20 96 34 Q 80 16 92 32"
+    stroke="#E870A0" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="96" cy="31" r="4" fill="#E870A0"/>
+
+  <!-- Nose -->
+  <ellipse cx="100" cy="114" rx="4" ry="3" fill="#E870A0"/>
+
+  <!-- Mouth -->
+  <path d="M 85 126 Q 100 140 115 126" stroke="#E870A0" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Blush cheeks -->
+  <ellipse cx="48"  cy="114" rx="14" ry="10" fill="#F060A0" opacity="0.48"/>
+  <ellipse cx="152" cy="114" rx="14" ry="10" fill="#F060A0" opacity="0.48"/>
+</svg>
