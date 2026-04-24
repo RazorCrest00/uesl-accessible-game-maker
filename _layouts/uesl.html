@@ -787,14 +787,16 @@
 
     /* ── Team Section ───────────────────────────────────────────── */
     .team-section { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border); }
-    .team-label {
-      font-size: .78rem; color: var(--muted); text-transform: uppercase;
-      letter-spacing: .1em; margin-bottom: 32px;
+    .team-heading {
+      font-family: var(--font-h); font-size: clamp(2rem,4vw,3.2rem);
+      font-weight: 700; color: var(--fg); margin-bottom: 36px;
+      text-align: center;
     }
     .team-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 28px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(16px, 2.5vw, 32px);
+      width: 100%;
     }
     .team-card {
       background: var(--surface2, #161b22);
@@ -803,6 +805,7 @@
       overflow: hidden;
       transition: border-color .25s, transform .25s, box-shadow .25s;
       box-shadow: 0 4px 20px rgba(0,0,0,.35);
+      display: flex; flex-direction: column;
     }
     .team-card:hover {
       border-color: rgba(0,212,255,.45);
@@ -810,28 +813,77 @@
       box-shadow: 0 12px 40px rgba(0,212,255,.12);
     }
     .team-photo-wrap {
-      width: 100%; aspect-ratio: 1/1; overflow: hidden;
+      width: 100%; aspect-ratio: 3/4; overflow: hidden;
       background: linear-gradient(135deg, #00d4ff22, #7c3aed33);
     }
     .team-photo-wrap img {
-      width: 100%; height: 100%; object-fit: cover; object-position: top;
+      width: 100%; height: 100%; object-fit: cover; object-position: top center;
       display: block; transition: transform .35s ease;
     }
     .team-card:hover .team-photo-wrap img { transform: scale(1.04); }
-    .team-info { padding: 22px 20px 24px; }
+    .team-info { padding: 22px 20px 26px; flex: 1; display: flex; flex-direction: column; }
     .team-name {
       font-family: var(--font-h); font-size: 1.1rem; font-weight: 700;
       color: var(--fg); margin-bottom: 4px;
     }
     .team-role {
-      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .12em; color: var(--cyan); margin-bottom: 14px;
     }
     .team-desc {
-      font-size: .84rem; color: var(--muted); line-height: 1.7; margin: 0;
+      font-size: .84rem; color: var(--muted); line-height: 1.75; margin: 0; flex: 1;
     }
-    @media (max-width: 600px) {
-      .team-grid { grid-template-columns: 1fr; }
+    .team-grid--two {
+      grid-template-columns: repeat(2, 1fr);
+      max-width: 900px;
+      gap: clamp(24px, 4vw, 56px);
+    }
+    .team-grid--two .team-photo-wrap {
+      aspect-ratio: 2/3;
+    }
+    @media (max-width: 860px) {
+      .team-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .team-grid, .team-grid--two { grid-template-columns: 1fr; }
+    }
+
+    /* ── Spotlight card (single person, photo left / text right) ── */
+    .spotlight-card {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: clamp(28px, 4vw, 56px);
+      align-items: start;
+      background: var(--surface2, #161b22);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,.4);
+      transition: border-color .25s, box-shadow .25s;
+    }
+    .spotlight-card:hover {
+      border-color: rgba(0,212,255,.4);
+      box-shadow: 0 12px 48px rgba(0,212,255,.1);
+    }
+    .spotlight-photo {
+      width: 100%; height: 100%; min-height: 420px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #00d4ff22, #7c3aed33);
+    }
+    .spotlight-photo img {
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: top center;
+      display: block; transition: transform .35s ease;
+    }
+    .spotlight-card:hover .spotlight-photo img { transform: scale(1.03); }
+    .spotlight-info {
+      padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 40px) clamp(24px, 3vw, 40px) 0;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    @media (max-width: 760px) {
+      .spotlight-card { grid-template-columns: 1fr; }
+      .spotlight-photo { min-height: 320px; }
+      .spotlight-info { padding: 24px; }
     }
 
     /* Partner logos */
