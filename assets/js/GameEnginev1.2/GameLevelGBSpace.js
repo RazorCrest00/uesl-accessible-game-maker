@@ -33,7 +33,7 @@ class GameLevelGBSpace {
             SCALE_FACTOR: 10,
             STEP_FACTOR: 1000,
             ANIMATION_RATE: 50,
-            INIT_POSITION: { x: 100, y: 300 },
+            INIT_POSITION: { x: 250, y: 250 },
             pixels: { height: 500, width: 500 },
             orientation: { rows: 4, columns: 3 },
             down: { row: 0, start: 0, columns: 3 },
@@ -91,18 +91,9 @@ class GameLevelGBSpace {
             hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
         };
         
-        // Split left wall into two parts with an entrance gap
-        const mazeLeftTop = {
-            id: 'maze_left_top',
-            x: 0.2, y: 0.15, width: 0.02, height: 0.20,  // Top section
-            color: 'rgba(100, 50, 200, 0.5)',
-            visible: true,
-            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
-        };
-        
-        const mazeLeftBottom = {
-            id: 'maze_left_bottom',
-            x: 0.2, y: 0.55, width: 0.02, height: 0.30,  // Bottom section (gap at 0.40-0.55)
+        const mazeLeft = {
+            id: 'maze_left',
+            x: 0.2, y: 0.15, width: 0.02, height: 0.7,
             color: 'rgba(100, 50, 200, 0.5)',
             visible: true,
             hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
@@ -157,6 +148,62 @@ class GameLevelGBSpace {
             hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
         };
 
+        const mazeWall6 = {
+            id: 'maze_wall_6',
+            x: 0.2, y: 0.45, width: 0.15, height: 0.02,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
+        const mazeWall7 = {
+            id: 'maze_wall_7',
+            x: 0.65, y: 0.65, width: 0.15, height: 0.02,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
+        const mazeWall8 = {
+            id: 'maze_wall_8',
+            x: 0.35, y: 0.15, width: 0.02, height: 0.2,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
+        const mazeWall9 = {
+            id: 'maze_wall_9',
+            x: 0.5, y: 0.65, width: 0.02, height: 0.18,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
+        const mazeWall10 = {
+            id: 'maze_wall_10',
+            x: 0.6, y: 0.15, width: 0.02, height: 0.15,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
+        const mazeWall11 = {
+            id: 'maze_wall_11',
+            x: 0.7, y: 0.35, width: 0.08, height: 0.02,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
+        const mazeWall12 = {
+            id: 'maze_wall_12',
+            x: 0.2, y: 0.7, width: 0.15, height: 0.02,
+            color: 'rgba(150, 100, 255, 0.5)',
+            visible: true,
+            hitbox: { widthPercentage: 0.0, heightPercentage: 0.0 }
+        };
+
 this.classes = [
       { class: GameEnvBackground, data: bgData },
       { class: Player, data: playerData },
@@ -164,14 +211,20 @@ this.classes = [
       // Maze barriers
       { class: Barrier, data: mazeTop },
       { class: Barrier, data: mazeBottom },
-      { class: Barrier, data: mazeLeftTop },      // Split left wall
-      { class: Barrier, data: mazeLeftBottom },   // with entrance gap
+      { class: Barrier, data: mazeLeft },
       { class: Barrier, data: mazeRight },
       { class: Barrier, data: mazeWall1 },
       { class: Barrier, data: mazeWall2 },
       { class: Barrier, data: mazeWall3 },
       { class: Barrier, data: mazeWall4 },
-      { class: Barrier, data: mazeWall5 }
+      { class: Barrier, data: mazeWall5 },
+      { class: Barrier, data: mazeWall6 },
+      { class: Barrier, data: mazeWall7 },
+      { class: Barrier, data: mazeWall8 },
+      { class: Barrier, data: mazeWall9 },
+      { class: Barrier, data: mazeWall10 },
+      { class: Barrier, data: mazeWall11 },
+      { class: Barrier, data: mazeWall12 }
 ];
 
         

@@ -202,7 +202,8 @@ class Player extends Character {
 
             for (const obj of this.gameEnv.gameObjects) {
                 if (obj === this || !obj.canvas) continue;
-                if ('spriteData' in obj) continue; // skip Characters / NPCs
+                // Ensure we skip other characters but ALWAYS process objects without velocity (Barriers)
+                if (obj.velocity && (obj.id !== this.id)) continue; 
 
                 const ox = obj.x;
                 const oy = obj.y;

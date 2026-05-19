@@ -443,8 +443,6 @@ permalink: /gamebuilderv1-2
                         <option value="wonder_woman">Wonder Woman</option>
                         <option value="thor">Thor</option>
                         </optgroup>
-                        <option value="chillguy">Chill Guy</option>
-                        <option value="tux">Tux</option>
                         <optgroup label="Pokémon">
                         <option value="pikachu">Pikachu</option>
                         <option value="charizard">Charizard</option>
@@ -984,12 +982,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // select option management
     function clearSelectOptions(selectEl) {
         if (!selectEl) return;
-        const opts = Array.from(selectEl.options || []);
-        for (const opt of opts) {
-            if (!opt.disabled) {
-                opt.remove();
-            }
-        }
+        // Only remove top-level non-disabled <option> elements.
+        // Leaving <optgroup> elements and their children intact preserves
+        // the Superheroes / Pokémon grouping; dedupSelectOptions removes
+        // any server-scanned duplicates that match hardcoded entries.
+        Array.from(selectEl.children).forEach(child => {
+            if (child.tagName === 'OPTION' && !child.disabled) child.remove();
+        });
     }
 
     // asset discovery: scan directory listing for image files
