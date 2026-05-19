@@ -34,6 +34,14 @@ export async function getUserData() {
                 if (m < 0 || (m === 0 && today.getDate() < bdate.getDate())) age--;
             }
         } else {
+            // Not authenticated — show gate and stop
+            const main = document.querySelector('main') || document.body;
+            main.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;font-family:Inter,sans-serif;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                    <p style="color:#8b949e;font-size:1.1rem;margin:0;">You are not logged in.</p>
+                    <a href="/login" style="padding:10px 28px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;border-radius:30px;font-weight:700;text-decoration:none;font-size:.95rem;">Log In</a>
+                </div>`;
             console.error('error fetching data:', response.status);
         }
     } catch (error) {

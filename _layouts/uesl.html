@@ -116,11 +116,12 @@
     .nav-signin-btn:hover { opacity: .88; transform: scale(1.04); }
 
     /* Logged-in user chip in nav */
+    #nav-auth-item { display: flex; align-items: center; gap: 8px; position: relative; }
     #nav-user-chip {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 5px 14px 5px 5px; border-radius: 30px;
       background: rgba(0,212,255,.1); border: 1.5px solid rgba(0,212,255,.35);
-      cursor: pointer; transition: background .2s, border-color .2s;
+      cursor: pointer; transition: background .2s, border-color .2s; position: relative;
     }
     #nav-user-chip:hover { background: rgba(0,212,255,.2); border-color: var(--cyan); }
     #nav-user-avatar {
@@ -130,6 +131,22 @@
       font-size: .75rem; font-weight: 700; color: #fff;
     }
     #nav-user-name { font-size: .85rem; font-weight: 700; color: var(--cyan); white-space: nowrap; }
+    #nav-user-dropdown {
+      display: none; position: absolute; top: calc(100% + 10px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); min-width: 160px; z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6); overflow: hidden;
+    }
+    #nav-user-dropdown.open { display: block; }
+    .nav-dd-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 16px; font-size: .88rem; color: var(--text);
+      cursor: pointer; transition: background .15s; text-decoration: none;
+      border: none; background: none; width: 100%; text-align: left; font-family: var(--font-b);
+    }
+    .nav-dd-item:hover { background: var(--surface2); }
+    .nav-dd-item.danger { color: #ff6b6b; }
+    .nav-dd-item.danger:hover { background: rgba(255,107,107,.1); }
     .nav-social-btn .invite-dot {
       display: none; width: 9px; height: 9px; border-radius: 50%;
       background: #ff4444; margin-left: 2px; flex-shrink: 0;
@@ -1217,6 +1234,7 @@
       padding-top: calc(var(--nav-h) + clamp(48px,7vw,80px));
     }
   </style>
+  <script src="{{ site.baseurl }}/assets/js/user-preferences.js"></script>
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to main content</a>
@@ -1233,13 +1251,6 @@
     </a>
     <ul id="nav-links" role="list">
       <li><a href="/">Home</a></li>
-      <li>
-        <button id="nav-social-btn" class="nav-social-btn" aria-label="Open Social Hub">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Social
-          <span class="invite-dot"></span>
-        </button>
-      </li>
       <li><a href="/about/">About</a></li>
       <li><a href="/locations/">Locations</a></li>
       <li><a href="/play/">Play</a></li>
@@ -1249,10 +1260,25 @@
            class="nav-donate" target="_blank" rel="noopener">Donate</a>
       </li>
       <li id="nav-auth-item">
-        <button id="nav-signin-btn" class="nav-signin-btn" aria-label="Sign in or create an account">Sign Up</button>
+        <button id="nav-social-btn" class="nav-social-btn" aria-label="Open Social Hub" style="display:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Social
+          <span class="invite-dot"></span>
+        </button>
+        <button id="nav-signin-btn" class="nav-signin-btn" aria-label="Sign in or create an account">Login</button>
         <div id="nav-user-chip" style="display:none;">
           <div id="nav-user-avatar"></div>
           <span id="nav-user-name"></span>
+        </div>
+        <div id="nav-user-dropdown">
+          <button class="nav-dd-item" id="nav-dd-settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+            Settings
+          </button>
+          <button class="nav-dd-item danger" id="nav-dd-logout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log Out
+          </button>
         </div>
       </li>
     </ul>
@@ -1262,11 +1288,16 @@
   </nav>
 
 
+  {% if layout.hide_main_wrapper %}
+    {{ content }}
+  {% else %}
   <main id="main">
     {{ content }}
   </main>
+  {% endif %}
 
   <!-- ── Footer ─────────────────────────────────────────────────── -->
+  {% unless layout.hide_footer %}
   <footer role="contentinfo">
     <div class="footer-grid">
       <div class="footer-brand">
@@ -1323,6 +1354,7 @@
       <span>Built with ♥ for the UESL community · <a href="https://www.unifiedesl.com" target="_blank" rel="noopener">unifiedesl.com</a></span>
     </div>
   </footer>
+  {% endunless %}
 
   <!-- ── JS ─────────────────────────────────────────────────────── -->
   <script>
@@ -1818,7 +1850,6 @@
       <!-- View switcher -->
       <div id="social-view-tabs" role="tablist">
         <button class="svt-btn active" id="svt-social" role="tab" aria-selected="true" data-view="social">💬 Social</button>
-        <button class="svt-btn" id="svt-dashboard" role="tab" aria-selected="false" data-view="dashboard">⚙️ Settings</button>
       </div>
       <div id="social-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -2311,30 +2342,44 @@
 
     // ── Render topbar ────────────────────────────────────────────────────────
     function renderTopbar() {
-      $('suc-avatar-el').textContent = initials(myName);
-      $('suc-avatar-el').style.background = `linear-gradient(135deg, ${colorFor(myName)}, #7c3aed)`;
-      $('suc-name').textContent = myName;
+      $('suc-avatar-el').textContent = (myUid||'?').slice(0,2).toUpperCase();
+      $('suc-avatar-el').style.background = `linear-gradient(135deg, ${colorFor(myUid)}, #7c3aed)`;
+      $('suc-name').textContent = myUid;
     }
 
     // ── Nav auth state — show user chip when logged in ────────────────────────
     function _updateNavAuthState() {
-      const signUpBtn = document.getElementById('nav-signin-btn');
-      const chip      = document.getElementById('nav-user-chip');
-      const avatar    = document.getElementById('nav-user-avatar');
-      const nameEl    = document.getElementById('nav-user-name');
+      const signUpBtn   = document.getElementById('nav-signin-btn');
+      const socialBtn   = document.getElementById('nav-social-btn');
+      const chip        = document.getElementById('nav-user-chip');
+      const dropdown    = document.getElementById('nav-user-dropdown');
+      const avatar      = document.getElementById('nav-user-avatar');
+      const nameEl      = document.getElementById('nav-user-name');
       if (!signUpBtn || !chip) return;
       if (myUid) {
         signUpBtn.style.display = 'none';
-        avatar.textContent = initials(myName);
-        nameEl.textContent  = myName || myUid;
-        chip.style.display  = 'inline-flex';
-        // clicking the chip opens the social hub
-        chip.onclick = () => { $('nav-social-btn') && $('nav-social-btn').click(); };
+        if (socialBtn) socialBtn.style.display = '';
+        avatar.textContent = (myUid||'?').slice(0,2).toUpperCase();
+        nameEl.textContent = myUid;
+        chip.style.display = 'inline-flex';
+        chip.onclick = (e) => {
+          e.stopPropagation();
+          dropdown && dropdown.classList.toggle('open');
+        };
       } else {
         signUpBtn.style.display = '';
+        if (socialBtn) socialBtn.style.display = 'none';
         chip.style.display = 'none';
+        if (dropdown) dropdown.classList.remove('open');
       }
     }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+      const dd = document.getElementById('nav-user-dropdown');
+      if (dd) dd.classList.remove('open');
+    });
+
 
     // Check login on page load and update nav immediately
     (async () => {
@@ -3075,25 +3120,22 @@
 
     // ── Sign In button — delegates to the Social button handler ─────────────
     $('nav-signin-btn').addEventListener('click', () => {
-      $('nav-social-btn').click();
+      window.location.href = '/login?tab=register';
     });
 
     // ── Open / close overlay ─────────────────────────────────────────────────
     $('nav-social-btn').addEventListener('click', async () => {
+      const loggedIn = await checkLogin();
+      if (!loggedIn) { window.location.href = '/login'; return; }
       overlay.classList.add('open');
       document.body.style.overflow = 'hidden';
       const groqBtn = document.getElementById('uesl-chat-btn');
       if (groqBtn) groqBtn.style.display = 'none';
-      const loggedIn = await checkLogin();
-      if (loggedIn) {
-        loginModal.classList.add('hidden');
-        renderTopbar();
-        loadFriends();
-        startReqPoll();
-        startInvitePoll();
-      } else {
-        loginModal.classList.remove('hidden');
-      }
+      loginModal.classList.add('hidden');
+      renderTopbar();
+      loadFriends();
+      startReqPoll();
+      startInvitePoll();
     });
 
     // ── Social / Settings view switcher ──────────────────────────────────────
@@ -3141,15 +3183,29 @@
       if (groqBtn) groqBtn.style.display = '';
     }
 
+    // ── Nav dropdown buttons ─────────────────────────────────────────────────
+    const navLogoutBtn   = document.getElementById('nav-dd-logout');
+    const navSettingsBtn = document.getElementById('nav-dd-settings');
+    if (navLogoutBtn) {
+      navLogoutBtn.addEventListener('click', async () => {
+        try { await api('/api/authenticate', { method: 'DELETE' }); } catch(e) {}
+        window.location.href = '/';
+      });
+    }
+    if (navSettingsBtn) {
+      navSettingsBtn.addEventListener('click', () => {
+        window.location.href = '/profile';
+      });
+    }
+
     // ── Sign out ─────────────────────────────────────────────────────────────
     $('social-logout-btn').addEventListener('click', async () => {
       _loggedIn = null; myUid = null; myName = ''; myUser = null; activeFriend = null;
       stopPoll(); stopReqPoll();
       chatEmpty.style.display = '';
       chatHeader.style.display = chatMsgs.style.display = chatInputRow.style.display = 'none';
-      try { await api('/api/logout', { method: 'POST' }); } catch(e) {}
-      loginModal.classList.remove('hidden');
-      slmSwitchTab('login');
+      try { await api('/api/authenticate', { method: 'DELETE' }); } catch(e) {}
+      window.location.href = '/';
     });
 
   })();

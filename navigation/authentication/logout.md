@@ -1,5 +1,5 @@
 ---
-layout: opencs
+layout: uesl
 title: Logout
 permalink: /logout
 search_exclude: true
@@ -9,6 +9,6 @@ search_exclude: true
     import { handleLogout } from '{{site.baseurl}}/assets/js/api/logout.js';
     // logout
     await handleLogout();
-    // redirect to login page
-    window.location.href = "{{site.baseurl}}/login";
+    // redirect to home
+    window.location.href = "{{site.baseurl}}/";
 </script>

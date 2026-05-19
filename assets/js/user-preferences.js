@@ -26,13 +26,13 @@
     'fa': { name: 'Persian (Farsi)', code: 'fa' },
   };
 
-  // Site Default uses the website's native CSS colors (from user-colors.scss)
+  // Site Default matches UESL theme tokens (from uesl.html :root)
   const SITE_DEFAULT = {
-    bg: '#121212',      // From user-colors.scss $background
-    text: '#F0F0F0',    // From root-color-map.scss $text
+    bg: '#0d1117',
+    text: '#e6edf3',
     font: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
     size: 14,
-    accent: '#4CAFEF',  // From root-color-map.scss $accent
+    accent: '#00d4ff',
   };
 
   const PRESETS = {
@@ -626,9 +626,43 @@
     }
   }
 
-  function init() {
+  async function syncFromBackend() {
+    try {
+      const uri = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8424'
+        : 'https://uesl.opencodingsociety.com';
+      const res = await fetch(`${uri}/api/user/preferences`, {
+        method: 'GET', mode: 'cors', cache: 'default', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-Origin': 'client' }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data || !data.id) return null;
+      if (!data.backgroundColor && !data.textColor) return null;
+      const prefs = {
+        bg: data.backgroundColor || SITE_DEFAULT.bg,
+        text: data.textColor || SITE_DEFAULT.text,
+        font: data.fontFamily || SITE_DEFAULT.font,
+        size: data.fontSize || SITE_DEFAULT.size,
+        accent: data.accentColor || SITE_DEFAULT.accent,
+        selectionColor: data.selectionColor || data.accentColor || SITE_DEFAULT.accent,
+        buttonStyle: data.buttonStyle || 'rounded',
+        language: data.language || '',
+        ttsVoice: data.ttsVoice || '',
+        ttsRate: data.ttsRate || 1.0,
+        ttsPitch: data.ttsPitch || 1.0,
+        ttsVolume: data.ttsVolume || 1.0,
+      };
+      localStorage.setItem(storageKey, JSON.stringify(prefs));
+      return prefs;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function init() {
     if (typeof window === 'undefined') return;
-    
+
     // Check if user explicitly reset preferences - if so, don't load anything
     const wasReset = window.localStorage.getItem('preferencesReset');
     if (wasReset === 'true') {
@@ -636,12 +670,17 @@
       // Just don't apply any preferences
       return;
     }
-    
+
     const prefs = loadStoredPreferences();
     if (prefs) {
       applyPreferences(prefs);
+    } else {
+      // No local prefs — try backend for logged-in users (cross-device sync)
+      const backendPrefs = await syncFromBackend();
+      if (backendPrefs) {
+        applyPreferences(backendPrefs);
+      }
     }
-    // If no stored preferences, don't apply anything - let site's default CSS show through
   }
 
   // Expose helpers for dashboard.html to reuse

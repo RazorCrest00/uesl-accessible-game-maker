@@ -1,11 +1,11 @@
 ---
 title: Profile Settings
-layout: aesthetihawk
+layout: ecentricolor
 active_tab: profile
 ---
 
 <head>
-    <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/aesthetihawk/shake.css">
+    <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/ecentricolor/shake.css">
 <style>
   .profile-card {
     background: #161b27;
@@ -477,7 +477,7 @@ active_tab: profile
 <!-- toasts -->
 <script type="module">
     // import the toast handler module
-    import { showToast } from "{{site.baseurl}}/assets/js/aesthetihawk/shared/toastHandler.js";
+    import { showToast } from "{{site.baseurl}}/assets/js/ecentricolor/shared/toastHandler.js";
 
     window.addEventListener('load', () => {
         const callToast = document.querySelector("#saveChangesBtn");
@@ -905,8 +905,8 @@ active_tab: profile
     import { putUpdate, postUpdate, deleteData, logoutUserJava } from "{{site.baseurl}}/assets/js/api/profile.js";
 
     // external functions
-    import { getUserData } from '{{site.baseurl}}/assets/js/aesthetihawk/profile/getUserData.js';
-    import { setUserData } from '{{site.baseurl}}/assets/js/aesthetihawk/profile/setUserData.js';
+    import { getUserData } from '{{site.baseurl}}/assets/js/ecentricolor/profile/getUserData.js';
+    import { setUserData } from '{{site.baseurl}}/assets/js/ecentricolor/profile/setUserData.js';
 
     // this runs on page load
     document.addEventListener("DOMContentLoaded", async () => {

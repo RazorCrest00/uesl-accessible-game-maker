@@ -1,0 +1,70 @@
+---
+layout: uesl
+hide_footer: true
+hide_main_wrapper: true
+---
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+<script src="{{ site.baseurl }}/assets/js/keyboard-shortcuts.js" defer></script>
+
+<script>
+    if (new URLSearchParams(location.search).get('embed')) {
+      document.documentElement.classList.add('embed-mode');
+    }
+</script>
+<style>
+    .embed-mode .lesson-sidebar { display: none !important; }
+    .embed-mode .lesson-main { margin-left: 0 !important; padding: 1.5rem !important; }
+    .lesson-sidebar {
+        position: fixed; left: 0; top: 60px;
+        width: 16rem; height: calc(100vh - 60px);
+        border-right: 1px solid rgba(255,255,255,.07);
+        display: flex; flex-direction: column;
+        background: #161b27;
+        z-index: 50; overflow-y: auto;
+    }
+    .lesson-main { margin-left: 16rem; padding: 2rem; background: var(--bg, #0d1117); min-height: 100vh; }
+
+    /* Sidebar text — override Tailwind neutrals with UESL tokens */
+    .lesson-sidebar .nav-item {
+        color: var(--muted, #8b949e) !important;
+        border-color: transparent !important;
+        background: transparent !important;
+    }
+    .lesson-sidebar .nav-item:hover {
+        color: var(--text, #e6edf3) !important;
+        border-color: var(--cyan, #00d4ff) !important;
+        background: var(--surface2, #1e2535) !important;
+    }
+    .lesson-sidebar .nav-item.bg-neutral-700,
+    .lesson-sidebar a.bg-neutral-700 {
+        color: var(--text, #e6edf3) !important;
+        border-color: var(--cyan, #00d4ff) !important;
+        background: var(--surface2, #1e2535) !important;
+    }
+    .lesson-sidebar .text-neutral-500,
+    .lesson-sidebar .text-neutral-600 {
+        color: var(--muted, #8b949e) !important;
+    }
+</style>
+
+<div class="lesson-sidebar">
+    {%- include ecentricolor/sidebar.html -%}
+</div>
+
+<div class="lesson-main">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
+        <h1 style="font-size:1.5rem;font-weight:700;">{{page.title}}</h1>
+    </div>
+    {{ content }}
+</div>
+
+<script type="module">
+    import { handleLogout } from '{{site.baseurl}}/assets/js/api/logout.js';
+    window.handleLogout = handleLogout;
+</script>
+
+<!-- set active sidebar tab -->

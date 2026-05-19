@@ -1,738 +1,333 @@
 ---
-layout: page
+layout: uesl
 title: Login
 permalink: /login
 search_exclude: true
 show_reading_time: false
 ---
-<br>
-
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-
-<!-- Global stub so GSI library always finds handleGoogleDispatch even before the module loads -->
-<script>
-function handleGoogleDispatch(response) {
-    if (typeof window._googleDispatchImpl === 'function') {
-        window._googleDispatchImpl(response);
-    } else {
-        window._pendingGoogleResponse = response;
-    }
-}
-</script>
 
 <style>
-.auth-wrapper {
-    display: flex;
-    gap: 2rem;
-    max-width: 900px;
-    margin: 0 auto;
-    flex-wrap: wrap;
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b27;
+  --surface2:  #1e2535;
+  --surface3:  #252d40;
+  --cyan:      #00d4ff;
+  --cyan-dim:  rgba(0,212,255,.12);
+  --purple:    #7c3aed;
+  --text:      #e6edf3;
+  --muted:     #8b949e;
+  --border:    rgba(255,255,255,.07);
+  --r:         12px;
+  --r-lg:      20px;
+  --font-h:    'Oswald', sans-serif;
+  --font-b:    'Inter', sans-serif;
 }
-.auth-card {
-    flex: 1;
-    min-width: 280px;
-    background: #1e1e2e;
-    border: 1px solid #3b3b5c;
-    border-radius: 12px;
-    padding: 2rem;
+
+body { background: var(--bg); color: var(--text); font-family: var(--font-b); }
+
+#login-page-wrap {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
 }
-.auth-card h2 { margin: 0 0 1.5rem; font-size: 1.4rem; color: #e2e8f0; }
-.auth-card hr { border-color: #3b3b5c; margin-bottom: 1.5rem; }
-.form-group { margin-bottom: 1rem; }
-.form-group input, .form-group select {
-    width: 100%;
-    padding: 0.65rem 0.9rem;
-    background: #12121f;
-    border: 1px solid #3b3b5c;
-    border-radius: 8px;
-    color: #e2e8f0;
-    font-size: 0.95rem;
-    box-sizing: border-box;
+
+.slm-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: clamp(28px,4vw,48px);
+  width: min(460px, 92vw);
+  box-shadow: 0 24px 80px rgba(0,0,0,.7);
 }
-.form-group input:focus, .form-group select:focus {
-    outline: none; border-color: #6366f1;
+.slm-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border);
 }
-.btn-primary {
-    width: 100%; padding: 0.7rem;
-    background: #6366f1; color: white;
-    border: none; border-radius: 8px;
-    font-size: 1rem; cursor: pointer; margin-top: 0.25rem;
+.slm-tab {
+  padding: 10px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+  margin-bottom: -1px;
 }
-.btn-primary:hover { background: #4f46e5; }
-.btn-primary:disabled { background: #4b4b6b; cursor: not-allowed; }
-.btn-secondary {
-    width: 100%; padding: 0.7rem;
-    background: transparent; color: #a0aec0;
-    border: 1px solid #3b3b5c; border-radius: 8px;
-    font-size: 0.9rem; cursor: pointer; margin-top: 0.5rem;
+.slm-tab.active { color: var(--cyan); border-color: var(--cyan); }
+.slm-field { margin-bottom: 16px; }
+.slm-label { display: block; font-size: .82rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.slm-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: .95rem;
+  font-family: var(--font-b);
+  outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
 }
-.btn-secondary:hover { border-color: #6366f1; color: #e2e8f0; }
-.divider {
-    display: flex; align-items: center;
-    gap: 0.75rem; margin: 1.25rem 0;
-    color: #6b7280; font-size: 0.85rem;
+.slm-input:focus { border-color: rgba(0,212,255,.5); }
+.slm-btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 30px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .15s;
 }
-.divider::before, .divider::after {
-    content: ''; flex: 1; height: 1px; background: #3b3b5c;
-}
-.status-msg {
-    margin-top: 0.75rem; padding: 0.6rem 0.9rem;
-    border-radius: 8px; font-size: 0.9rem; display: none;
-}
-.status-msg.show { display: block; }
-.status-msg.success { background: #14532d; color: #86efac; }
-.status-msg.error { background: #450a0a; color: #fca5a5; }
-.status-msg.info { background: #1e3a5f; color: #93c5fd; }
-.otp-step { display: none; margin-top: 0.5rem; }
-.otp-step.show { display: block; }
-.otp-input { letter-spacing: 0.4rem; text-align: center; font-size: 1.4rem; }
-.validation-message { font-size: 0.8rem; margin-top: 0.3rem; }
-.validation-message.success { color: #86efac; }
-.validation-message.error { color: #fca5a5; }
-.overall-status {
-    margin-top: 1rem; padding: 0.6rem 0.9rem;
-    border-radius: 8px; font-size: 0.9rem;
-}
-.overall-status.hidden { display: none; }
-.overall-status.success { background: #14532d; color: #86efac; }
-.overall-status.error { background: #450a0a; color: #fca5a5; }
-.signup-toggle {
-    text-align: center; margin-top: 1rem;
-    color: #9ca3af; font-size: 0.9rem;
-}
-.signup-toggle a { color: #818cf8; cursor: pointer; text-decoration: underline; }
-.signup-section { display: none; }
-.signup-section.show { display: block; }
-.oauth-box { display: none; text-align: center; }
-.oauth-box.show { display: block; }
-.oauth-status { margin-top: 0.75rem; font-size: 0.9rem; }
-.backend-status { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
-.status-item { font-size: 0.85rem; color: #9ca3af; }
+.slm-btn:hover { opacity: .9; transform: scale(1.01); }
+.slm-err { font-size: .82rem; margin-top: -8px; margin-bottom: 8px; display: none; }
 </style>
 
-<div class="auth-wrapper">
-
-    <!-- LOGIN CARD -->
-    <div class="auth-card">
-        <h2>Login</h2>
-        <hr>
-
-        <!-- Step 1: credentials -->
-        <div id="loginStep1">
-            <div class="form-group">
-                <input type="text" id="loginUid" placeholder="User ID" autocomplete="username">
-            </div>
-            <div class="form-group">
-                <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
-            </div>
-            <button class="btn-primary" id="sendOtpBtn" onclick="sendOtp()">Sign In</button>
-            <div id="loginMsg" class="status-msg"></div>
-
-            <div class="divider">or</div>
-
-            <div id="g_id_onload"
-                 data-client_id="714327350398-q7jtd45cknoa0ijsgsg0d0iedk7epqdo.apps.googleusercontent.com"
-                 data-callback="handleGoogleDispatch"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-size="large"
-                 data-theme="filled_blue"
-                 data-text="signin_with"
-                 data-shape="rectangular"
-                 data-logo_alignment="left"
-                 data-context="signin">
-            </div>
-        </div>
-
-        <!-- Step 2: OTP entry -->
-        <div id="loginStep2" class="otp-step">
-            <p style="color:#9ca3af; font-size:0.9rem; margin-bottom:1rem;">
-                Enter the 6-digit code sent to
-                <strong id="otpEmailLabel" style="color:#e2e8f0;"></strong>
-            </p>
-            <div id="loginDevOtpBox" style="display:none; background:#1e3a5f; border:1px solid #3b6cb7; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#93c5fd;">
-                <strong>Dev mode</strong> — no SMTP configured. Your code is: <strong id="loginDevOtpCode" style="letter-spacing:0.15rem;"></strong>
-            </div>
-<div class="form-group">
-                <input type="text" id="otpCode" class="otp-input"
-                       placeholder="000000" maxlength="6"
-                       inputmode="numeric" autocomplete="one-time-code">
-            </div>
-            <button class="btn-primary" onclick="verifyOtp()">Verify &amp; Login</button>
-            <button class="btn-secondary" onclick="backToLoginStep1()">Back</button>
-            <div id="otpMsg" class="status-msg"></div>
-        </div>
-
-        <div class="signup-toggle">
-            Don't have an account? <a onclick="toggleSignup()">Sign up</a>
-        </div>
+<div id="login-page-wrap">
+  <div class="slm-card">
+    <!-- header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+      <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <span style="font-family:var(--font-h);font-size:1.4rem;color:var(--cyan);font-weight:700;">UESL Social</span>
     </div>
 
-    <!-- SIGNUP CARD -->
-    <div class="auth-card signup-section" id="signupCard">
-        <h2>Sign Up</h2>
-        <hr>
-
-        <!-- Step 1: Choose verification method -->
-        <div id="su1">
-            <div class="form-group">
-                <input type="email" id="suEmail" placeholder="Email address" autocomplete="email">
-            </div>
-            <button class="btn-primary" id="suSendBtn" onclick="suSendOtp()">Send Verification Code</button>
-            <div id="suEmailMsg" class="status-msg"></div>
-            <div class="divider">or</div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-size="large"
-                 data-theme="filled_blue"
-                 data-text="signup_with"
-                 data-shape="rectangular"
-                 data-logo_alignment="left">
-            </div>
-        </div>
-
-        <!-- Step 2: OTP code (email path only) -->
-        <div id="su2" style="display:none;">
-            <p style="color:#9ca3af; font-size:0.9rem; margin-bottom:1rem;">
-                Enter the 6-digit code sent to
-                <strong id="suOtpTarget" style="color:#e2e8f0;"></strong>
-            </p>
-            <div id="suDevOtpBox" style="display:none; background:#1e3a5f; border:1px solid #3b6cb7; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#93c5fd;">
-                <strong>Dev mode</strong> — no SMTP configured. Your code is: <strong id="suDevOtpCode" style="letter-spacing:0.15rem;"></strong>
-            </div>
-<div class="form-group">
-                <input type="text" id="suOtpCode" class="otp-input"
-                       placeholder="000000" maxlength="6"
-                       inputmode="numeric" autocomplete="one-time-code">
-            </div>
-            <button class="btn-primary" onclick="suVerifyOtp()">Verify Code</button>
-            <button class="btn-secondary" onclick="suBackTo1()">Back</button>
-            <div id="suOtpMsg" class="status-msg"></div>
-        </div>
-
-        <!-- Step 3: Account details -->
-        <div id="su3" style="display:none;">
-            <p style="font-size:0.85rem; margin-bottom:1rem;">
-                Verified: <span id="suVerifiedEmail" style="color:#86efac;"></span>
-            </p>
-            <div class="form-group">
-                <input type="text" id="suName" placeholder="Full Name">
-            </div>
-            <div class="form-group">
-                <input type="text" id="suUid" placeholder="User ID">
-            </div>
-            <div class="form-group">
-                <input type="date" id="suBirthdate" placeholder="Birthdate" onchange="checkMinor()">
-            </div>
-            <div id="suParentEmailGroup" style="display:none;">
-                <div class="form-group">
-                    <input type="email" id="suParentEmail" placeholder="Parent/Guardian Email (required for minors)">
-                </div>
-                <p style="font-size:0.8rem; color:#f59e0b; margin: -0.5rem 0 0.75rem;">
-                    You are under 18. A parent or guardian email is required to link their account.
-                </p>
-            </div>
-            <div class="form-group">
-                <input type="text" id="suLocation" placeholder="Location (City, State or Country)">
-            </div>
-            <div id="suPasswordGroup">
-                <div class="form-group">
-                    <input type="password" id="suPassword" placeholder="Password (min 8 chars)">
-                </div>
-                <div class="form-group">
-                    <input type="password" id="suConfirmPassword" placeholder="Confirm Password">
-                    <div id="suPwMsg" class="validation-message"></div>
-                </div>
-            </div>
-            <label style="display:flex; align-items:center; gap:0.5rem; color:#9ca3af; font-size:0.85rem; margin-bottom:1rem; cursor:pointer;">
-                <input type="checkbox" id="suKasm"> Kasm Server Needed
-            </label>
-            <button class="btn-primary" id="suCreateBtn" onclick="suCreate()">Create Account</button>
-            <div id="suCreateMsg" class="overall-status hidden"></div>
-        </div>
-
-        <div class="signup-toggle">
-            Already have an account? <a onclick="toggleSignup()">Log in</a>
-        </div>
+    <!-- tabs -->
+    <div class="slm-tabs" id="slm-tabs">
+      <button class="slm-tab active" id="slm-tab-login" onclick="slmSwitchTab('login')">Sign In</button>
+      <button class="slm-tab" id="slm-tab-register" onclick="slmSwitchTab('register')">Create Account</button>
     </div>
 
+    <!-- LOGIN FLOW -->
+    <div id="slm-login-flow">
+      <div id="slm-l1">
+        <div class="slm-field"><label class="slm-label">User ID</label><input class="slm-input" id="slm-uid" type="text" placeholder="your_user_id" autocomplete="username"/></div>
+        <div class="slm-field"><label class="slm-label">Password</label><input class="slm-input" id="slm-pw" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+        <div class="slm-err" id="slm-l1-msg" style="display:none;"></div>
+        <button class="slm-btn" id="slm-send-otp-btn" onclick="slmSendOtp()">Sign In</button>
+      </div>
+      <div id="slm-l2" style="display:none;">
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;">Enter the 6-digit code sent to your registered email.</p>
+        <div id="slm-dev-otp-box" style="display:none;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:.85rem;color:var(--cyan);">Dev mode — code: <strong id="slm-dev-otp-code" style="letter-spacing:.12rem;"></strong></div>
+        <div class="slm-field"><input class="slm-input" id="slm-otp" type="text" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="text-align:center;letter-spacing:.4rem;font-size:1.4rem;"/></div>
+        <div class="slm-err" id="slm-l2-msg" style="display:none;"></div>
+        <button class="slm-btn" onclick="slmVerifyOtp()">Verify &amp; Sign In</button>
+        <button class="slm-btn" onclick="slmBackToL1()" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);">Back</button>
+      </div>
+    </div>
+
+    <!-- REGISTER FLOW -->
+    <div id="slm-register-flow" style="display:none;">
+      <div id="slm-r1">
+        <div class="slm-field"><label class="slm-label">Email Address</label><input class="slm-input" id="slm-r-email" type="email" placeholder="you@email.com" autocomplete="email"/></div>
+        <div class="slm-err" id="slm-r1-msg" style="display:none;"></div>
+        <button class="slm-btn" id="slm-r-send-btn" onclick="slmSuSendOtp()">Send Verification Code</button>
+      </div>
+      <div id="slm-r2" style="display:none;">
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;">Enter the 6-digit code sent to <strong id="slm-r-otp-target" style="color:var(--text);"></strong>.</p>
+        <div id="slm-r-dev-otp-box" style="display:none;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:.85rem;color:var(--cyan);">Dev mode — code: <strong id="slm-r-dev-otp-code" style="letter-spacing:.12rem;"></strong></div>
+        <div class="slm-field"><input class="slm-input" id="slm-r-otp" type="text" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="text-align:center;letter-spacing:.4rem;font-size:1.4rem;"/></div>
+        <div class="slm-err" id="slm-r2-msg" style="display:none;"></div>
+        <button class="slm-btn" onclick="slmSuVerifyOtp()">Verify Code</button>
+        <button class="slm-btn" onclick="slmSuBackTo1()" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);">Back</button>
+      </div>
+      <div id="slm-r3" style="display:none;">
+        <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px;">Verified: <span id="slm-r-verified-email" style="color:#00ff88;"></span></p>
+        <div class="slm-field"><label class="slm-label">Full Name</label><input class="slm-input" id="slm-r-name" type="text" placeholder="Your Name"/></div>
+        <div class="slm-field"><label class="slm-label">User ID</label><input class="slm-input" id="slm-r-uid" type="text" placeholder="choose_a_username"/></div>
+        <div class="slm-field"><label class="slm-label">Age</label><input class="slm-input" id="slm-r-age" type="number" min="1" max="120" placeholder="Your age"/></div>
+        <div class="slm-field" id="slm-r-parent-field" style="display:none;"><label class="slm-label">Parent / Guardian Name</label><input class="slm-input" id="slm-r-parent" type="text" placeholder="Parent or guardian name"/></div>
+        <div class="slm-field"><label class="slm-label">Password (min 8 chars)</label><input class="slm-input" id="slm-r-pass" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+        <div class="slm-field"><label class="slm-label">Confirm Password</label><input class="slm-input" id="slm-r-pass2" type="password" placeholder="••••••••"/></div>
+        <button class="slm-btn" id="slm-r-create-btn" onclick="slmSuCreate()">Create Account</button>
+        <div id="slm-r3-msg" style="display:none;"></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
-<p id="message" style="display:none;"></p>
+<script>
+const _AUTH = {
+  PYTHON_URI: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com',
+  suEmail: '',
+};
 
-<!-- Admin-only dev mode toggle (hidden until admin role confirmed) -->
-<div id="devModeBar" style="display:none; margin-top:1.5rem; text-align:center;">
-    <button id="devModeBtn" onclick="toggleDevMode()"
-        style="background:transparent; border:1px dashed #4b5563; border-radius:6px; color:#6b7280; font-size:0.8rem; padding:0.35rem 0.9rem; cursor:pointer;">
-        Dev Mode: <span id="devModeLabel">OFF</span>
-    </button>
-</div>
+function _devMode() { return sessionStorage.getItem('devMode') === 'true'; }
 
-<script type="module">
-    import { pythonURI, getDevMode, setDevMode } from '{{site.baseurl}}/assets/js/api/config.js';
+function _authMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.style.cssText = 'display:block;padding:8px 12px;border-radius:8px;font-size:.85rem;margin-top:8px;' +
+    (type === 'error'   ? 'background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.3);' :
+     type === 'success' ? 'background:rgba(0,255,136,.1);color:#00ff88;border:1px solid rgba(0,255,136,.25);' :
+                          'background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.25);');
+}
+function _authClear(id) { const el=document.getElementById(id); if(el){el.style.display='none';el.textContent='';} }
 
-    const GOOGLE_CLIENT_ID = "714327350398-q7jtd45cknoa0ijsgsg0d0iedk7epqdo.apps.googleusercontent.com";
+function slmSwitchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('slm-tab-login').classList.toggle('active', isLogin);
+  document.getElementById('slm-tab-register').classList.toggle('active', !isLogin);
+  document.getElementById('slm-login-flow').style.display    = isLogin ? '' : 'none';
+  document.getElementById('slm-register-flow').style.display = isLogin ? 'none' : '';
+}
 
-    // ── Utilities ──────────────────────────────────────────────────────────────
-
-    function showMsg(id, text, type) {
-        const el = document.getElementById(id);
-        el.textContent = text;
-        el.className = `status-msg show ${type}`;
+async function slmSendOtp() {
+  const uid = document.getElementById('slm-uid').value.trim();
+  const pw  = document.getElementById('slm-pw').value;
+  if (!uid || !pw) { _authMsg('slm-l1-msg','Enter your User ID and password.','error'); return; }
+  const btn = document.getElementById('slm-send-otp-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  _authClear('slm-l1-msg');
+  try {
+    if (_devMode()) {
+      const r = await fetch(`${_AUTH.PYTHON_URI}/api/authenticate`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({uid,password:pw}) });
+      if (r.ok) { _authMsg('slm-l1-msg','Signed in!','success'); setTimeout(() => { window.location.href = '/'; }, 800); return; }
+      const d = await r.json(); _authMsg('slm-l1-msg',d.message||'Login failed.','error'); btn.disabled=false; btn.textContent='Sign In'; return;
     }
+    const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/send`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({uid,password:pw}) });
+    const d = await r.json();
+    if (r.ok) {
+      if (d.user) { _authMsg('slm-l1-msg','Signed in!','success'); setTimeout(() => { window.location.href = '/'; }, 800); }
+      else {
+        document.getElementById('slm-l1').style.display = 'none';
+        document.getElementById('slm-l2').style.display = '';
+        if (d.dev_otp) { document.getElementById('slm-dev-otp-code').textContent=d.dev_otp; document.getElementById('slm-dev-otp-box').style.display=''; }
+        _authMsg('slm-l2-msg', d.message||'Code sent to your email.','info');
+      }
+    } else { _authMsg('slm-l1-msg',d.message||'Failed.','error'); btn.disabled=false; btn.textContent='Sign In'; }
+  } catch(e) { _authMsg('slm-l1-msg','Network error — check your connection.','error'); btn.disabled=false; btn.textContent='Sign In'; }
+}
 
-    function redirect() {
-        setTimeout(() => { window.location.href = '{{site.baseurl}}/profile'; }, 800);
-    }
+async function slmVerifyOtp() {
+  const uid = document.getElementById('slm-uid').value.trim();
+  const otp = document.getElementById('slm-otp').value.trim();
+  if (!otp) { _authMsg('slm-l2-msg','Enter the 6-digit code.','error'); return; }
+  _authMsg('slm-l2-msg','Verifying…','info');
+  try {
+    const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/verify`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({uid,otp}) });
+    const d = await r.json();
+    if (r.ok) { _authMsg('slm-l2-msg','Verified!','success'); setTimeout(() => { window.location.href = '/'; }, 800); }
+    else _authMsg('slm-l2-msg',d.message||'Invalid code.','error');
+  } catch(e) { _authMsg('slm-l2-msg','Network error.','error'); }
+}
 
-    // ── OTP Login ──────────────────────────────────────────────────────────────
+function slmBackToL1() {
+  document.getElementById('slm-l2').style.display='none';
+  document.getElementById('slm-l1').style.display='';
+  document.getElementById('slm-otp').value='';
+  document.getElementById('slm-dev-otp-box').style.display='none';
+  const btn=document.getElementById('slm-send-otp-btn'); btn.disabled=false; btn.textContent='Sign In';
+  _authClear('slm-l1-msg');
+}
 
-    window.sendOtp = async function() {
-        const uid      = document.getElementById('loginUid').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        if (!uid || !password) {
-            showMsg('loginMsg', 'Please enter your User ID and password.', 'error');
-            return;
-        }
-        const btn = document.getElementById('sendOtpBtn');
-        btn.disabled = true;
-        btn.textContent = 'Signing in...';
+async function slmSuSendOtp() {
+  const email = document.getElementById('slm-r-email').value.trim();
+  if (!email || !email.includes('@')) { _authMsg('slm-r1-msg','Enter a valid email address.','error'); return; }
+  if (_devMode()) {
+    _AUTH.suEmail = email;
+    _authMsg('slm-r1-msg','[Dev] OTP skipped — fill in your details.','info');
+    setTimeout(() => _slmSuGoToDetails(email), 600);
+    return;
+  }
+  const btn = document.getElementById('slm-r-send-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  _authClear('slm-r1-msg');
+  try {
+    const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/signup/send`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+    const d = await r.json();
+    if (r.ok) {
+      _AUTH.suEmail = email;
+      document.getElementById('slm-r-otp-target').textContent = email;
+      if (d.dev_otp) { document.getElementById('slm-r-dev-otp-code').textContent=d.dev_otp; document.getElementById('slm-r-dev-otp-box').style.display=''; }
+      document.getElementById('slm-r1').style.display = 'none';
+      document.getElementById('slm-r2').style.display = '';
+    } else { _authMsg('slm-r1-msg', d.message||'Failed to send code.','error'); btn.disabled=false; btn.textContent='Send Verification Code'; }
+  } catch(e) { _authMsg('slm-r1-msg','Network error — check your connection.','error'); btn.disabled=false; btn.textContent='Send Verification Code'; }
+}
 
-        // Dev mode: skip OTP, authenticate directly
-        if (getDevMode()) {
-            try {
-                const res  = await fetch(`${pythonURI}/api/authenticate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ uid, password })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showMsg('loginMsg', '[Dev] Signed in — 2FA bypassed. Redirecting...', 'success');
-                    redirect();
-                } else {
-                    showMsg('loginMsg', data.message || 'Login failed.', 'error');
-                    btn.disabled = false;
-                    btn.textContent = 'Sign In';
-                }
-            } catch (e) {
-                showMsg('loginMsg', 'Network error.', 'error');
-                btn.disabled = false;
-                btn.textContent = 'Sign In';
-            }
-            return;
-        }
+async function slmSuVerifyOtp() {
+  const otp = document.getElementById('slm-r-otp').value.trim();
+  if (!otp) { _authMsg('slm-r2-msg','Enter the 6-digit code.','error'); return; }
+  _authMsg('slm-r2-msg','Verifying…','info');
+  try {
+    const r = await fetch(`${_AUTH.PYTHON_URI}/api/otp/signup/verify`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:_AUTH.suEmail, otp}) });
+    const d = await r.json();
+    if (r.ok) _slmSuGoToDetails(_AUTH.suEmail);
+    else _authMsg('slm-r2-msg', d.message||'Invalid code.','error');
+  } catch(e) { _authMsg('slm-r2-msg','Network error.','error'); }
+}
 
-        try {
-            const res  = await fetch(`${pythonURI}/api/otp/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ uid, password })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                if (data.user) {
-                    // 2FA disabled — backend issued JWT directly
-                    showMsg('loginMsg', 'Signed in! Redirecting...', 'success');
-                    redirect();
-                } else {
-                    // 2FA enabled — show OTP step
-                    document.getElementById('loginStep1').style.display = 'none';
-                    document.getElementById('loginStep2').classList.add('show');
-                    document.getElementById('otpEmailLabel').textContent = 'your registered email';
-                    if (getDevMode() && data.dev_otp) {
-                        document.getElementById('loginDevOtpCode').textContent = data.dev_otp;
-                        document.getElementById('loginDevOtpBox').style.display = '';
-                    } else {
-                        document.getElementById('loginDevOtpBox').style.display = 'none';
-                    }
-                    showMsg('otpMsg', data.message, 'info');
-                }
-            } else {
-                showMsg('loginMsg', data.message || 'Failed to send code.', 'error');
-                btn.disabled = false;
-                btn.textContent = 'Sign In';
-            }
-        } catch (e) {
-            showMsg('loginMsg', 'Network error. Is the backend running?', 'error');
-            btn.disabled = false;
-            btn.textContent = 'Sign In';
-        }
-    };
+function slmSuBackTo1() {
+  document.getElementById('slm-r2').style.display='none';
+  document.getElementById('slm-r1').style.display='';
+  document.getElementById('slm-r-otp').value='';
+  document.getElementById('slm-r-dev-otp-box').style.display='none';
+  const btn=document.getElementById('slm-r-send-btn'); btn.disabled=false; btn.textContent='Send Verification Code';
+  _authClear('slm-r1-msg');
+}
 
-    window.verifyOtp = async function() {
-        const uid = document.getElementById('loginUid').value.trim();
-        const otp = document.getElementById('otpCode').value.trim();
-        if (!otp) { showMsg('otpMsg', 'Enter the verification code.', 'error'); return; }
-        showMsg('otpMsg', 'Verifying...', 'info');
-        try {
-            const res  = await fetch(`${pythonURI}/api/otp/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ uid, otp })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                showMsg('otpMsg', 'Verified! Redirecting...', 'success');
-                redirect();
-            } else {
-                showMsg('otpMsg', data.message || 'Invalid code.', 'error');
-            }
-        } catch (e) {
-            showMsg('otpMsg', 'Network error.', 'error');
-        }
-    };
+function _slmSuGoToDetails(email) {
+  document.getElementById('slm-r-verified-email').textContent = email;
+  document.getElementById('slm-r2').style.display = 'none';
+  document.getElementById('slm-r3').style.display = '';
+}
 
-    window.backToLoginStep1 = function() {
-        document.getElementById('loginStep2').classList.remove('show');
-        document.getElementById('loginStep1').style.display = '';
-        const btn = document.getElementById('sendOtpBtn');
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
-        document.getElementById('otpCode').value = '';
-        document.getElementById('loginDevOtpBox').style.display = 'none';
-    };
+document.addEventListener('DOMContentLoaded', function() {
+  const ageInput = document.getElementById('slm-r-age');
+  if (ageInput) ageInput.addEventListener('input', slmToggleParent);
+  if (new URLSearchParams(location.search).get('tab') === 'register') slmSwitchTab('register');
+});
 
-    // ── Google Dispatch ────────────────────────────────────────────────────────
+function slmToggleParent() {
+  const age = parseInt(document.getElementById('slm-r-age').value, 10);
+  document.getElementById('slm-r-parent-field').style.display = (!isNaN(age) && age < 18) ? '' : 'none';
+}
 
-    function googleDispatch(response) {
-        const signupCard = document.getElementById('signupCard');
-        if (signupCard && signupCard.classList.contains('show')) {
-            handleGoogleSignIn(response);
-        } else {
-            window.handleGoogleLogin(response);
-        }
-    }
+async function slmSuCreate() {
+  const name   = document.getElementById('slm-r-name').value.trim();
+  const uid    = document.getElementById('slm-r-uid').value.trim();
+  const age    = parseInt(document.getElementById('slm-r-age').value, 10);
+  const parentEl = document.getElementById('slm-r-parent');
+  const parent = parentEl ? parentEl.value.trim() : '';
+  const pw     = document.getElementById('slm-r-pass').value;
+  const pw2    = document.getElementById('slm-r-pass2').value;
 
-    // Register the real implementation and flush any call that arrived before the module loaded
-    window._googleDispatchImpl = googleDispatch;
-    if (window._pendingGoogleResponse) {
-        googleDispatch(window._pendingGoogleResponse);
-        window._pendingGoogleResponse = null;
-    }
+  if (!name) { _authMsg('slm-r3-msg','Full name is required.','error'); return; }
+  if (!uid)  { _authMsg('slm-r3-msg','User ID is required.','error'); return; }
+  if (isNaN(age) || age < 1) { _authMsg('slm-r3-msg','Enter a valid age.','error'); return; }
+  if (age < 18 && !parent) { _authMsg('slm-r3-msg','Parent/guardian name is required for users under 18.','error'); return; }
+  if (!pw || pw.length < 8) { _authMsg('slm-r3-msg','Password must be at least 8 characters.','error'); return; }
+  if (pw !== pw2) { _authMsg('slm-r3-msg','Passwords do not match.','error'); return; }
 
-    // ── Google Login ───────────────────────────────────────────────────────────
+  const btn = document.getElementById('slm-r-create-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  _authMsg('slm-r3-msg','Creating account…','info');
 
-    window.handleGoogleLogin = async function(response) {
-        showMsg('loginMsg', 'Signing in with Google...', 'info');
-        try {
-            const res  = await fetch(`${pythonURI}/api/google/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ credential: response.credential })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                showMsg('loginMsg', 'Signed in! Redirecting...', 'success');
-                redirect();
-            } else if (res.status === 404) {
-                showMsg('loginMsg', 'No account found. Taking you to sign up...', 'info');
-                setTimeout(() => {
-                    document.getElementById('signupCard').classList.add('show');
-                    handleGoogleSignIn(response);
-                }, 800);
-            } else {
-                showMsg('loginMsg', data.message || 'Google login failed.', 'error');
-            }
-        } catch (e) {
-            showMsg('loginMsg', 'Network error.', 'error');
-        }
-    };
-
-    // ── Signup toggle ──────────────────────────────────────────────────────────
-
-    window.toggleSignup = function() {
-        document.getElementById('signupCard').classList.toggle('show');
-    };
-
-    // ── Signup state ───────────────────────────────────────────────────────────
-
-    let suEmail = '';
-    let suGoogleName = '';
-    let suIsGoogle = false;
-    let suGoogleResponse = null;
-
-    function suShowStep(n) {
-        ['su1','su2','su3'].forEach((id, i) => {
-            document.getElementById(id).style.display = (i + 1 === n) ? '' : 'none';
-        });
-    }
-
-    function suGoToDetails(email, googleName) {
-        suEmail      = email;
-        suGoogleName = googleName || '';
-        suIsGoogle   = !!googleName;
-        document.getElementById('suVerifiedEmail').textContent = email;
-        document.getElementById('suName').value = suGoogleName;
-        document.getElementById('suPasswordGroup').style.display = suIsGoogle ? 'none' : '';
-        document.getElementById('suUid').value = '';
-        document.getElementById('suBirthdate').value = '';
-        document.getElementById('suLocation').value = '';
-        document.getElementById('suParentEmail').value = '';
-        document.getElementById('suParentEmailGroup').style.display = 'none';
-        document.getElementById('suCreateMsg').className = 'overall-status hidden';
-        suShowStep(3);
-    }
-
-    // ── Signup: Step 1 → OTP ───────────────────────────────────────────────────
-
-    window.suSendOtp = async function() {
-        const email = document.getElementById('suEmail').value.trim();
-        if (!email) { showMsg('suEmailMsg', 'Enter your email address.', 'error'); return; }
-
-        // Dev mode: skip OTP, go straight to account details
-        if (getDevMode()) {
-            suEmail = email;
-            showMsg('suEmailMsg', '[Dev] OTP skipped. Fill in your account details.', 'info');
-            setTimeout(() => suGoToDetails(email, ''), 600);
-            return;
-        }
-
-        const btn = document.getElementById('suSendBtn');
-        btn.disabled = true; btn.textContent = 'Sending...';
-        try {
-            const res  = await fetch(`${pythonURI}/api/otp/signup/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                document.getElementById('suOtpTarget').textContent = email;
-                suEmail = email;
-                // Show OTP in UI only when running locally (dev mode)
-                if (getDevMode() && data.dev_otp) {
-                    document.getElementById('suDevOtpCode').textContent = data.dev_otp;
-                    document.getElementById('suDevOtpBox').style.display = '';
-                } else {
-                    document.getElementById('suDevOtpBox').style.display = 'none';
-                }
-                suShowStep(2);
-            } else {
-                showMsg('suEmailMsg', data.message || 'Failed to send code.', 'error');
-                btn.disabled = false; btn.textContent = 'Send Verification Code';
-            }
-        } catch (e) {
-            showMsg('suEmailMsg', 'Network error. Is the backend running?', 'error');
-            btn.disabled = false; btn.textContent = 'Send Verification Code';
-        }
-    };
-
-    // ── Signup: Step 2 → verify OTP ───────────────────────────────────────────
-
-    window.suVerifyOtp = async function() {
-        const otp = document.getElementById('suOtpCode').value.trim();
-        if (!otp) { showMsg('suOtpMsg', 'Enter the verification code.', 'error'); return; }
-        showMsg('suOtpMsg', 'Verifying...', 'info');
-        try {
-            const res  = await fetch(`${pythonURI}/api/otp/signup/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email: suEmail, otp })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                suGoToDetails(suEmail, '');
-            } else {
-                showMsg('suOtpMsg', data.message || 'Invalid code.', 'error');
-            }
-        } catch (e) {
-            showMsg('suOtpMsg', 'Network error.', 'error');
-        }
-    };
-
-    window.suBackTo1 = function() {
-        document.getElementById('suOtpCode').value = '';
-        document.getElementById('suSendBtn').disabled = false;
-        document.getElementById('suSendBtn').textContent = 'Send Verification Code';
-        suShowStep(1);
-    };
-
-    // ── Signup: Google path ────────────────────────────────────────────────────
-
-    function handleGoogleSignIn(response) {
-        try {
-            const b64  = response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-            const pad  = b64 + '='.repeat((4 - b64.length % 4) % 4);
-            const info = JSON.parse(atob(pad));
-            suGoogleResponse = response;
-            suGoToDetails(info.email, info.name || info.given_name || '');
-        } catch (e) {
-            showMsg('suEmailMsg', 'Error processing Google Sign-In. Try again.', 'error');
-        }
-    }
-
-    // ── Signup: Step 3 → create account ───────────────────────────────────────
-
-    window.checkMinor = function() {
-        const birthdateVal = document.getElementById('suBirthdate').value;
-        if (!birthdateVal) return;
-        const bdate = new Date(birthdateVal);
-        const today = new Date();
-        let age = today.getFullYear() - bdate.getFullYear();
-        const m = today.getMonth() - bdate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < bdate.getDate())) age--;
-        document.getElementById('suParentEmailGroup').style.display = age < 18 ? '' : 'none';
-    };
-
-    window.suCreate = async function() {
-        const name      = document.getElementById('suName').value.trim();
-        const uid       = document.getElementById('suUid').value.trim();
-        const birthdate = document.getElementById('suBirthdate').value;
-        const location  = document.getElementById('suLocation').value.trim();
-        const kasm      = document.getElementById('suKasm').checked;
-
-        if (!name || !uid || !birthdate || !location) {
-            const el = document.getElementById('suCreateMsg');
-            el.className = 'overall-status error';
-            el.textContent = 'Please fill in all fields.';
-            return;
-        }
-
-        // Check if minor and require parent email
-        const bdate = new Date(birthdate);
-        const today = new Date();
-        let age = today.getFullYear() - bdate.getFullYear();
-        const m = today.getMonth() - bdate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < bdate.getDate())) age--;
-        const parentEmail = document.getElementById('suParentEmail').value.trim();
-        if (age < 18 && !parentEmail) {
-            const el = document.getElementById('suCreateMsg');
-            el.className = 'overall-status error';
-            el.textContent = 'Parent/guardian email is required for users under 18.';
-            return;
-        }
-
-        let password;
-        if (suIsGoogle) {
-            password = crypto.randomUUID();
-        } else {
-            password = document.getElementById('suPassword').value;
-            const cpw = document.getElementById('suConfirmPassword').value;
-            if (password.length < 8) {
-                const el = document.getElementById('suCreateMsg');
-                el.className = 'overall-status error';
-                el.textContent = 'Password must be at least 8 characters.';
-                return;
-            }
-            if (password !== cpw) {
-                const el = document.getElementById('suCreateMsg');
-                el.className = 'overall-status error';
-                el.textContent = 'Passwords do not match.';
-                return;
-            }
-        }
-
-        const btn = document.getElementById('suCreateBtn');
-        btn.disabled = true;
-        const msgEl = document.getElementById('suCreateMsg');
-        msgEl.className = 'overall-status info';
-        msgEl.textContent = 'Creating account...';
-
-        try {
-            const res = await fetch(`${pythonURI}/api/user`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ name, uid, birthdate, location, parent_email: age < 18 ? parentEmail : undefined, email: suEmail, password, kasm_server_needed: kasm, auth_type: suIsGoogle ? 'google' : 'otp' })
-            });
-            if (res.ok) {
-                msgEl.className = 'overall-status success';
-                msgEl.textContent = 'Account created! Signing you in...';
-                if (suIsGoogle && suGoogleResponse) {
-                    setTimeout(() => window.handleGoogleLogin(suGoogleResponse), 800);
-                } else {
-                    // Pre-fill login form and redirect after a brief delay
-                    setTimeout(() => {
-                        document.getElementById('signupCard').classList.remove('show');
-                        suShowStep(1);
-                        showMsg('loginMsg', 'Account created! Enter your User ID and password to sign in.', 'success');
-                    }, 1500);
-                }
-            } else {
-                const data = await res.json();
-                msgEl.className = 'overall-status error';
-                msgEl.textContent = data.message || 'Account creation failed.';
-                btn.disabled = false;
-            }
-        } catch (e) {
-            msgEl.className = 'overall-status error';
-            msgEl.textContent = 'Network error.';
-            btn.disabled = false;
-        }
-    };
-
-    // ── Dev Mode Toggle (admin only) ───────────────────────────────────────────
-
-    async function initDevModeBar() {
-        try {
-            const res = await fetch(`${pythonURI}/api/id`, { credentials: 'include' });
-            if (!res.ok) return;
-            const data = await res.json();
-            const isAdmin = data.role === 'Admin' ||
-                (Array.isArray(data.roles) && data.roles.some(r => r.name === 'Admin'));
-            if (!isAdmin) return;
-            const bar = document.getElementById('devModeBar');
-            bar.style.display = '';
-            document.getElementById('devModeLabel').textContent = getDevMode() ? 'ON' : 'OFF';
-        } catch (_) {}
-    }
-
-    window.toggleDevMode = async function() {
-        try {
-            const next = !getDevMode();
-            await setDevMode(next, pythonURI);
-            document.getElementById('devModeLabel').textContent = next ? 'ON' : 'OFF';
-        } catch (e) {
-            alert(e.message);
-        }
-    };
-
-    // ── Init ───────────────────────────────────────────────────────────────────
-
-    // Always reset form to clean state when the page is shown.
-    // This fixes the bfcache issue where the browser restores the page with the
-    // button disabled in the "Signing in..." state from a previous attempt.
-    window.addEventListener('pageshow', function() {
-        backToLoginStep1();
-        // Also reset signup send button if it got stuck
-        const suBtn = document.getElementById('suSendBtn');
-        if (suBtn) { suBtn.disabled = false; suBtn.textContent = 'Send Verification Code'; }
-        // Clear any leftover status messages
-        ['loginMsg', 'suEmailMsg'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.className = 'status-msg';
-        });
-    });
-
-    window.addEventListener('load', async function() {
-        initDevModeBar();
-
-        // Check for an existing session so the user knows they're already signed in.
-        // This prevents the silent auto-login where pressing "Sign In" uses the cached
-        // cookie and redirects without the user realising it.
-        try {
-            const res = await fetch(`${pythonURI}/api/id`, { credentials: 'include', cache: 'no-store' });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.name) {
-                    const wrapper = document.querySelector('.auth-wrapper');
-                    if (wrapper) {
-                        const notice = document.createElement('div');
-                        notice.style.cssText = 'width:100%;padding:0.9rem 1.2rem;background:#1a2a1a;border:1px solid #2d5a2d;border-radius:10px;color:#86efac;font-size:0.92rem;margin-bottom:0.5rem;';
-                        notice.innerHTML = `You are already signed in as <strong>${data.name}</strong>. <a href="{{site.baseurl}}/profile" style="color:#6ee7b7;text-decoration:underline;">Go to profile</a> &nbsp;·&nbsp; <a href="{{site.baseurl}}/logout" style="color:#fca5a5;text-decoration:underline;">Sign out</a> to switch accounts.`;
-                        wrapper.insertBefore(notice, wrapper.firstChild);
-                    }
-                }
-            }
-        } catch (_) {}
-    });
+  try {
+    const body = { name, uid, password: pw, email: _AUTH.suEmail, age };
+    if (age < 18 && parent) body.parent = parent;
+    const r = await fetch(`${_AUTH.PYTHON_URI}/api/user`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const d = await r.json();
+    if (r.ok) {
+      _authMsg('slm-r3-msg','Account created! Signing you in…','success');
+      setTimeout(() => { window.location.href = '/'; }, 1000);
+    } else { _authMsg('slm-r3-msg', d.message||'Failed to create account.','error'); btn.disabled=false; btn.textContent='Create Account'; }
+  } catch(e) { _authMsg('slm-r3-msg','Network error — check your connection.','error'); btn.disabled=false; btn.textContent='Create Account'; }
+}
 </script>
