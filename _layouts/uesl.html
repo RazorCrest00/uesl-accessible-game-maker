@@ -2217,13 +2217,15 @@
     <div id="social-body">
       <!-- Sidebar: friends list -->
       <aside id="social-sidebar">
-        <!-- Pending friend requests (hidden until there are some) -->
-        <div id="requests-section" style="display:none;">
+        <!-- Friend requests inbox — always visible -->
+        <div id="requests-section">
           <div class="ss-section-header" style="color:var(--cyan);">
-            Requests
-            <span id="req-badge" style="background:var(--cyan);color:#000;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:700;margin-left:4px;"></span>
+            Friend Requests
+            <span id="req-badge" style="background:var(--cyan);color:#000;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:700;margin-left:4px;display:none;"></span>
           </div>
-          <div id="request-list"></div>
+          <div id="request-list">
+            <div id="req-empty" style="padding:10px 14px;font-size:.82rem;color:var(--muted);">No pending requests.</div>
+          </div>
           <div class="ss-divider"></div>
         </div>
 
@@ -2740,13 +2742,21 @@
 
     // ── Friend requests UI ────────────────────────────────────────────────────
     async function renderRequests() {
+      const badge   = $('req-badge');
+      const list    = $('request-list');
+      const empty   = $('req-empty');
+      if (!list) return;
+
       const incoming = await reqGetIncoming();
-      const section  = $('requests-section');
-      const badge    = $('req-badge');
-      const list     = $('request-list');
-      if (!section) return;
-      if (!incoming.length) { section.style.display = 'none'; badge.textContent = ''; return; }
-      section.style.display = '';
+
+      if (!incoming.length) {
+        badge.style.display = 'none';
+        list.innerHTML = '';
+        if (empty) { empty.style.display = ''; list.appendChild(empty); }
+        return;
+      }
+
+      badge.style.display = '';
       badge.textContent = incoming.length;
       list.innerHTML = '';
       incoming.forEach(req => {
