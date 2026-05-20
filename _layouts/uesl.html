@@ -2580,7 +2580,7 @@
 
     // ── Friend requests (server-side) ─────────────────────────────────────────
     async function reqSend(toUid, toName) {
-      const r = await api('/friend/request', {
+      const r = await api('/api/friend/request', {
         method: 'POST',
         body: JSON.stringify({ to_uid: toUid, to_name: toName }),
       });
@@ -2589,7 +2589,7 @@
 
     async function reqGetIncoming() {
       try {
-        const r = await api('/friend/requests');
+        const r = await api('/api/friend/requests');
         if (!r.ok) return [];
         return await r.json();
       } catch(e) { return []; }
@@ -2603,14 +2603,14 @@
     }
 
     async function reqAccept(reqId) {
-      await api('/friend/accept', {
+      await api('/api/friend/accept', {
         method: 'POST',
         body: JSON.stringify({ request_id: reqId }),
       });
     }
 
     async function reqDecline(reqId) {
-      await api('/friend/decline', {
+      await api('/api/friend/decline', {
         method: 'POST',
         body: JSON.stringify({ request_id: reqId }),
       });
@@ -2774,7 +2774,7 @@
     async function loadFriends() {
       // Pull accepted friends from server, merge into localStorage for chat/DM use
       try {
-        const r = await api('/friend/list');
+        const r = await api('/api/friend/list');
         if (r.ok) {
           const serverFriends = await r.json();
           const current = lsLoad();
@@ -3320,10 +3320,11 @@
         </button>`;
       if (!alreadyFriend && !isMe) {
         item.querySelector('.afm-add-btn').addEventListener('click', async e => {
-          e.currentTarget.disabled = true;
-          e.currentTarget.textContent = 'Sending…';
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          btn.textContent = 'Sending…';
           const ok = await reqSend(uid, uid);
-          e.currentTarget.textContent = ok ? 'Sent ✓' : 'Already sent';
+          btn.textContent = ok ? 'Sent ✓' : 'Already sent';
         });
       }
       container.appendChild(item);
