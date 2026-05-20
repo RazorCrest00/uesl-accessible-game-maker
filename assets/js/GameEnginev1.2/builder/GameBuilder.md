@@ -412,11 +412,11 @@ permalink: /gamebuilderv1-2
                         <option value="desert">Desert Dunes</option>
                         <option value="alien">Alien Planet</option>
                         <option value="skykingdom">Sky Kingdom</option>
-                        <optgroup label="── Spline Levels (platforms built-in) ──">
-                          <option value="spline_forest">🌲 Forest Spline</option>
-                          <option value="spline_cave">🌑 Cave Spline</option>
-                          <option value="spline_sky">☁️ Sky Spline</option>
-                        </optgroup>
+                        <option value="spline_forest">🌲 Forest Spline</option>
+                        <option value="spline_cave">🌑 Cave Spline</option>
+                        <option value="spline_sky">☁️ Sky Spline</option>
+                        <option value="maze">🟩 Maze Classic</option>
+                        <option value="maze2">🟣 Maze v2 — Cyber Space</option>
                     </select>
                     <div class="upload-instructions" style="margin-top:6px;">
                         <button id="bg-instructions-btn" class="btn btn-sm">Upload Instructions ▸</button>
@@ -918,7 +918,8 @@ document.addEventListener('DOMContentLoaded', () => {
             desert: { src: "/images/gamify/desert.png", h: 580, w: 1038 },
             alien: { src: "/images/gamebuilder/bg/alien_planet.jpg", h: 600, w: 1000 },
             skykingdom: { src: "/images/gamebuilder/bg/clouds.jpg", h: 720, w: 1280 },
-            maze: { type: 'maze', h: 600, w: 900 },
+            maze:  { type: 'maze',  h: 600, w: 900 },
+            maze2: { type: 'maze2', h: 600, w: 900 },
             spline_forest:  { type: 'spline', src: "/images/gamify/forest.png",          h: 600, w: 1024, preset: 'spline_forest' },
             spline_cave:    { type: 'spline', src: "/images/gamify/nightowl-background.png", h: 600, w: 1024, preset: 'spline_cave' },
             spline_sky:     { type: 'spline', src: "/images/gamebuilder/bg/clouds.jpg",  h: 720, w: 1280, preset: 'spline_sky' },
@@ -1035,7 +1036,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* server asset scan → populate background/sprite selectors */
     async function scanServerAssets() {
-        clearSelectOptions(ui.bg);
         clearSelectOptions(ui.pSprite);
         document.querySelectorAll('.npc-sprite').forEach(sel => clearSelectOptions(sel));
 
@@ -1068,16 +1068,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Add procedural backgrounds (not image-file based) after server scan
-        if (ui.bg && !Array.from(ui.bg.options).some(o => o.value === 'maze')) {
-            const mazeOpt = document.createElement('option');
-            mazeOpt.value = 'maze'; mazeOpt.textContent = 'Maze';
-            ui.bg.appendChild(mazeOpt);
-
-            const maze2Opt = document.createElement('option');
-            maze2Opt.value = 'maze2'; maze2Opt.textContent = 'Maze v2 (Cyber Maze)';
-            ui.bg.appendChild(maze2Opt);
-        }
         // Pre-scan Newmaze.png for wall barriers so they're ready when the user confirms
         _mazeScanBarriersAsync(900, 600).then(() => {
             // If maze is already selected, re-stage the code now that barriers are loaded
