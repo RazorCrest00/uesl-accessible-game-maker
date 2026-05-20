@@ -1981,11 +1981,18 @@
     // ── Active Friends ──
     const friendsPanel = document.getElementById('tk-friends-panel');
     const friendsList  = document.getElementById('tk-friends-list');
-    const pythonURI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
+
+    // Reuse the social hub's api() helper (defined later in this script, but
+    // only called inside event handlers so it's always available by then).
+    function tkApiOrFallback(path, opts) {
+      if (typeof api === 'function') return api(path, opts);
+      const uri = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
+      return fetch(uri + path, Object.assign({ mode:'cors', credentials:'include', headers:{'Content-Type':'application/json','X-Origin':'client'} }, opts));
+    }
 
     function sendHeartbeat() {
-      fetch(pythonURI + '/api/heartbeat', { method: 'POST', credentials: 'include' }).catch(() => {});
+      tkApiOrFallback('/api/heartbeat', { method: 'POST' }).catch(() => {});
     }
     sendHeartbeat();
     setInterval(sendHeartbeat, 120000);
@@ -1998,7 +2005,7 @@
       }
       friendsPanel.style.display = 'block';
       friendsList.innerHTML = '<span style="color:var(--muted)">Loading…</span>';
-      fetch(pythonURI + '/api/active-users', { credentials: 'include' })
+      tkApiOrFallback('/api/active-users')
         .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(users => {
           if (!users.length) {
