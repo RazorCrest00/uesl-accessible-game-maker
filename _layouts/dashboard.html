@@ -369,13 +369,10 @@ active_tab: dashboard
                                     <option value="Montserrat, Arial, sans-serif">Montserrat</option>
                                     <option value="Georgia, 'Times New Roman', Times, serif">Georgia (Serif)</option>
                                     <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                                    <option value="'SimBraille', 'Swell Braille', monospace">Braille</option>
                                 </select>
                             </div>
 
-                            <div>
-                                <label class="text-sm text-neutral-400">Text color</label>
-                                <input type="color" id="pref-text-color" value="#F0F0F0" class="w-full h-8 mt-1 rounded" />
-                            </div>
                         </div>
                     </div>
 
@@ -393,7 +390,12 @@ active_tab: dashboard
                                 <label class="text-sm text-neutral-400">Background color</label>
                                 <input type="color" id="pref-bg-color" value="#121212" class="w-full h-8 mt-1 rounded" />
                             </div>
-                            
+
+                            <div>
+                                <label class="text-sm text-neutral-400">Text color</label>
+                                <input type="color" id="pref-text-color" value="#e6edf3" class="w-full h-8 mt-1 rounded" />
+                            </div>
+
                             <div>
                                 <label class="text-sm text-neutral-400">Accent color</label>
                                 <input type="color" id="pref-accent-color" value="#4CAFEF" class="w-full h-8 mt-1 rounded" />
@@ -402,6 +404,11 @@ active_tab: dashboard
                             <div>
                                 <label class="text-sm text-neutral-400">Selection highlight color</label>
                                 <input type="color" id="pref-selection-color" value="#4CAFEF" class="w-full h-8 mt-1 rounded" />
+                            </div>
+
+                            <div>
+                                <label class="text-sm text-neutral-400">Navbar color</label>
+                                <input type="color" id="pref-nav-color" value="#0d1117" class="w-full h-8 mt-1 rounded" />
                             </div>
                             
                             <div>
@@ -898,6 +905,7 @@ active_tab: dashboard
                             ttsPitch: Number(document.getElementById('pref-tts-pitch').value),
                             ttsVolume: Number(document.getElementById('pref-tts-volume').value),
                             selectionColor: document.getElementById('pref-selection-color').value,
+                            navColor: document.getElementById('pref-nav-color').value,
                             buttonStyle: document.getElementById('pref-button-style').value,
                             customThemes: loadThemes()
                         };
@@ -925,6 +933,7 @@ active_tab: dashboard
                         
                         // Styling settings
                         document.getElementById('pref-selection-color').value = prefs.selectionColor || '#3b82f6';
+                        document.getElementById('pref-nav-color').value = prefs.navColor || '#0d1117';
                         document.getElementById('pref-button-style').value = prefs.buttonStyle || 'rounded';
                     }
 
@@ -942,11 +951,12 @@ active_tab: dashboard
                         if (section === 'text') {
                             current.font = form.font;
                             current.size = form.size;
-                            current.text = form.text;
                         } else if (section === 'colors') {
                             current.bg = form.bg;
+                            current.text = form.text;
                             current.accent = form.accent;
                             current.selectionColor = form.selectionColor;
+                            current.navColor = form.navColor;
                             current.buttonStyle = form.buttonStyle;
                         } else if (section === 'tts') {
                             current.ttsVoice = form.ttsVoice;
@@ -1127,6 +1137,7 @@ active_tab: dashboard
                             document.getElementById('pref-text-color').value = '#e6edf3';
                             document.getElementById('pref-accent-color').value = '#00d4ff';
                             document.getElementById('pref-selection-color').value = '#00d4ff';
+                            document.getElementById('pref-nav-color').value = '#0d1117';
                         });
 
                         document.querySelectorAll('.save-section-btn').forEach(btn => {
@@ -1431,7 +1442,8 @@ active_tab: dashboard
       'montserrat': "Montserrat, Arial, sans-serif",
       'georgia': "Georgia, 'Times New Roman', Times, serif",
       'source code pro': "'Source Code Pro', monospace",
-      'sourcecodepro': "'Source Code Pro', monospace"
+      'sourcecodepro': "'Source Code Pro', monospace",
+      'braille': "'SimBraille', 'Swell Braille', monospace",
     };
 
     function tryParseResponsePayload(data) {

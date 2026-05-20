@@ -1,21 +1,17 @@
-// Keyboard shortcuts for main pages (Alt+Shift+key)
-// Uses Alt+Shift modifier to avoid overriding browser defaults
-// (Ctrl+C=copy, Ctrl+S=save, Ctrl+P=print, etc.)
-//
-// Uses e.code (physical key position) instead of e.key because
-// Alt+Shift can produce accented characters on some OS/browser
-// combos (e.g. Alt+Shift+C → Ç on macOS).
+// Keyboard shortcuts (Alt+Shift+key)
+// Uses e.code so shortcuts are stable regardless of OS char remapping from Alt+Shift.
 
 (function() {
     // Map KeyboardEvent.code → destination path
     const shortcuts = {
-        'KeyC': '/student/calendar',
-        'KeyH': '/',               // home page
-        'KeyP': '/profile',        // profile page
-        'KeyS': '/student',        // student toolkit
-        'KeyT': '/teacher',        // teacher toolkit
-        'KeyL': '/login',          // login page
-        'KeyU': '/signup',         // signup page
+        'KeyH': '/',                          // Home
+        'KeyP': '/profile',                   // Profile
+        'KeyD': '/dashboard',                 // Dashboard
+        'KeyL': '/login',                     // Login
+        'KeyG': '/play/',                     // Play / Game
+        'KeyC': '/gamify/character-select',   // Character Select
+        'KeyS': '/stats',                     // Stats
+        'KeyA': '/about/',                    // About
     };
 
     // Help trigger codes
@@ -33,13 +29,14 @@
                 <h3>Keyboard Shortcuts</h3>
                 <p class="ks-hint">Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>key</kbd></p>
                 <table>
-                    <tr><td><kbd>C</kbd></td><td>Calendar</td></tr>
                     <tr><td><kbd>H</kbd></td><td>Home</td></tr>
                     <tr><td><kbd>P</kbd></td><td>Profile</td></tr>
-                    <tr><td><kbd>S</kbd></td><td>Student Toolkit</td></tr>
-                    <tr><td><kbd>T</kbd></td><td>Teacher Toolkit</td></tr>
+                    <tr><td><kbd>D</kbd></td><td>Dashboard</td></tr>
                     <tr><td><kbd>L</kbd></td><td>Login</td></tr>
-                    <tr><td><kbd>U</kbd></td><td>Signup</td></tr>
+                    <tr><td><kbd>G</kbd></td><td>Play</td></tr>
+                    <tr><td><kbd>C</kbd></td><td>Character Select</td></tr>
+                    <tr><td><kbd>S</kbd></td><td>Stats</td></tr>
+                    <tr><td><kbd>A</kbd></td><td>About</td></tr>
                     <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
                 </table>
                 <p class="ks-close-hint">Press <kbd>Esc</kbd> or click outside to close</p>
@@ -82,6 +79,9 @@
         }
         window.location.href = url;
     }
+
+    // Expose globally so the toolkit button can call it directly
+    window.showKeyboardHelp = showHelp;
 
     document.addEventListener('keydown', function(e) {
         // Close help overlay on Escape

@@ -239,6 +239,16 @@ reload:
 	@make stop
 	@make
 
+# Touch all pages that use uesl.html (or its children) directly so Jekyll
+# incremental rebuild picks up layout changes without a full clean.
+touch:
+	@echo "Touching uesl-layout pages to bust incremental cache..."
+	@find pages navigation -name "*.html" -o -name "*.md" | \
+		xargs grep -rl "layout: uesl" 2>/dev/null | xargs touch
+	@find _layouts -name "*.html" | \
+		xargs grep -rl "layout: uesl" 2>/dev/null | xargs touch
+	@echo "Done. Run 'make reload' if the server is already running."
+
 refresh:
 	@make stop
 	@make clean
@@ -353,6 +363,7 @@ help:
 	@echo "  make stop         - Stop server and logging"
 	@echo "  make reload       - Stop and restart server"
 	@echo "  make refresh      - Stop, clean, and restart server"
+	@echo "  make touch        - Touch uesl-layout pages to bust incremental build cache"
 	@echo ""
 	@echo "Conversion Commands:"
 	@echo "  make convert        - Convert notebooks and DOCX files"

@@ -120,100 +120,116 @@
     );
   }
 
+  function loadWebFont(url, id) {
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+  }
+
   function applyPreferences(prefs) {
     const base = SITE_DEFAULT;
-    const bg = prefs?.bg || base.bg;
-    const text = prefs?.text || base.text;
-    const font = prefs?.font || base.font;
-    const size = prefs?.size || base.size;
-    const accent = prefs?.accent || base.accent;
-    
-    // Styling preferences
+    const bg       = prefs?.bg       || base.bg;
+    const text     = prefs?.text     || base.text;
+    const font     = prefs?.font     || base.font;
+    const size     = prefs?.size     || base.size;
+    const accent   = prefs?.accent   || base.accent;
+    const navColor       = prefs?.navColor       || bg;
     const selectionColor = prefs?.selectionColor || accent;
-    const buttonStyle = prefs?.buttonStyle || 'rounded';
+    const buttonStyle    = prefs?.buttonStyle    || 'rounded';
 
-    const root = document.documentElement;
-    root.style.setProperty('--pref-bg-color', bg);
-    root.style.setProperty('--pref-text-color', text);
-    root.style.setProperty('--pref-font-family', font);
-    root.style.setProperty('--pref-font-size', size + 'px');
-    root.style.setProperty('--pref-accent-color', accent);
-    root.style.setProperty('--pref-selection-color', selectionColor);
+    const root     = document.documentElement;
+    const set      = (name, val) => root.style.setProperty(name, val);
+    const lightBg  = isLightColor(bg);
+    const dir      = lightBg ? -1 : 1;
 
-    const set = (name, value) => root.style.setProperty(name, value);
-    
-    // Determine if background is light or dark
-    const lightBg = isLightColor(bg);
-    const dir = lightBg ? -1 : 1; // Darken for light bg, lighten for dark bg
+    // Surface scale — mirrors the UESL token hierarchy
+    const surface  = adjustColor(bg, 12 * dir);
+    const surface2 = adjustColor(bg, 22 * dir);
+    const surface3 = adjustColor(bg, 32 * dir);
+    const border   = lightBg ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.08)';
+    const textMuted = lightBg ? '#6b7280' : adjustColor(text, -55);
+    const { r: ar, g: ag, b: ab } = hexToRgb(accent);
+    const accentDim = `rgba(${ar},${ag},${ab},0.14)`;
 
-    set('--background', bg);
-    set('--bg-0', bg);
-    set('--bg-1', adjustColor(bg, 8 * dir));
-    set('--bg-2', adjustColor(bg, 16 * dir));
-    set('--bg-3', adjustColor(bg, 24 * dir));
-    set('--text', text);
+    // ── UESL design tokens — lets uesl.html's own CSS respond via var() ──
+    set('--nav-color', navColor);
+    set('--bg',        bg);
+    set('--surface',   surface);
+    set('--surface2',  surface2);
+    set('--surface3',  surface3);
+    set('--text',      text);
+    set('--muted',     textMuted);
+    set('--cyan',      accent);
+    set('--cyan-dim',  accentDim);
+    set('--border',    border);
+
+    // ── Pref-specific vars (used by some components) ──
+    set('--pref-bg-color',        bg);
+    set('--pref-text-color',      text);
+    set('--pref-font-family',     font);
+    set('--pref-font-size',       size + 'px');
+    set('--pref-accent-color',    accent);
+    set('--pref-selection-color', selectionColor);
+
+    // ── Legacy aliases ──
+    set('--background',  bg);
+    set('--bg-0',        bg);
+    set('--bg-1',        surface);
+    set('--bg-2',        surface2);
+    set('--bg-3',        surface3);
+    set('--panel',       surface);
+    set('--panel-mid',   surface2);
+    set('--ui-bg',       surface);
+    set('--ui-border',   border);
     set('--text-strong', adjustColor(text, lightBg ? -20 : 20));
-    set('--white1', text);
-    set('--theme', lightBg ? "base" : "dark"); // For Mermaid charts
+    set('--text-muted',  textMuted);
+    set('--white1',      text);
+    set('--theme',       lightBg ? 'base' : 'dark');
 
-    // Panels contrast with background
-    const panel = adjustColor(bg, 25 * dir);
-    const panelMid = adjustColor(bg, 35 * dir);
-    const uiBg = adjustColor(bg, 20 * dir);
-    const uiBorder = adjustColor(bg, 45 * dir);
-
-    set('--panel', panel);
-    set('--panel-mid', panelMid);
-    set('--ui-bg', uiBg);
-    set('--ui-border', uiBorder);
-    
-    // Text colors that work on panels - muted text should still be readable
-    // For light backgrounds: we want a medium-dark gray that contrasts with white
-    // For dark backgrounds: we want a medium-light gray that contrasts with dark
-    let textMuted;
+    // Priority hues
     if (lightBg) {
-      // Light background: use a dark gray for muted text (good contrast on white)
-      textMuted = '#6b7280'; // Tailwind gray-500, works well on light backgrounds
+      set('--priority-p0', '#b91c1c');
+      set('--priority-p1', '#c2410c');
+      set('--priority-p2', '#a16207');
+      set('--priority-p3', '#15803d');
     } else {
-      // Dark background: make the light text slightly dimmer
-      textMuted = adjustColor(text, -60);
-    }
-    set('--text-muted', textMuted);
-
-    // Priority colors — semantic hues adjusted per theme so calendar events
-    // stay readable on every background. Light themes darken the hues slightly;
-    // dark themes keep them vibrant.
-    if (lightBg) {
-      set('--priority-p0', '#b91c1c'); // red-700
-      set('--priority-p1', '#c2410c'); // orange-700
-      set('--priority-p2', '#a16207'); // yellow-700
-      set('--priority-p3', '#15803d'); // green-700
-    } else {
-      set('--priority-p0', '#dc2626'); // red-600
-      set('--priority-p1', '#ea580c'); // orange-600
-      set('--priority-p2', '#eab308'); // yellow-500
-      set('--priority-p3', '#22c55e'); // green-500
+      set('--priority-p0', '#dc2626');
+      set('--priority-p1', '#ea580c');
+      set('--priority-p2', '#eab308');
+      set('--priority-p3', '#22c55e');
     }
 
-    // Turn on the high-priority theme class on <html> so global CSS rules
-    // can override other themes consistently (Minima, Tailwind, etc.).
+    // Load external web fonts on demand
+    if (font.includes('SimBraille') || font.includes('Swell Braille')) {
+      // SimBraille ships with Windows 10/11 — no CDN needed.
+      // Inject a @font-face alias so browsers that have the system font pick it up correctly.
+      if (!document.getElementById('font-braille')) {
+        const s = document.createElement('style');
+        s.id = 'font-braille';
+        s.textContent = `@font-face { font-family: 'Swell Braille'; src: local('SimBraille'), local('Braille'); }`;
+        document.head.appendChild(s);
+      }
+    }
+
     document.documentElement.classList.add('user-theme-active');
 
-    // Inject CSS to override Tailwind classes with our theme colors
     injectThemeOverrideCSS({
-      bg, text, font, size, accent, panel, uiBorder, textMuted,
-      selectionColor, buttonStyle
+      bg, text, font, size, accent, accentDim,
+      surface, surface2, surface3,
+      border, textMuted, selectionColor, navColor, buttonStyle, lightBg,
     });
 
-    // Apply language translation if set
-    const lang = prefs?.language || '';
-    applyLanguage(lang);
+    applyLanguage(prefs?.language || '');
   }
 
   function injectThemeOverrideCSS(opts) {
-    const { bg, text, font, size, accent, panel, uiBorder, textMuted,
-            selectionColor, buttonStyle } = opts;
-    
+    const { bg, text, font, size, accent, accentDim,
+            surface, surface2, surface3,
+            border, textMuted, selectionColor, navColor, buttonStyle, lightBg } = opts;
+
     const styleId = 'user-theme-override-css';
     let style = document.getElementById(styleId);
     if (!style) {
@@ -221,179 +237,103 @@
       style.id = styleId;
       document.head.appendChild(style);
     }
-    
-    // Generate button border-radius based on style
-    let btnRadius = '0.375rem'; // rounded (default)
+
+    let btnRadius = '0.375rem';
     if (buttonStyle === 'square') btnRadius = '0';
     else if (buttonStyle === 'pill') btnRadius = '9999px';
-    
-    // Override Tailwind's neutral background classes when theme is active
+
     style.textContent = `
-      html.user-theme-active,
+      /* ── Navbar ── */
+      html.user-theme-active #nav {
+        background: ${navColor} !important;
+        border-bottom-color: ${border} !important;
+      }
+
+      /* ── Base ── */
       html.user-theme-active body {
         background-color: ${bg} !important;
         color: ${text} !important;
         font-family: ${font} !important;
         font-size: ${size}px !important;
       }
-      
-      /* Selection highlight color */
-      html.user-theme-active ::selection {
-        background-color: ${selectionColor} !important;
-        color: white !important;
-      }
-      html.user-theme-active ::-moz-selection {
-        background-color: ${selectionColor} !important;
-        color: white !important;
-      }
-      
-      /* Button border-radius based on style */
+
+      /* ── Selection ── */
+      html.user-theme-active ::selection      { background-color: ${selectionColor}; color: #fff; }
+      html.user-theme-active ::-moz-selection { background-color: ${selectionColor}; color: #fff; }
+
+      /* ── Button shape ── */
       html.user-theme-active button,
       html.user-theme-active .btn,
-      html.user-theme-active [class*="rounded"] button,
       html.user-theme-active input[type="submit"],
-      html.user-theme-active input[type="button"] {
-        border-radius: ${btnRadius} !important;
-      }
-      
-      /* Main content areas */
+      html.user-theme-active input[type="button"] { border-radius: ${btnRadius} !important; }
+
+      /* ── Tailwind backgrounds — mapped to the correct surface level ── */
+      html.user-theme-active .bg-neutral-950,
       html.user-theme-active .bg-neutral-900,
-      html.user-theme-active .bg-neutral-800 {
-        background-color: ${bg} !important;
-      }
-      
-      /* Sidebar and panels - slightly different shade */
-      html.user-theme-active .fixed.left-0.bg-neutral-800,
-      html.user-theme-active div[class*="bg-neutral-800"].border {
-        background-color: ${panel} !important;
-      }
-      
-      /* Cards and content blocks */
-      html.user-theme-active .rounded-lg.bg-neutral-800,
-      html.user-theme-active .p-4.rounded-lg.bg-neutral-800 {
-        background-color: ${panel} !important;
-      }
-      
-      /* Text colors */
-      html.user-theme-active .text-neutral-100,
+      html.user-theme-active .bg-gray-900     { background-color: ${bg}       !important; }
+      html.user-theme-active .bg-neutral-800,
+      html.user-theme-active .bg-gray-800     { background-color: ${surface}  !important; }
+      html.user-theme-active .bg-neutral-700,
+      html.user-theme-active .bg-gray-700     { background-color: ${surface2} !important; }
+      html.user-theme-active .bg-neutral-600,
+      html.user-theme-active .bg-gray-600     { background-color: ${surface3} !important; }
+
+      /* ── Tailwind text ── */
+      html.user-theme-active .text-white,
       html.user-theme-active .text-neutral-50,
-      html.user-theme-active .text-white {
-        color: ${text} !important;
-      }
-      
+      html.user-theme-active .text-neutral-100,
+      html.user-theme-active .text-neutral-200,
+      html.user-theme-active .text-neutral-300 { color: ${text}      !important; }
       html.user-theme-active .text-neutral-400,
-      html.user-theme-active .text-neutral-500 {
-        color: ${textMuted} !important;
-      }
-      
-      /* Gray text classes - common for descriptions */
-      html.user-theme-active .text-gray-300,
+      html.user-theme-active .text-neutral-500,
       html.user-theme-active .text-gray-400,
-      html.user-theme-active .text-gray-500,
-      html.user-theme-active .text-gray-600 {
-        color: ${textMuted} !important;
-      }
-      
-      /* Blog post meta and descriptions - these have hardcoded colors in themes */
-      html.user-theme-active .post-meta,
-      html.user-theme-active .post-meta-description {
-        color: ${textMuted} !important;
-      }
-      
-      /* Borders */
-      html.user-theme-active .border-neutral-700,
-      html.user-theme-active .border-neutral-600 {
-        border-color: ${uiBorder} !important;
-      }
-      
-      /* Accent colors for links and active states */
+      html.user-theme-active .text-gray-500    { color: ${textMuted} !important; }
+      html.user-theme-active .text-blue-400,
       html.user-theme-active .text-blue-500,
-      html.user-theme-active .border-blue-500 {
-        color: ${accent} !important;
-        border-color: ${accent} !important;
-      }
-      
-      /* Input fields */
-      html.user-theme-active .bg-neutral-700 {
-        background-color: ${panel} !important;
-      }
-      
-      html.user-theme-active input,
+      html.user-theme-active .text-cyan-400,
+      html.user-theme-active .text-cyan-500    { color: ${accent}    !important; }
+
+      /* ── Tailwind borders ── */
+      html.user-theme-active .border-neutral-800,
+      html.user-theme-active .border-neutral-700,
+      html.user-theme-active .border-neutral-600 { border-color: ${border} !important; }
+      html.user-theme-active .border-blue-500,
+      html.user-theme-active .border-cyan-500    { border-color: ${accent} !important; }
+
+      /* ── Form controls (exclude color/range/checkbox/radio inputs) ── */
+      html.user-theme-active input:not([type="color"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
       html.user-theme-active select,
       html.user-theme-active textarea {
-        background-color: ${panel} !important;
-        color: ${text} !important;
-        border-color: ${uiBorder} !important;
+        background-color: ${surface2} !important;
+        color: ${text}               !important;
+        border-color: ${border}      !important;
       }
-      
-      /* Lesson player overrides - these have hardcoded dark colors */
-      html.user-theme-active .lesson-player {
-        background-color: ${bg} !important;
-      }
-      
-      html.user-theme-active .lesson-sidebar {
-        background-color: ${panel} !important;
-        border-color: ${uiBorder} !important;
-      }
-      
-      html.user-theme-active .lesson-sidebar,
+
+      /* ── Ecentricolor layout ── */
+      html.user-theme-active .lesson-main    { background-color: ${bg}      !important; color: ${text} !important; }
+      html.user-theme-active .lesson-sidebar { background-color: ${surface} !important; border-color: ${border} !important; }
+
+      /* ── Lesson / lesson player ── */
+      html.user-theme-active .lesson-player,
+      html.user-theme-active .main-content,
+      html.user-theme-active .lesson-content  { background-color: ${bg}      !important; color: ${text} !important; }
       html.user-theme-active .sidebar-header,
       html.user-theme-active .sprint-nav,
       html.user-theme-active .sprint-section,
-      html.user-theme-active .lesson-item {
-        background-color: ${panel} !important;
-        color: ${text} !important;
-      }
-      
-      html.user-theme-active .lesson-main,
-      html.user-theme-active .main-content,
-      html.user-theme-active .lesson-content,
-      html.user-theme-active .content-wrapper {
-        background-color: ${bg} !important;
-        color: ${text} !important;
-      }
-      
-      html.user-theme-active .sidebar-header h2,
-      html.user-theme-active .sidebar-header p,
-      html.user-theme-active .sprint-toggle,
-      html.user-theme-active .lesson-title {
-        color: ${text} !important;
-      }
-      
-      html.user-theme-active .progress-bar-sidebar {
-        background-color: ${uiBorder} !important;
-      }
-      
-      /* Module cards in lesson player */
-      html.user-theme-active .module-card,
-      html.user-theme-active [class*="bg-neutral"],
-      html.user-theme-active [class*="bg-gray"],
-      html.user-theme-active [class*="bg-slate"],
-      html.user-theme-active [class*="bg-zinc"] {
-        background-color: ${panel} !important;
-        color: ${text} !important;
-      }
-      
-      /* All headings and paragraphs */
-      html.user-theme-active h1,
-      html.user-theme-active h2,
-      html.user-theme-active h3,
-      html.user-theme-active h4,
-      html.user-theme-active h5,
-      html.user-theme-active h6,
-      html.user-theme-active p,
-      html.user-theme-active li,
-      html.user-theme-active span,
-      html.user-theme-active div {
-        color: ${text} !important;
-      }
-      
-      /* Except for buttons and special elements */
-      html.user-theme-active button,
-      html.user-theme-active .btn,
-      html.user-theme-active a.btn {
-        color: inherit !important;
-      }
+      html.user-theme-active .lesson-item     { background-color: ${surface} !important; color: ${text} !important; }
+      html.user-theme-active .progress-bar-sidebar { background-color: ${surface2} !important; }
+
+      /* ── Links ── */
+      html.user-theme-active a:not([class*="bg-"]):not(.btn) { color: ${accent}; }
+      html.user-theme-active a:not([class*="bg-"]):not(.btn):hover { opacity: 0.8; }
+
+      /* ── Accent hover backgrounds ── */
+      html.user-theme-active .hover\\:bg-neutral-700:hover { background-color: ${surface2} !important; }
+      html.user-theme-active .hover\\:bg-neutral-800:hover { background-color: ${surface}  !important; }
+
+      /* ── Jekyll / Minima prose ── */
+      html.user-theme-active .post-meta,
+      html.user-theme-active .post-meta-description { color: ${textMuted} !important; }
     `;
   }
 
@@ -590,26 +530,18 @@
     }
 
     const props = [
-      '--pref-bg-color',
-      '--pref-text-color',
-      '--pref-font-family',
-      '--pref-font-size',
-      '--pref-accent-color',
-      '--pref-selection-color',
-      '--pref-cursor-style',
-      '--background',
-      '--bg-0',
-      '--bg-1',
-      '--bg-2',
-      '--bg-3',
-      '--text',
-      '--text-strong',
-      '--text-muted',
-      '--white1',
-      '--panel',
-      '--panel-mid',
-      '--ui-bg',
-      '--ui-border',
+      // UESL tokens
+      '--bg', '--surface', '--surface2', '--surface3',
+      '--text', '--muted', '--cyan', '--cyan-dim', '--border', '--nav-color',
+      // Pref vars
+      '--pref-bg-color', '--pref-text-color', '--pref-font-family',
+      '--pref-font-size', '--pref-accent-color', '--pref-selection-color', '--pref-cursor-style',
+      // Legacy aliases
+      '--background', '--bg-0', '--bg-1', '--bg-2', '--bg-3',
+      '--text-strong', '--text-muted', '--white1',
+      '--panel', '--panel-mid', '--ui-bg', '--ui-border',
+      // Priority
+      '--priority-p0', '--priority-p1', '--priority-p2', '--priority-p3',
     ];
 
     props.forEach((name) => root.style.removeProperty(name));

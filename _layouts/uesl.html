@@ -1235,6 +1235,7 @@
     }
   </style>
   <script src="{{ site.baseurl }}/assets/js/user-preferences.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/keyboard-shortcuts.js" defer></script>
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to main content</a>
@@ -1516,10 +1517,110 @@
       background: linear-gradient(135deg, var(--cyan), var(--purple));
       color: #fff; font-size: 1.6rem; cursor: pointer;
       box-shadow: 0 4px 24px rgba(0,212,255,.45);
-      transition: transform .2s, box-shadow .2s;
+      transition: transform .2s, box-shadow .2s, rotate .25s;
       display: flex; align-items: center; justify-content: center;
     }
     #uesl-chat-btn:hover { transform: scale(1.1); box-shadow: 0 6px 32px rgba(0,212,255,.6); }
+    #uesl-chat-btn.menu-open { rotate: 45deg; }
+
+    /* ── Toolkit panel ── */
+    #toolkit-menu {
+      position: fixed; bottom: 100px; right: 28px; z-index: 8999;
+      width: 272px;
+      background: var(--surface2, #1e2535);
+      border: 1.5px solid rgba(255,255,255,.09);
+      border-radius: 18px; padding: 14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(0,212,255,.08);
+      opacity: 0; pointer-events: none;
+      transform: translateY(14px) scale(.96);
+      transition: opacity .2s ease, transform .22s ease;
+    }
+    #toolkit-menu.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+    .tk-panel-header {
+      font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+      color: var(--muted, #8b949e); padding-bottom: 10px; margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .tk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 7px; }
+    .tk-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      background: var(--surface3, #252d40); border: 1.5px solid transparent;
+      color: var(--text, #e6edf3); padding: 10px 6px; border-radius: 11px;
+      cursor: pointer; text-align: center;
+      font-size: .72rem; font-weight: 600; font-family: var(--font-b, 'Inter', sans-serif);
+      transition: background .14s, border-color .14s, transform .1s, color .14s;
+      line-height: 1.25; user-select: none;
+    }
+    .tk-btn .tk-icon { font-size: 1.25rem; line-height: 1; }
+    .tk-btn:hover { background: var(--surface, #161b27); border-color: var(--cyan, #00d4ff); transform: translateY(-1px); }
+    .tk-btn.active { border-color: var(--cyan, #00d4ff); background: rgba(0,212,255,.1); color: var(--cyan, #00d4ff); }
+    .tk-btn-wide {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface3, #252d40); border: 1.5px solid transparent;
+      color: var(--text, #e6edf3); padding: 10px 14px; border-radius: 11px;
+      cursor: pointer; width: 100%; font-size: .78rem; font-weight: 600;
+      font-family: var(--font-b, 'Inter', sans-serif);
+      transition: background .14s, border-color .14s, color .14s;
+      margin-top: 7px;
+    }
+    .tk-btn-wide .tk-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .tk-btn-wide:hover { background: var(--surface, #161b27); border-color: var(--cyan, #00d4ff); }
+    .tk-btn-wide.active { border-color: var(--cyan, #00d4ff); background: rgba(0,212,255,.1); color: var(--cyan, #00d4ff); }
+
+    /* ── Active Friends panel ── */
+    #tk-friends-panel {
+      position: fixed; bottom: 90px; right: 80px;
+      width: 220px; background: var(--surface, #161b27);
+      border: 1px solid var(--border, rgba(255,255,255,.07));
+      border-radius: 12px; padding: 12px 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      z-index: 9001; display: none; font-size: .82rem;
+    }
+    #tk-friends-panel h4 {
+      margin: 0 0 8px; font-size: .8rem; font-weight: 700;
+      color: var(--cyan, #00d4ff); text-transform: uppercase; letter-spacing: .05em;
+    }
+    .tk-friend-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 0; color: var(--text, #e6edf3);
+    }
+    .tk-friend-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #3fb950; flex-shrink: 0;
+    }
+
+    /* ── Reading ruler ── */
+    #reading-ruler {
+      position: fixed; left: 0; right: 0; height: 30px;
+      background: rgba(0,212,255,.09);
+      border-top: 2px solid rgba(0,212,255,.35);
+      border-bottom: 2px solid rgba(0,212,255,.35);
+      pointer-events: none; z-index: 7999; display: none; top: 0;
+    }
+
+    /* ── High contrast mode ── */
+    html.tk-high-contrast { --bg:#000; --surface:#0d0d0d; --surface2:#1a1a1a; --surface3:#222; --text:#fff; --muted:#bbb; --cyan:#ff0; --border:rgba(255,255,255,.3); }
+    html.tk-high-contrast body { background:#000 !important; color:#fff !important; }
+    html.tk-high-contrast a:not([class*="bg-"]) { color:#ff0 !important; }
+    html.tk-high-contrast .bg-neutral-900, html.tk-high-contrast .bg-neutral-800,
+    html.tk-high-contrast .bg-neutral-700 { background:#111 !important; }
+    html.tk-high-contrast button:not(#uesl-chat-btn) { border:1.5px solid #fff !important; }
+
+    /* ── Focus mode ── */
+    html.tk-focus #nav { opacity:.15; transition:opacity .3s; }
+    html.tk-focus #nav:hover { opacity:1; }
+    html.tk-focus footer { opacity:.08; transition:opacity .3s; pointer-events:none; }
+    html.tk-focus .lesson-sidebar { opacity:.12; transition:opacity .3s; }
+
+    /* ── Dyslexia font ── */
+    html.tk-dyslexia, html.tk-dyslexia body,
+    html.tk-dyslexia p, html.tk-dyslexia li, html.tk-dyslexia td,
+    html.tk-dyslexia h1, html.tk-dyslexia h2, html.tk-dyslexia h3,
+    html.tk-dyslexia h4, html.tk-dyslexia h5, html.tk-dyslexia h6,
+    html.tk-dyslexia label, html.tk-dyslexia input, html.tk-dyslexia textarea {
+      font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+      letter-spacing: .04em; word-spacing: .1em; line-height: 1.7 !important;
+    }
 
     #uesl-chat-bubble {
       position: fixed; bottom: 100px; right: 96px; z-index: 9999;
@@ -1632,10 +1733,64 @@
   </style>
 
   <!-- Speech bubble -->
-  <div id="uesl-chat-bubble">Ask me anything! 👋</div>
+  <div id="uesl-chat-bubble">Need help? Open the toolkit! 🛠️</div>
 
-  <!-- Floating button -->
-  <button id="uesl-chat-btn" aria-label="Open UESL Coach chat">💬</button>
+  <!-- Reading ruler (follows cursor) -->
+  <div id="reading-ruler" aria-hidden="true"></div>
+
+  <!-- Toolkit panel -->
+  <div id="toolkit-menu" role="menu" aria-label="Accessibility toolkit">
+    <div class="tk-panel-header">🛠️ Accessibility Toolkit</div>
+
+    <div class="tk-grid">
+      <button class="tk-btn" id="toolkit-tts" role="menuitem">
+        <span class="tk-icon">🎧</span><span class="tk-label">Read Selection</span>
+      </button>
+      <button class="tk-btn" id="toolkit-dyslexia" role="menuitem">
+        <span class="tk-icon">📖</span><span class="tk-label">Dyslexia Font</span>
+      </button>
+      <button class="tk-btn" id="toolkit-high-contrast" role="menuitem">
+        <span class="tk-icon">⚫</span><span class="tk-label">High Contrast</span>
+      </button>
+      <button class="tk-btn" id="toolkit-focus" role="menuitem">
+        <span class="tk-icon">🎯</span><span class="tk-label">Focus Mode</span>
+      </button>
+      <button class="tk-btn" id="toolkit-font-up" role="menuitem">
+        <span class="tk-icon">🔡</span><span class="tk-label">Larger Text</span>
+      </button>
+      <button class="tk-btn" id="toolkit-font-down" role="menuitem">
+        <span class="tk-icon">🔤</span><span class="tk-label">Smaller Text</span>
+      </button>
+      <button class="tk-btn" id="toolkit-ruler" role="menuitem">
+        <span class="tk-icon">📏</span><span class="tk-label">Reading Ruler</span>
+      </button>
+      <button class="tk-btn" id="toolkit-shortcuts" role="menuitem">
+        <span class="tk-icon">⌨️</span><span class="tk-label">Shortcuts</span>
+      </button>
+    </div>
+
+    <button class="tk-btn-wide" id="toolkit-summarize" role="menuitem">
+      <span class="tk-icon">✨</span><span>Summarize Page</span>
+    </button>
+    <button class="tk-btn-wide" id="toolkit-chatbot" role="menuitem">
+      <span class="tk-icon">💬</span><span>Chatbot</span>
+    </button>
+    <button class="tk-btn-wide" id="toolkit-friends" role="menuitem">
+      <span class="tk-icon">🟢</span><span>Active Friends</span>
+    </button>
+    <button class="tk-btn-wide" id="toolkit-revert" role="menuitem">
+      <span class="tk-icon">↩️</span><span>Revert Settings</span>
+    </button>
+  </div>
+
+  <!-- Active friends popup -->
+  <div id="tk-friends-panel">
+    <h4>🟢 Active Now</h4>
+    <div id="tk-friends-list"><span style="color:var(--muted)">Loading…</span></div>
+  </div>
+
+  <!-- Floating toolkit button -->
+  <button id="uesl-chat-btn" aria-label="Open toolkit" aria-expanded="false">🛠️</button>
 
   <!-- Chat window -->
   <div id="uesl-chat-window" role="dialog" aria-label="UESL Coach chat">
@@ -1677,11 +1832,194 @@
     // Clear any stale saved position from old draggable feature
     try { localStorage.removeItem('uesl_chat_btn_pos'); } catch (_) {}
 
-    btn.addEventListener('click', () => {
+    const menu    = document.getElementById('toolkit-menu');
+    const ruler   = document.getElementById('reading-ruler');
+    const TK_KEY  = 'uesl_toolkit';
+
+    // Persistent toggle state (dyslexia + high-contrast survive refresh)
+    const tkState = (() => {
+      try { return JSON.parse(localStorage.getItem(TK_KEY) || '{}'); } catch(e) { return {}; }
+    })();
+    function saveTk() { try { localStorage.setItem(TK_KEY, JSON.stringify(tkState)); } catch(e) {} }
+
+    function closeMenu() {
+      menu.classList.remove('open');
+      btn.classList.remove('menu-open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       bubble.classList.remove('show');
-      win.classList.toggle('open');
-      if (win.classList.contains('open')) input.focus();
+      const opening = !menu.classList.contains('open');
+      opening ? (menu.classList.add('open'), btn.classList.add('menu-open'), btn.setAttribute('aria-expanded','true'))
+              : closeMenu();
     });
+    document.addEventListener('click', (e) => {
+      if (!btn.contains(e.target) && !menu.contains(e.target)) closeMenu();
+    });
+
+    // ── Helper: load OpenDyslexic font on demand ──
+    function loadOpenDyslexic() {
+      if (document.getElementById('font-opendyslexic')) return;
+      const s = document.createElement('style');
+      s.id = 'font-opendyslexic';
+      s.textContent = `@font-face{font-family:'OpenDyslexic';src:url('https://cdn.jsdelivr.net/npm/opendyslexic/WOFF/OpenDyslexic-Regular.woff') format('woff'),local('OpenDyslexic');}`;
+      document.head.appendChild(s);
+    }
+
+    // ── Apply persistent state on load ──
+    function applyTkState() {
+      const html = document.documentElement;
+      if (tkState.dyslexia)     { loadOpenDyslexic(); html.classList.add('tk-dyslexia');       document.getElementById('toolkit-dyslexia')?.classList.add('active'); }
+      if (tkState.highContrast) { html.classList.add('tk-high-contrast'); document.getElementById('toolkit-high-contrast')?.classList.add('active'); }
+    }
+    applyTkState();
+
+    // ── Toggle factory ──
+    function makeToggle(id, key, cssClass, onEnable) {
+      document.getElementById(id)?.addEventListener('click', () => {
+        tkState[key] = !tkState[key];
+        if (tkState[key] && onEnable) onEnable();
+        document.documentElement.classList.toggle(cssClass, tkState[key]);
+        document.getElementById(id).classList.toggle('active', tkState[key]);
+        saveTk();
+      });
+    }
+
+    makeToggle('toolkit-dyslexia',      'dyslexia',     'tk-dyslexia',       loadOpenDyslexic);
+    makeToggle('toolkit-high-contrast', 'highContrast', 'tk-high-contrast',  null);
+    makeToggle('toolkit-focus',         'focus',        'tk-focus',          null);
+
+    // ── Reading ruler ──
+    let rulerOn = false;
+    document.getElementById('toolkit-ruler').addEventListener('click', () => {
+      rulerOn = !rulerOn;
+      ruler.style.display = rulerOn ? 'block' : 'none';
+      document.getElementById('toolkit-ruler').classList.toggle('active', rulerOn);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (rulerOn) ruler.style.top = (e.clientY - 15) + 'px';
+    });
+
+    // ── Font size ──
+    function bumpFontSize(delta) {
+      const html = document.documentElement;
+      const cur = parseFloat(html.style.fontSize) || parseFloat(getComputedStyle(html).fontSize) || 16;
+      const next = Math.min(Math.max(cur + delta, 10), 28);
+      html.style.fontSize = next + 'px';
+    }
+    document.getElementById('toolkit-font-up').addEventListener('click',   () => bumpFontSize(2));
+    document.getElementById('toolkit-font-down').addEventListener('click', () => bumpFontSize(-2));
+
+    // ── TTS ──
+    const tkTTS = document.getElementById('toolkit-tts');
+    tkTTS.addEventListener('click', () => {
+      const sp = window.SitePreferences;
+      if (!sp) return;
+      if (sp.isSpeaking()) {
+        sp.stopSpeaking();
+        tkTTS.querySelector('.tk-label').textContent = 'Read Selection';
+        tkTTS.classList.remove('active');
+        return;
+      }
+      const spoke = sp.speakSelection();
+      if (spoke) {
+        tkTTS.querySelector('.tk-label').textContent = 'Stop Reading';
+        tkTTS.classList.add('active');
+        const poll = setInterval(() => {
+          if (!sp.isSpeaking()) {
+            tkTTS.querySelector('.tk-label').textContent = 'Read Selection';
+            tkTTS.classList.remove('active');
+            clearInterval(poll);
+          }
+        }, 300);
+      } else {
+        const lbl = tkTTS.querySelector('.tk-label');
+        lbl.textContent = 'Highlight text first';
+        setTimeout(() => { lbl.textContent = 'Read Selection'; }, 2200);
+      }
+    });
+
+    // ── Keyboard shortcuts ──
+    document.getElementById('toolkit-shortcuts').addEventListener('click', () => {
+      closeMenu();
+      if (typeof window.showKeyboardHelp === 'function') {
+        window.showKeyboardHelp();
+      }
+    });
+
+    // ── Summarize page ──
+    document.getElementById('toolkit-summarize').addEventListener('click', () => {
+      closeMenu();
+      const pageText = (document.querySelector('#main') || document.body).innerText
+        .replace(/\s+/g, ' ').trim().slice(0, 1800);
+      input.value = 'Summarize this page in simple terms:\n\n' + pageText;
+      win.classList.add('open');
+      send.click();
+    });
+
+    // ── Chatbot ──
+    document.getElementById('toolkit-chatbot').addEventListener('click', () => {
+      closeMenu();
+      win.classList.add('open');
+      input.focus();
+    });
+
+    // ── Revert Settings ──
+    document.getElementById('toolkit-revert').addEventListener('click', () => {
+      closeMenu();
+      if (window.SitePreferences?.resetPreferences) {
+        window.SitePreferences.resetPreferences();
+        const btn = document.getElementById('toolkit-revert');
+        const span = btn.querySelector('span:last-child');
+        span.textContent = 'Reverted!';
+        setTimeout(() => { span.textContent = 'Revert Settings'; }, 2000);
+      }
+    });
+
+    // ── Active Friends ──
+    const friendsPanel = document.getElementById('tk-friends-panel');
+    const friendsList  = document.getElementById('tk-friends-list');
+    const pythonURI = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8424' : 'https://uesl.opencodingsociety.com';
+
+    function sendHeartbeat() {
+      fetch(pythonURI + '/api/heartbeat', { method: 'POST', credentials: 'include' }).catch(() => {});
+    }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 120000);
+
+    document.getElementById('toolkit-friends').addEventListener('click', () => {
+      closeMenu();
+      if (friendsPanel.style.display === 'block') {
+        friendsPanel.style.display = 'none';
+        return;
+      }
+      friendsPanel.style.display = 'block';
+      friendsList.innerHTML = '<span style="color:var(--muted)">Loading…</span>';
+      fetch(pythonURI + '/api/active-users', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(users => {
+          if (!users.length) {
+            friendsList.innerHTML = '<span style="color:var(--muted)">No one else active right now.</span>';
+            return;
+          }
+          friendsList.innerHTML = users.map(u =>
+            `<div class="tk-friend-row"><span class="tk-friend-dot"></span><span>${u.uid}</span></div>`
+          ).join('');
+        })
+        .catch(() => {
+          friendsList.innerHTML = '<span style="color:var(--muted)">Could not load — are you logged in?</span>';
+        });
+    });
+
+    document.addEventListener('click', e => {
+      if (!friendsPanel.contains(e.target) && e.target.id !== 'toolkit-friends') {
+        friendsPanel.style.display = 'none';
+      }
+    });
+
     close.addEventListener('click', () => win.classList.remove('open'));
 
     function addMsg(text, role) {
