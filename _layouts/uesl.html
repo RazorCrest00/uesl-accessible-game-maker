@@ -2571,36 +2571,42 @@
       localStorage.setItem(key, JSON.stringify(l));
     }
 
-    // ── Friend requests ───────────────────────────────────────────────────────
-    // Stored globally (shared across all users on same browser)
-    function reqLoad()     { try { return JSON.parse(localStorage.getItem(REQUESTS_KEY)) || []; } catch(e) { return []; } }
-    function reqSave(list) { localStorage.setItem(REQUESTS_KEY, JSON.stringify(list)); }
-
-    function reqSend(toUid, toName) {
-      const reqs = reqLoad();
-      if (reqs.find(r => r.from_uid===myUid && r.to_uid===toUid && r.status==='pending')) return; // no duplicates
-      reqs.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2), from_uid: myUid, from_name: myName, to_uid: toUid, to_name: toName, status: 'pending' });
-      reqSave(reqs);
+    // ── Friend requests (server-side) ─────────────────────────────────────────
+    async function reqSend(toUid, toName) {
+      const r = await api('/friend/request', {
+        method: 'POST',
+        body: JSON.stringify({ to_uid: toUid, to_name: toName }),
+      });
+      return r.ok;
     }
 
-    function reqGetIncoming() { return reqLoad().filter(r => r.to_uid === String(myUid) && r.status === 'pending'); }
-
-    function reqIsPending(toUid) { return reqLoad().some(r => r.from_uid===String(myUid) && r.to_uid===String(toUid) && r.status==='pending'); }
-
-    function reqAccept(reqId) {
-      const reqs = reqLoad();
-      const req  = reqs.find(r => r.id === reqId);
-      if (!req) return;
-      req.status = 'accepted';
-      reqSave(reqs);
-      lsAdd(req.from_uid, req.from_name);          // add sender to MY friends
-      lsAddForUser(req.from_uid, myUid, myName);   // add ME to sender's friends (mutual)
+    async function reqGetIncoming() {
+      try {
+        const r = await api('/friend/requests');
+        if (!r.ok) return [];
+        return await r.json();
+      } catch(e) { return []; }
     }
 
-    function reqDecline(reqId) {
-      const reqs = reqLoad();
-      const req  = reqs.find(r => r.id === reqId);
-      if (req) { req.status = 'declined'; reqSave(reqs); }
+    async function reqIsPending(toUid) {
+      const reqs = await reqGetIncoming();
+      // check outgoing — server doesn't expose these, so check via a simple GET
+      // treat as "not pending" if we can't verify; the send will 409 if already pending
+      return false;
+    }
+
+    async function reqAccept(reqId) {
+      await api('/friend/accept', {
+        method: 'POST',
+        body: JSON.stringify({ request_id: reqId }),
+      });
+    }
+
+    async function reqDecline(reqId) {
+      await api('/friend/decline', {
+        method: 'POST',
+        body: JSON.stringify({ request_id: reqId }),
+      });
     }
 
     // ── People cache (fetched once per session from Python backend) ─────────────
@@ -2726,8 +2732,8 @@
     })();
 
     // ── Friend requests UI ────────────────────────────────────────────────────
-    function renderRequests() {
-      const incoming = reqGetIncoming();
+    async function renderRequests() {
+      const incoming = await reqGetIncoming();
       const section  = $('requests-section');
       const badge    = $('req-badge');
       const list     = $('request-list');
@@ -2740,28 +2746,42 @@
         const item = document.createElement('div');
         item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);';
         item.innerHTML = `
-          <div style="width:34px;height:34px;border-radius:50%;background:${colorFor(req.from_name)};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#000;flex-shrink:0;">${initials(req.from_name)}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${colorFor(req.from_uid)};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#000;flex-shrink:0;">${initials(req.from_uid)}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:.86rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(req.from_name)}</div>
+            <div style="font-size:.86rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@${esc(req.from_uid)}</div>
             <div style="font-size:.74rem;color:var(--muted);">wants to be friends</div>
           </div>
-          <button data-act="accept" style="background:var(--green);color:#000;border:none;border-radius:7px;padding:4px 10px;font-size:.78rem;font-weight:700;cursor:pointer;">✓</button>
+          <button data-act="accept" style="background:var(--green,#3fb950);color:#000;border:none;border-radius:7px;padding:4px 10px;font-size:.78rem;font-weight:700;cursor:pointer;">✓</button>
           <button data-act="decline" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:.78rem;cursor:pointer;">✕</button>`;
-        item.querySelector('[data-act="accept"]').addEventListener('click', () => {
-          reqAccept(req.id); loadFriends(); renderRequests();
+        item.querySelector('[data-act="accept"]').addEventListener('click', async () => {
+          await reqAccept(req.id); await loadFriends();
         });
-        item.querySelector('[data-act="decline"]').addEventListener('click', () => {
-          reqDecline(req.id); renderRequests();
+        item.querySelector('[data-act="decline"]').addEventListener('click', async () => {
+          await reqDecline(req.id); await renderRequests();
         });
         list.appendChild(item);
       });
     }
 
-    // ── Friends list (localStorage — no backend friends API needed) ──────────
-    function loadFriends() {
+    // ── Friends list (server + localStorage cache for chat) ───────────────────
+    async function loadFriends() {
+      // Pull accepted friends from server, merge into localStorage for chat/DM use
+      try {
+        const r = await api('/friend/list');
+        if (r.ok) {
+          const serverFriends = await r.json();
+          const current = lsLoad();
+          serverFriends.forEach(f => {
+            if (!current.find(c => c.uid === f.uid)) {
+              current.push({ uid: f.uid, name: f.uid, status: 'offline' });
+            }
+          });
+          lsSave(current);
+        }
+      } catch(e) {}
       friendsCache = lsLoad();
       renderFriendList();
-      renderRequests();
+      await renderRequests();
       renderGroupList();
     }
 
@@ -3283,20 +3303,20 @@
     $('afm-input').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
 
     function renderPersonRow(container, uid, name, alreadyFriend, isMe) {
-      const isPending = !alreadyFriend && !isMe && reqIsPending(uid);
       const item = document.createElement('div');
       item.className = 'afm-result-item';
       item.innerHTML = `
-        <div class="afm-r-avatar" style="background:${colorFor(name)}">${initials(name)}</div>
-        <div><div class="afm-r-name">${esc(name)}</div><div class="afm-r-tag">@${esc(uid)}</div></div>
-        <button class="afm-add-btn" ${(alreadyFriend||isMe||isPending)?'disabled':''}>
-          ${isMe ? 'You' : alreadyFriend ? 'Friends ✓' : isPending ? 'Sent ✓' : '+ Add'}
+        <div class="afm-r-avatar" style="background:${colorFor(uid)}">${initials(uid)}</div>
+        <div><div class="afm-r-name">@${esc(uid)}</div></div>
+        <button class="afm-add-btn" ${(alreadyFriend||isMe)?'disabled':''}>
+          ${isMe ? 'You' : alreadyFriend ? 'Friends ✓' : '+ Add'}
         </button>`;
-      if (!alreadyFriend && !isMe && !isPending) {
-        item.querySelector('.afm-add-btn').addEventListener('click', e => {
+      if (!alreadyFriend && !isMe) {
+        item.querySelector('.afm-add-btn').addEventListener('click', async e => {
           e.currentTarget.disabled = true;
-          e.currentTarget.textContent = 'Sent ✓';
-          reqSend(uid, name);
+          e.currentTarget.textContent = 'Sending…';
+          const ok = await reqSend(uid, uid);
+          e.currentTarget.textContent = ok ? 'Sent ✓' : 'Already sent';
         });
       }
       container.appendChild(item);
@@ -3351,11 +3371,13 @@
               value="${esc(q)}"/>
             <button id="afm-manual-add" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:.88rem;">Add</button>
           </div>`;
-        $('afm-manual-add').addEventListener('click', () => {
+        $('afm-manual-add').addEventListener('click', async () => {
           const uid = $('afm-manual-uid').value.trim();
           if (!uid) return;
-          reqSend(uid, uid);
-          container.innerHTML = `<p style="color:var(--green);font-size:.85rem;">Friend request sent to @${esc(uid)}. They'll see it when they open the social hub.</p>`;
+          const ok = await reqSend(uid, uid);
+          container.innerHTML = ok
+            ? `<p style="color:var(--green,#3fb950);font-size:.85rem;">Friend request sent to @${esc(uid)}!</p>`
+            : `<p style="color:#ff6b6b;font-size:.85rem;">Could not send request — user not found or already sent.</p>`;
         });
         $('afm-manual-uid').addEventListener('keydown', e => { if (e.key === 'Enter') $('afm-manual-add').click(); });
       } finally {
