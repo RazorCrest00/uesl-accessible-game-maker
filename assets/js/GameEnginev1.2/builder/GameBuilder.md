@@ -1073,11 +1073,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const mazeOpt = document.createElement('option');
             mazeOpt.value = 'maze'; mazeOpt.textContent = 'Maze';
             ui.bg.appendChild(mazeOpt);
+
+            const maze2Opt = document.createElement('option');
+            maze2Opt.value = 'maze2'; maze2Opt.textContent = 'Maze v2 (Cyber Maze)';
+            ui.bg.appendChild(maze2Opt);
         }
         // Pre-scan Newmaze.png for wall barriers so they're ready when the user confirms
         _mazeScanBarriersAsync(900, 600).then(() => {
             // If maze is already selected, re-stage the code now that barriers are loaded
-            if (ui.bg && ui.bg.value === 'maze') {
+            if (ui.bg && (ui.bg.value === 'maze' || ui.bg.value === 'maze2')) {
                 state.lastEdited = 'background';
                 syncFromControlsIfFreestyle();
             }
@@ -2622,7 +2626,7 @@ function barrier_code(barrierData) {
  * @param {number} canvasH - Canvas pixel height
  * @returns {Object} { dataURL: string, barriers: Array<{x,y,width,height}> }
  */
-function maze_generate(canvasW = 900, canvasH = 600) {
+function maze_generate(canvasW = 900, canvasH = 600, seedValue = 42) {
     // 6×4 grid: 150×150px cells, WALL=32 → barrier thickness=64px.
     //
     // WHY THIS GRID AND WALL SIZE:
@@ -2654,8 +2658,8 @@ function maze_generate(canvasW = 900, canvasH = 600) {
         Array.from({ length: COLS }, () => ({ N: true, E: true, S: true, W: true }))
     );
 
-    // Seeded RNG (fixed seed = 42) — same seed produces the same maze every run
-    let _seed = 42;
+    // Seeded RNG — same seed produces the same maze every run
+    let _seed = seedValue;
     const _rng = () => { _seed = (_seed * 1664525 + 1013904223) & 0xffffffff; return (_seed >>> 0) / 0xffffffff; };
 
     // Iterative backtracker (perfect maze — exactly one path between any two cells)
@@ -2687,10 +2691,19 @@ function maze_generate(canvasW = 900, canvasH = 600) {
     oc.width = canvasW; oc.height = canvasH;
     const ctx = oc.getContext('2d');
 
-    // Stone-wall background with faint masonry grid texture
-    ctx.fillStyle = '#12100f';
+    const isCyber = (game.background === 'maze2');
+    const theme = isCyber ? {
+        wall: '#0a0a1a', grid: 'rgba(50,50,150,0.3)', floor: '#1a0a2a',
+        glow1: '#ff00ff', glow2: '#00ffff', start: '#ff00ff'
+    } : {
+        wall: '#12100f', grid: 'rgba(55,42,30,0.55)', floor: '#0b2924',
+        glow1: '#00e5cc', glow2: '#00ffcc', start: '#00FF88'
+    };
+
+    // Wall & Grid
+    ctx.fillStyle = theme.wall;
     ctx.fillRect(0, 0, canvasW, canvasH);
-    ctx.strokeStyle = 'rgba(55,42,30,0.55)';
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 0.8;
     for (let gx = 0; gx < canvasW; gx += 32) {
         ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, canvasH); ctx.stroke();
@@ -2731,21 +2744,21 @@ function maze_generate(canvasW = 900, canvasH = 600) {
 
     // Layer 1 — outer glow halo
     ctx.save();
-    ctx.shadowColor = '#00e5cc'; ctx.shadowBlur = 26;
-    ctx.strokeStyle = 'rgba(0,200,180,0.18)';
+    ctx.shadowColor = theme.glow1; ctx.shadowBlur = 26;
+    ctx.strokeStyle = isCyber ? 'rgba(255,0,255,0.18)' : 'rgba(0,200,180,0.18)';
     ctx.lineWidth = COR_W + 20; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (const seg of corridors) { ctx.beginPath(); _crPath(ctx, seg); ctx.stroke(); }
     ctx.restore();
 
-    // Layer 2 — corridor floor (dark teal fill)
-    ctx.strokeStyle = '#0b2924';
+    // Layer 2 — corridor floor (dark fill)
+    ctx.strokeStyle = theme.floor;
     ctx.lineWidth = COR_W; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (const seg of corridors) { ctx.beginPath(); _crPath(ctx, seg); ctx.stroke(); }
 
     // Layer 3 — inner glow centerline (spline highlight)
     ctx.save();
-    ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 12;
-    ctx.strokeStyle = 'rgba(0,235,185,0.55)';
+    ctx.shadowColor = theme.glow2; ctx.shadowBlur = 12;
+    ctx.strokeStyle = isCyber ? 'rgba(0,255,255,0.55)' : 'rgba(0,235,185,0.55)';
     ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (const seg of corridors) { ctx.beginPath(); _crPath(ctx, seg); ctx.stroke(); }
     ctx.restore();
@@ -2760,10 +2773,10 @@ function maze_generate(canvasW = 900, canvasH = 600) {
     ctx.fillText('EXIT', nodeX[COLS - 1], nodeY[ROWS - 1] + 1);
     ctx.restore();
 
-    // START marker — green dot at top-left cell
+    // START marker — themed dot at top-left cell
     ctx.save();
-    ctx.shadowColor = '#00FF88'; ctx.shadowBlur = 10;
-    ctx.fillStyle = 'rgba(0,255,136,0.5)';
+    ctx.shadowColor = theme.start; ctx.shadowBlur = 10;
+    ctx.fillStyle = isCyber ? 'rgba(255,0,255,0.5)' : 'rgba(0,255,136,0.5)';
     ctx.beginPath(); ctx.arc(nodeX[0], nodeY[0], 10, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
@@ -2958,8 +2971,7 @@ function background_generate(bg) {
                 y: p.yf,
                 width:  p.wf,
                 height: p.hf,
-                visible: true,
-                color: '#4466ff',
+                visible: false,
                 fromOverlay: false,
             };
             const bc = barrier_code(bData);
@@ -2969,17 +2981,19 @@ function background_generate(bg) {
         return { defs, classes };
     }
 
-    // Maze background — use Newmaze.png with auto-scanned pixel barriers
-    if (bg.type === 'maze') {
+    // Maze background — use procedurally generated maze with auto-scanned barriers
+    if (bg.type === 'maze' || bg.type === 'maze2') {
         const canvasH = parseInt(bg.h) || 600;
         const canvasW = parseInt(bg.w) || 900;
-        const mazeBg = { src: '/images/gamebuilder/Newmaze.png', h: canvasH, w: canvasW };
+        const seed = bg.type === 'maze2' ? 99 : 42;
+        const mazeData = maze_generate(canvasW, canvasH, seed);
+        const mazeBg = { src: mazeData.dataURL, h: canvasH, w: canvasW };
         const bgx = bg_extract(mazeBg, 'maze_bg');
         const bgCode = bg_code(bgx, 'mazeData');
         const defs = [bgCode.def];
         const classes = [bgCode.classEntry];
-        // Include pre-scanned wall barriers (ready if _mazeScanBarriersAsync was called earlier)
-        for (const b of (_mazeBarrierData || [])) {
+        // Include the procedural wall barriers
+        for (const b of (mazeData.barriers || [])) {
             const bc = barrier_code(b);
             defs.push(bc.def);
             classes.push(bc.classEntry);

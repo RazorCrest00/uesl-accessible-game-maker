@@ -1033,6 +1033,7 @@ permalink: /game-maker/
         <option value="sunset">🌅 Sunset</option>
         <option value="ocean">🌊 Ocean Sky</option>
         <option value="maze">🌀 Maze</option>
+        <option value="maze2">⚡ Cyber Maze</option>
         <option value="road">🛣️ Road Drive</option>
       </select>
     </div>
@@ -1516,6 +1517,19 @@ const MAZE_CORRIDORS=[
   [_mn(4,2),_mn(4,3),_mn(4,4),_mn(5,4)],                     // down then → EXIT
 ];
 
+/* Cyber Maze: A more complex layout with a central hub and branching paths */
+const MAZE2_CORRIDORS = [
+  // ── Main solution path ──────────────────────────────────────────────────
+  [_mn(0,0),_mn(1,0),_mn(1,1),_mn(1,2),_mn(2,2),_mn(3,2),_mn(3,3),_mn(3,4),_mn(4,4),_mn(5,4)],
+  // ── Branching paths ─────────────────────────────────────────────────────
+  [_mn(1,2),_mn(0,2),_mn(0,3),_mn(0,4)],                     // left-side loop
+  [_mn(3,2),_mn(3,1),_mn(3,0),_mn(4,0),_mn(5,0),_mn(5,1)],   // top-right branch
+  [_mn(3,0),_mn(2,0)],                                       // dead end top
+  [_mn(1,1),_mn(2,1),_mn(2,0)],                               // small loop top
+  [_mn(3,3),_mn(4,3),_mn(5,3),_mn(5,2),_mn(4,2),_mn(4,1)],   // mid-right branch
+  [_mn(1,4),_mn(2,4)],                                       // bottom stub
+];
+
 /* Draw a Catmull-Rom spline through pts (call beginPath before this) */
 function catmullRomPath(ctx,pts){
   if(pts.length<2)return;
@@ -1529,16 +1543,17 @@ function catmullRomPath(ctx,pts){
 }
 
 /* Lazy offscreen collision mask — white pixels = walkable corridor.
-   Reset whenever MAZE_CORRIDORS changes (e.g. background switch). */
+   Reset whenever background switches. */
 let _mazePixels=null;
 function getMazePixels(){
   if(_mazePixels)return _mazePixels;
+  const corridors = (game.background === 'maze2') ? MAZE2_CORRIDORS : MAZE_CORRIDORS;
   const oc=document.createElement('canvas');
   oc.width=W;oc.height=H;
   const c=oc.getContext('2d');
   c.fillStyle='#000';c.fillRect(0,0,W,H);
   c.strokeStyle='#FFF';c.lineWidth=MAZE_CW;c.lineCap='round';c.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){c.beginPath();catmullRomPath(c,cor);c.stroke();}
+  for(const cor of corridors){c.beginPath();catmullRomPath(c,cor);c.stroke();}
   _mazePixels=c.getImageData(0,0,W,H).data;
   return _mazePixels;
 }
@@ -1568,42 +1583,61 @@ function resolveMazeCollision(ps,prevX,prevY){
 }
 
 function drawMazeBg(ctx){
+  _drawGenericMaze(ctx, MAZE_CORRIDORS, {
+    wall: '#12100f', grid: 'rgba(55,42,30,0.55)', floor: '#0b2924',
+    glow1: '#00e5cc', glow2: '#00ffcc', start: '#00FF88'
+  });
+}
+
+function drawMaze2Bg(ctx){
+  _drawGenericMaze(ctx, MAZE2_CORRIDORS, {
+    wall: '#0a0a1a', grid: 'rgba(50,50,150,0.3)', floor: '#1a0a2a',
+    glow1: '#ff00ff', glow2: '#00ffff', start: '#ff00ff'
+  });
+}
+
+function _drawGenericMaze(ctx, corridors, theme){
   const t=Date.now()*0.001;
-  // Stone wall
-  ctx.fillStyle='#12100f';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(55,42,30,0.55)';ctx.lineWidth=0.8;
+  // Wall & Grid
+  ctx.fillStyle=theme.wall; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=theme.grid; ctx.lineWidth=0.8;
   for(let gx=0;gx<W;gx+=32){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
   for(let gy=0;gy<H;gy+=28){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+  
   // Outer corridor glow
   ctx.save();
-  ctx.shadowColor='#00e5cc';ctx.shadowBlur=26;
-  ctx.strokeStyle='rgba(0,200,180,0.15)';
-  ctx.lineWidth=MAZE_CW+20;ctx.lineCap='round';ctx.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  ctx.shadowColor=theme.glow1; ctx.shadowBlur=26;
+  ctx.strokeStyle=`rgba(${parseInt(theme.glow1.slice(1,3),16)},${parseInt(theme.glow1.slice(3,5),16)},${parseInt(theme.glow1.slice(5,7),16)},0.15)`;
+  ctx.lineWidth=MAZE_CW+20; ctx.lineCap='round'; ctx.lineJoin='round';
+  for(const cor of corridors){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
   ctx.restore();
+  
   // Corridor floor
-  ctx.strokeStyle='#0b2924';ctx.lineWidth=MAZE_CW;ctx.lineCap='round';ctx.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  ctx.strokeStyle=theme.floor; ctx.lineWidth=MAZE_CW; ctx.lineCap='round'; ctx.lineJoin='round';
+  for(const cor of corridors){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  
   // Inner glow line (animated)
   ctx.save();
-  ctx.shadowColor='#00ffcc';ctx.shadowBlur=12;
-  ctx.strokeStyle=`rgba(0,235,185,${0.4+0.2*Math.sin(t*1.8)})`;
-  ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
-  for(const cor of MAZE_CORRIDORS){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
+  ctx.shadowColor=theme.glow2; ctx.shadowBlur=12;
+  ctx.strokeStyle=`rgba(${parseInt(theme.glow2.slice(1,3),16)},${parseInt(theme.glow2.slice(3,5),16)},${parseInt(theme.glow2.slice(5,7),16)},${0.4+0.2*Math.sin(t*1.8)})`;
+  ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.lineJoin='round';
+  for(const cor of corridors){ctx.beginPath();catmullRomPath(ctx,cor);ctx.stroke();}
   ctx.restore();
-  // EXIT marker — pulsing gold at node(5,4)
+  
+  // EXIT marker
   const ex=MAZE_CX[5],ey=MAZE_RY[4],pulse=0.85+0.25*Math.sin(t*2.5);
   ctx.save();
-  ctx.shadowColor='#FFD700';ctx.shadowBlur=22*pulse;
+  ctx.shadowColor='#FFD700'; ctx.shadowBlur=22*pulse;
   ctx.fillStyle=`rgba(255,215,0,${0.75*pulse})`;
   ctx.beginPath();ctx.arc(ex,ey,13*pulse,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#000';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText('EXIT',ex,ey+1);
   ctx.restore();
-  // START marker — soft green at node(0,0)
+  
+  // START marker
   ctx.save();
-  ctx.shadowColor='#00FF88';ctx.shadowBlur=10;
-  ctx.fillStyle='rgba(0,255,136,0.45)';
+  ctx.shadowColor=theme.start; ctx.shadowBlur=10;
+  ctx.fillStyle=`rgba(${parseInt(theme.start.slice(1,3),16)},${parseInt(theme.start.slice(3,5),16)},${parseInt(theme.start.slice(5,7),16)},0.45)`;
   ctx.beginPath();ctx.arc(MAZE_CX[0],MAZE_RY[0],9,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
@@ -1721,6 +1755,7 @@ const BACKGROUNDS = [
   { id: 'sunset', label: '🌅 Sunset',        type: 'drawn', draw: drawSunsetBg },
   { id: 'ocean',  label: '🌊 Ocean Sky',     type: 'drawn', draw: drawOceanBg },
   { id: 'maze',   label: '🌀 Maze',   type: 'drawn', draw: drawMazeBg },
+  { id: 'maze2',  label: '⚡ Cyber Maze',  type: 'drawn', draw: drawMaze2Bg },
   { id: 'road',   label: '🛣️ Road Drive', type: 'drawn', draw: drawRoadBg },
 ];
 
@@ -1893,6 +1928,7 @@ function initBgPicker() {
     sel.value = game.background || 'dark';
     sel.addEventListener('change', () => {
       game.background = sel.value;
+      _mazePixels = null; // Reset collision cache for new maze layout
       syncBgActive();
       renderEditor();
     });
@@ -1915,6 +1951,7 @@ function initBgPicker() {
       wrap.appendChild(lbl);
       wrap.addEventListener('click', ()=>{
         game.background = bg.id;
+        _mazePixels = null; // Reset collision cache for new maze layout
         if (sel) sel.value = bg.id;
         syncBgActive();
         renderEditor();
