@@ -215,6 +215,62 @@ permalink: /car-racing-builder
   100% { transform: scale(0.8); opacity: 0; }
 }
 
+/* ── Pre-race track preview banner ───────────────────────────────────── */
+.crb-preview {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 28px;
+  pointer-events: none;
+  z-index: 45;
+}
+.crb-preview-box {
+  background: rgba(0,0,0,0.72);
+  border: 2px solid var(--pref-accent-color, #4CAFEF);
+  border-radius: 14px;
+  padding: 12px 36px 14px;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  animation: previewFadeIn 0.4s ease-out forwards;
+}
+@keyframes previewFadeIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.crb-preview-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f59e0b;
+  margin-bottom: 4px;
+}
+.crb-preview-track {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+}
+.crb-preview-sub {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 5px;
+}
+.crb-preview-arrow {
+  width: 0; height: 0;
+  margin-top: 6px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid var(--pref-accent-color, #4CAFEF);
+  animation: arrowBounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes arrowBounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(6px); }
+}
+
 /* ── Results overlay ──────────────────────────────────────────────────── */
 .crb-results {
   position: absolute;
@@ -504,6 +560,15 @@ permalink: /car-racing-builder
           </div>
         </div>
         <canvas id="crb-minimap" class="minimap-canvas" width="120" height="90"></canvas>
+        <!-- pre-race track preview banner -->
+        <div class="crb-preview" id="crb-preview" style="display:none;">
+          <div class="crb-preview-box">
+            <div class="crb-preview-label">Get Ready</div>
+            <div class="crb-preview-track" id="crb-preview-track">City Sprint</div>
+            <div class="crb-preview-sub">Find your car on the track ↓</div>
+          </div>
+          <div class="crb-preview-arrow"></div>
+        </div>
         <!-- countdown -->
         <div class="crb-countdown" id="crb-countdown">
           <div class="crb-countdown-num" id="crb-countdown-num">3</div>
@@ -1498,14 +1563,62 @@ class RaceManager {
     // update HUD laps
     document.getElementById('hud-lap').textContent = `Lap 0 / ${this.totalLaps}`;
 
-    // countdown then go
+    // show track preview AND run countdown at the same time
+    const stopPreview = this._showPreview();
     this._doCountdown(() => {
+      stopPreview();
       this.running   = true;
       this.startTime = performance.now();
       this.t         = 0;
       this.lastTime  = performance.now();
       this._raf      = requestAnimationFrame(ts => this._loop(ts));
     });
+  }
+
+  // Starts the static pre-race render loop and returns a stop() function.
+  // The caller decides when to stop (e.g. when the countdown finishes).
+  _showPreview() {
+    document.getElementById('crb-preview-track').textContent = this.trackDef.name;
+    document.getElementById('crb-preview').style.display = 'flex';
+
+    const W = this.canvas.width, H = this.canvas.height;
+    const ctx = this.ctx;
+
+    let raf;
+    const renderStatic = () => {
+      ctx.clearRect(0, 0, W, H);
+      drawTrack(ctx, this.trackDef, this.camX, this.camY, W, H);
+      drawWeather(ctx, W, H, this.weather, 0);
+
+      for (const car of this.cars) car.draw(ctx, this.camX, this.camY);
+
+      // glowing "YOU" arrow so the player spots their car instantly
+      const px = this.playerCar.x - this.camX;
+      const py = this.playerCar.y - this.camY;
+      ctx.save();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'var(--pref-accent-color, #4CAFEF)';
+      ctx.shadowColor = 'var(--pref-accent-color, #4CAFEF)';
+      ctx.shadowBlur = 8;
+      ctx.fillText('YOU', px, py - 28);
+      ctx.beginPath();
+      ctx.moveTo(px - 6, py - 24);
+      ctx.lineTo(px + 6, py - 24);
+      ctx.lineTo(px,     py - 16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      drawMinimap(this.mmCtx, this.trackDef, this.cars);
+      raf = requestAnimationFrame(renderStatic);
+    };
+    raf = requestAnimationFrame(renderStatic);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      document.getElementById('crb-preview').style.display = 'none';
+    };
   }
 
   _doCountdown(cb) {
