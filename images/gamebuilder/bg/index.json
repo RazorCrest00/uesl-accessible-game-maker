@@ -1,13 +1,11 @@
 [
-  { "name": "Alien Planet",   "src": "alien_planet.jpg",    "w": 1134, "h": 772  },
-  { "name": "Sky Kingdom",    "src": "clouds.jpg",           "w": 1280, "h": 720  },
-  { "name": "Desert Dunes",   "src": "desert.png",           "w": 2048, "h": 1317 },
-  { "name": "Outer Space",    "src": "space.png",            "w": 1200, "h": 857  },
-  { "name": "City",           "src": "city.png",             "w": 966,  "h": 654  },
-  { "name": "Retro City",     "src": "retrocity.jpg",        "w": 1191, "h": 850  },
-  { "name": "Forest",         "src": "forest.png",           "w": 315,  "h": 250  },
-  { "name": "End World",      "src": "endbackground.png",    "w": 2460, "h": 1140 },
-  { "name": "Starfield",      "src": "stars.png",            "w": 1025, "h": 570  },
-  { "name": "Haunted Mansion","src": "mansion.jpeg",         "w": 850,  "h": 600  },
-  { "name": "Deep Sea Dungeon","src": "deepseadungeon.jpeg", "w": 597,  "h": 340  }
+  { "name": "Sky Kingdom",     "icon": "☁️",  "src": "clouds.jpg",          "w": 1280, "h": 720  },
+  { "name": "Outer Space",     "icon": "🚀",  "src": "space.png",            "w": 1200, "h": 857  },
+  { "name": "City",            "icon": "🏙️",  "src": "city.png",             "w": 966,  "h": 654  },
+  { "name": "Retro City",      "icon": "🕹️",  "src": "retrocity.jpg",        "w": 1191, "h": 850  },
+  { "name": "Forest",          "icon": "🌳",  "src": "forest.png",           "w": 315,  "h": 250  },
+  { "name": "End World",       "icon": "💀",  "src": "endbackground.png",    "w": 2460, "h": 1140 },
+  { "name": "Starfield",       "icon": "⭐",  "src": "stars.png",            "w": 1025, "h": 570  },
+  { "name": "Haunted Mansion", "icon": "👻",  "src": "mansion.jpeg",         "w": 850,  "h": 600  },
+  { "name": "Deep Sea Dungeon","icon": "🐠",  "src": "deepseadungeon.jpeg",  "w": 597,  "h": 340  }
 ]

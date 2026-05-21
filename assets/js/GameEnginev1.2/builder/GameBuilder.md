@@ -38,6 +38,11 @@ permalink: /gamebuilderv1-2
     20% width            80% width (flexible)
 <!-- Minimal page-specific overrides only -->
 <style>
+/* Hide the site header (logo + nav) on this page */
+.site-header {
+  display: none !important;
+}
+
 /* Remove default page wrapper constraints for full-width layout */
 .page-content {
   padding: 0 !important;
@@ -51,6 +56,19 @@ permalink: /gamebuilderv1-2
   overflow: hidden;
 }
 
+/* ── GameBuilder title — site-matching blue aesthetic ── */
+.gamebuilder-title {
+  color: var(--pref-accent-color, #4CAFEF) !important;
+  font-family: 'Segoe UI', system-ui, sans-serif !important;
+  font-size: clamp(1.1rem, 2.2vw, 1.6rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--pref-accent-color, #4CAFEF) 55%, transparent),
+               0 1px 4px rgba(0,0,0,0.6) !important;
+  padding: 6px 0 2px !important;
+  background: none !important;
+}
+
 /* ── Draw overlay: visual layer on top of the game frame ── */
 .game-frame {
   position: relative;  /* anchor for the absolute overlay */
@@ -62,9 +80,15 @@ permalink: /gamebuilderv1-2
 .draw-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: none; /* never intercepts events — game-frame handles mousedown */
+  pointer-events: none;
   z-index: 50;
   overflow: visible; /* must be visible so SVG route lines and dots aren't clipped */
+}
+/* When a draw mode is active the overlay must intercept mouse events so the
+   game canvas below cannot swallow them via stopPropagation */
+.draw-overlay.active {
+  pointer-events: auto;
+  cursor: crosshair;
 }
 /* Hide all drawn shapes (stars, barriers) while the game is running so they
    don't visually double up with the live game objects */
@@ -349,10 +373,16 @@ permalink: /gamebuilderv1-2
 </script>
 
 <!-- title banner for the GameBuilder page -->
-<div class="gamebuilder-title">
-  {{page.title}}
-  <a href="{{site.baseurl}}/gamebuilderv1-2/doc" target="_blank" rel="noopener noreferrer">📜</a>
-  <a href="{{site.baseurl}}/rpg/game" target="_blank" rel="noopener noreferrer">🕹️</a>
+<div style="text-align:center;padding:4px 0 4px;">
+  <div class="gamebuilder-title" style="font-size:clamp(1.4rem,3vw,2.2rem);margin-bottom:10px;">
+    {{page.title}}
+    <a href="{{site.baseurl}}/gamebuilderv1-2/doc" target="_blank" rel="noopener noreferrer" style="font-size:0.6em;vertical-align:middle;opacity:0.7;">📜</a>
+    <a href="{{site.baseurl}}/rpg/game" target="_blank" rel="noopener noreferrer" style="font-size:0.6em;vertical-align:middle;opacity:0.7;">🕹️</a>
+  </div>
+  <div style="display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap;">
+    <span style="padding:7px 28px;border-radius:24px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:.85rem;font-weight:700;cursor:default;letter-spacing:.04em;box-shadow:0 0 12px rgba(99,102,241,0.4);">🎮 Game Builder</span>
+    <a href="{{site.baseurl}}/car-racing-builder" style="padding:7px 28px;border-radius:24px;background:#1e293b;border:1px solid #f59e0b;color:#fbbf24;font-size:.85rem;font-weight:700;text-decoration:none;letter-spacing:.04em;transition:background .15s,box-shadow .15s;">🏎️ Racing Builder</a>
+  </div>
 </div>
 
 <!-- Ensure GameTemplatesV1_1 is available as a global by loading templates.js -->
@@ -409,12 +439,11 @@ permalink: /gamebuilderv1-2
                     <label>Background Selection</label>
                     <select id="bg-select">
                         <option value="" selected disabled>Select background…</option>
-                        <option value="desert">Desert Dunes</option>
-                        <option value="alien">Alien Planet</option>
-                        <option value="skykingdom">Sky Kingdom</option>
-                        <option value="spline_forest">🌲 Forest Spline</option>
-                        <option value="spline_cave">🌑 Cave Spline</option>
-                        <option value="spline_sky">☁️ Sky Spline</option>
+                        <option value="desert">🏜️ Desert Dunes</option>
+                        <option value="alien">👽 Alien Planet</option>
+                        <option value="spline_forest">🌲 Forest</option>
+                        <option value="spline_cave">🌑 Cave</option>
+                        <option value="spline_sky">☁️ Sky</option>
                         <option value="maze">🟩 Maze Classic</option>
                         <option value="maze2">🟣 Maze v2 — Cyber Space</option>
                     </select>
@@ -434,22 +463,29 @@ permalink: /gamebuilderv1-2
                     <label>Sprite</label>
                     <select id="player-select">
                         <option value="" selected disabled>Select sprite…</option>
+                        <optgroup label="Adventure">
+                        <option value="chillguy">😎 Chill Guy</option>
+                        <option value="tux">🐧 Tux</option>
+                        <option value="r2d2">🤖 R2-D2</option>
+                        <option value="octocat">🐙 Octocat</option>
+                        <option value="robot">🦾 Robot</option>
+                        </optgroup>
                         <optgroup label="Superheroes">
-                        <option value="ironman">Iron Man</option>
-                        <option value="spiderman">Spider-Man</option>
-                        <option value="captain_america">Captain America</option>
-                        <option value="batman">Batman</option>
-                        <option value="superman">Superman</option>
-                        <option value="wonder_woman">Wonder Woman</option>
-                        <option value="thor">Thor</option>
+                        <option value="ironman">🦸 Iron Man</option>
+                        <option value="spiderman">🕷️ Spider-Man</option>
+                        <option value="captain_america">🛡️ Captain America</option>
+                        <option value="batman">🦇 Batman</option>
+                        <option value="superman">💪 Superman</option>
+                        <option value="wonder_woman">⚡ Wonder Woman</option>
+                        <option value="thor">🔨 Thor</option>
                         </optgroup>
                         <optgroup label="Pokémon">
-                        <option value="pikachu">Pikachu</option>
-                        <option value="charizard">Charizard</option>
-                        <option value="mewtwo">Mewtwo</option>
-                        <option value="eevee">Eevee</option>
-                        <option value="gengar">Gengar</option>
-                        <option value="lucario">Lucario</option>
+                        <option value="pikachu">⚡ Pikachu</option>
+                        <option value="charizard">🔥 Charizard</option>
+                        <option value="mewtwo">🔮 Mewtwo</option>
+                        <option value="eevee">🦊 Eevee</option>
+                        <option value="gengar">👻 Gengar</option>
+                        <option value="lucario">💙 Lucario</option>
                         </optgroup>
                     </select>
                     <div class="upload-instructions" style="margin-top:6px;">
@@ -466,8 +502,8 @@ permalink: /gamebuilderv1-2
                     <label>Movement Keys</label>
                     <select id="movement-keys">
                         <option value="" selected disabled>Select keys…</option>
-                        <option value="wasd">WASD</option>
-                        <option value="arrows">Arrow Keys</option>
+                        <option value="wasd">⌨️ WASD</option>
+                        <option value="arrows">↕️ Arrow Keys</option>
                     </select>
                     <div class="upload-instructions" style="margin-top:6px;">
                         <button id="player-advanced-btn" class="btn btn-sm">Advanced ▸</button>
@@ -670,6 +706,36 @@ permalink: /gamebuilderv1-2
                         <input type="range" id="gb-coach-range" min="80" max="700" step="20" value="300" style="width:80px;accent-color:#f59e0b;">
                         <span id="gb-coach-range-val" style="min-width:28px;color:#fcd34d;">300</span>px
                       </label>
+                    </div>
+                    <!-- More Information expandable panel -->
+                    <button id="gb-info-btn" style="margin-top:8px;width:100%;padding:6px 10px;background:#1e293b;border:1px solid #334155;border-radius:7px;color:#94a3b8;cursor:pointer;font-size:.78rem;text-align:left;display:flex;align-items:center;gap:6px;">
+                      <span>📖</span><span>How to Build &amp; Play</span><span id="gb-info-arrow" style="margin-left:auto;">▸</span>
+                    </button>
+                    <div id="gb-info-panel" style="display:none;margin-top:6px;background:rgba(0,0,0,.25);border:1px solid #1e3a5f;border-radius:8px;padding:10px 12px;font-size:.75rem;color:#94a3b8;line-height:1.6;">
+                      <div style="font-weight:700;color:#a5b4fc;margin-bottom:6px;">🏗️ Building Your Game</div>
+                      <ol style="margin:0 0 10px 14px;padding:0;">
+                        <li><strong style="color:#e2e8f0;">Environment</strong> — Pick a background from the dropdown to set the scene.</li>
+                        <li><strong style="color:#e2e8f0;">Player</strong> — Choose a sprite, set a name, pick movement keys (WASD or Arrows), and adjust position/scale.</li>
+                        <li><strong style="color:#e2e8f0;">NPCs</strong> — Press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">+</kbd> to add characters. Give each a name, sprite, greeting, and position.</li>
+                        <li><strong style="color:#e2e8f0;">Walls &amp; Objects</strong> — Use <em>Draw Collision Wall</em> to drag red barriers on the canvas. Use <em>Place Stars</em> to drop collectibles.</li>
+                        <li><strong style="color:#e2e8f0;">Run</strong> — Press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">▶</kbd> to preview your game. Press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">■</kbd> to stop.</li>
+                        <li><strong style="color:#e2e8f0;">Export</strong> — Press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">⤓</kbd> to copy the generated level code.</li>
+                      </ol>
+                      <div style="font-weight:700;color:#a5b4fc;margin-bottom:6px;">🎮 Playing the Game</div>
+                      <ul style="margin:0 0 10px 14px;padding:0;">
+                        <li>Move with <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">WASD</kbd> or <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">↑↓←→</kbd> depending on your chosen keys.</li>
+                        <li>Walk into <strong style="color:#e2e8f0;">NPCs</strong> and press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">E</kbd> to open their dialogue.</li>
+                        <li>Collect <strong style="color:#e2e8f0;">⭐ Stars</strong> to score points.</li>
+                        <li>Avoid the <strong style="color:#fca5a5;">⚔️ Attack NPCs</strong> — touching them costs a heart.</li>
+                        <li>Red collision walls block movement; toggle <em>Show Walls in Game</em> to see them in-game.</li>
+                        <li>Enable <strong style="color:#c4b5fd;">🧑‍🏫 UESL Coach</strong> for an extra challenge — it chases you!</li>
+                      </ul>
+                      <div style="font-weight:700;color:#a5b4fc;margin-bottom:6px;">💾 Saving &amp; Sharing</div>
+                      <ul style="margin:0 0 0 14px;padding:0;">
+                        <li>Press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">💾</kbd> to save your game to the server (login required).</li>
+                        <li>Press <kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">👥</kbd> to create or join a multiplayer room.</li>
+                        <li>Use <em>Refresh Assets</em> (<kbd style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:1px 4px;">⟳</kbd>) after uploading custom backgrounds or sprites.</li>
+                      </ul>
                     </div>
                     <div id="gb-face-panel" style="display:none;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;margin-top:4px;">
                       <video id="gb-face-video" style="display:none;"></video>
@@ -917,7 +983,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bg: {
             desert: { src: "/images/gamify/desert.png", h: 580, w: 1038 },
             alien: { src: "/images/gamebuilder/bg/alien_planet.jpg", h: 600, w: 1000 },
-            skykingdom: { src: "/images/gamebuilder/bg/clouds.jpg", h: 720, w: 1280 },
             maze:  { type: 'maze',  h: 600, w: 900 },
             maze2: { type: 'maze2', h: 600, w: 900 },
             spline_forest:  { type: 'spline', src: "/images/gamify/forest.png",          h: 600, w: 1024, preset: 'spline_forest' },
@@ -1023,13 +1088,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const seen = new Set();
         for (let i = 0; i < selectEl.options.length; i++) {
             const opt = selectEl.options[i];
-            const label = (opt.textContent || '').trim().toLowerCase();
             if (opt.disabled) continue;
-            if (seen.has(label)) {
+            const key = opt.value || (opt.textContent || '').trim().toLowerCase();
+            if (seen.has(key)) {
                 selectEl.removeChild(opt);
                 i--;
             } else {
-                seen.add(label);
+                seen.add(key);
             }
         }
     }
@@ -1050,8 +1115,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const srcRel = item.src?.startsWith('/') ? item.src : (dir.replace(/\/$/, '') + '/' + (item.src || ''));
                     const src = srcRel;
                     const dims = (item.h && item.w) ? { h: item.h, w: item.w } : await ensureImageDims(src);
-                    if (!assets.bg[key]) assets.bg[key] = { src, h: dims.h, w: dims.w };
-                    const opt = document.createElement('option'); opt.value = key; opt.textContent = name; ui.bg.appendChild(opt);
+                    if (assets.bg[key]) continue;
+                    assets.bg[key] = { src, h: dims.h, w: dims.w };
+                    const opt = document.createElement('option'); opt.value = key; opt.textContent = (item.icon ? item.icon + ' ' : '') + name; ui.bg.appendChild(opt);
                 }
             } else {
                 const imgs = await scanDirForImages(dir);
@@ -1922,14 +1988,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach mousedown to the game-frame container rather than the overlay itself.
     // The overlay uses pointer-events:none by default (so the game stays interactive)
     // and pointer-events:auto only when .active — but attaching to game-frame avoids
-    // any pointer-events/z-index race. We just check ui.drawState.mode as a gate.
-    const gameFrameEl = document.querySelector('.game-frame');
-    const drawTarget = gameFrameEl || ui.drawOverlay;
-    if (drawTarget) {
-        drawTarget.addEventListener('mousedown', (e) => {
+    // Attach mousedown to the overlay itself (not game-frame) so it fires even
+    // when the game canvas calls stopPropagation. The overlay has pointer-events:auto
+    // when .active, so it sits on top and intercepts events directly.
+    if (ui.drawOverlay) {
+        ui.drawOverlay.addEventListener('mousedown', (e) => {
             if (!ui.drawState.mode) return;
             e.preventDefault();
-            const bounds = (ui.drawOverlay || drawTarget).getBoundingClientRect();
+            const bounds = ui.drawOverlay.getBoundingClientRect();
             const localX = e.clientX - bounds.left;
             const localY = e.clientY - bounds.top;
             ui.drawState.activeBarrier = null;
@@ -5135,6 +5201,13 @@ document.getElementById('gb-coach-range')?.addEventListener('input', e => {
   document.getElementById('gb-coach-range-val').textContent = e.target.value;
 });
 document.getElementById('gb-recalibrate')?.addEventListener('click', () => window.FaceTracker?.recalibrate?.());
+document.getElementById('gb-info-btn')?.addEventListener('click', () => {
+  const panel = document.getElementById('gb-info-panel');
+  const arrow = document.getElementById('gb-info-arrow');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  arrow.textContent = open ? '▾' : '▸';
+});
 
 // ── Face Tracking ────────────────────────────────────────────────────────────
 let _faceInterval = null;
@@ -5592,11 +5665,32 @@ function connectSocket(room, isHost, gameData, gameName) {
   if (_socket) { _socket.disconnect(); }
   mpConnDot('Connecting…', '#f59e0b');
   mpStatus('Connecting to server…');
-  _socket = io(PYTHON_URI, { transports: ['websocket', 'polling'] });
+  _socket = io(PYTHON_URI, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1500,
+    withCredentials: true,
+  });
   window.__mpSocket = _socket;
   window.__mpRoom = room;
   const myUid  = sessionStorage.getItem('uesl_my_uid')  || '';
   const myName = sessionStorage.getItem('uesl_my_name') || (isHost ? 'Host' : 'Player 2');
+
+  // Track whether guest has successfully joined (game_data received)
+  let _guestJoined = isHost;
+
+  // Timeout: if guest doesn't receive game_data within 12s, reset
+  let _joinTimeout = null;
+  if (!isHost) {
+    _joinTimeout = setTimeout(() => {
+      if (!_guestJoined) {
+        mpStatus('⚠ Could not join — room not found or host disconnected. Try again.', '#ef4444');
+        mpConnDot('Not connected', '#64748b');
+        disconnectSocket();
+      }
+    }, 12000);
+  }
 
   // Real-time partner position for the overlay renderer
   _socket.on('partner_update', data => {
@@ -5604,9 +5698,8 @@ function connectSocket(room, isHost, gameData, gameName) {
   });
 
   _socket.on('connect', () => {
-    mpConnDot('In room ' + room, '#22c55e');
     if (isHost) {
-      // HOST: create the room and attach current level code
+      mpConnDot('In room ' + room, '#22c55e');
       const code = gameData || document.getElementById('code-editor')?.value || '';
       _socket.emit('create_room', {
         room_id:   room,
@@ -5616,7 +5709,8 @@ function connectSocket(room, isHost, gameData, gameName) {
         game_name: gameName || 'UESL Game Builder',
       });
     } else {
-      // GUEST: join the existing room by code
+      mpConnDot('Joining room ' + room + '…', '#f59e0b');
+      mpStatus('Connected — waiting for host to confirm…');
       _socket.emit('join_room_event', { room_id: room, uid: myUid, name: myName });
     }
   });
@@ -5627,36 +5721,44 @@ function connectSocket(room, isHost, gameData, gameName) {
     mpRenderPlayers(1);
   });
 
-  // HOST: a guest joined — (re)create the remote overlay so host can see guest
+  // HOST: a guest joined
   _socket.on('partner_joined', ({ name }) => {
     mpStatus('🎮 ' + (name || 'A player') + ' joined the room!', '#4ade80');
     mpRenderPlayers(2);
-    _createRemoteOverlay(true); // host sees guest as "Player 2"
+    _createRemoteOverlay(true);
   });
 
   // GUEST: receive host's game data and launch it
   _socket.on('game_data', ({ game_data, game_name, host_name }) => {
+    clearTimeout(_joinTimeout);
+    _guestJoined = true;
     if (game_data) {
+      mpConnDot('In room ' + room, '#22c55e');
       mpStatus('📥 Level received from ' + (host_name || 'host') + ' — launching…', '#a5f3fc');
       window.__mpInjectedCode = game_data;
       const editor = document.getElementById('code-editor');
       if (editor) editor.value = game_data;
+      // Show the room panel now that join is confirmed
+      mpShowRoom(room);
+      _enableMpMode();
       setTimeout(() => {
         if (typeof window.__runInRunner === 'function') {
           window.__runInRunner();
         } else {
           document.getElementById('btn-code-play')?.click();
         }
-        // Guest also needs the remote overlay to see the host's player
-        setTimeout(() => _createRemoteOverlay(false), 600); // guest sees host as "Host"
+        setTimeout(() => _createRemoteOverlay(false), 600);
         mpStatus('🎮 Playing "' + (game_name || 'Game') + '" — have fun!', '#4ade80');
       }, 500);
     }
   });
 
   _socket.on('join_error', ({ msg }) => {
-    mpStatus('⚠ ' + msg, '#ef4444');
-    mpConnDot('Error', '#ef4444');
+    clearTimeout(_joinTimeout);
+    mpStatus('⚠ ' + (msg || 'Could not join room — check the code and try again.'), '#ef4444');
+    mpConnDot('Not connected', '#64748b');
+    // Reset to setup so the user can try again
+    disconnectSocket();
   });
 
   _socket.on('partner_left', () => {
@@ -5665,14 +5767,34 @@ function connectSocket(room, isHost, gameData, gameName) {
     mpConnDot('In room ' + room + ' (1 player)', '#22c55e');
   });
 
-  _socket.on('disconnect', () => {
-    mpConnDot('Disconnected', '#ef4444');
-    mpStatus('Disconnected from server');
+  _socket.on('disconnect', (reason) => {
+    // Ignore transport upgrade disconnects (socket.io reconnects automatically)
+    if (reason === 'transport upgrade') return;
+    if (_guestJoined || isHost) {
+      mpConnDot('Reconnecting…', '#f59e0b');
+      mpStatus('Connection lost — attempting to reconnect…');
+    } else {
+      // Guest disconnected before join was confirmed
+      clearTimeout(_joinTimeout);
+      mpStatus('⚠ Connection lost before joining — check the room code and try again.', '#ef4444');
+      mpConnDot('Not connected', '#64748b');
+      disconnectSocket();
+    }
   });
 
-  _socket.on('connect_error', () => {
+  _socket.on('reconnect', () => {
+    mpConnDot('In room ' + room, '#22c55e');
+    mpStatus('✅ Reconnected!', '#4ade80');
+  });
+
+  _socket.on('reconnect_failed', () => {
+    mpConnDot('Disconnected', '#ef4444');
+    mpStatus('⚠ Could not reconnect. Please leave and rejoin.', '#ef4444');
+  });
+
+  _socket.on('connect_error', (err) => {
     mpConnDot('Connection failed', '#ef4444');
-    mpStatus('⚠ Could not reach server — is the socket server running on port 8424?');
+    mpStatus('⚠ Could not reach the server. Check your connection and try again.');
   });
 }
 
@@ -5760,7 +5882,6 @@ document.getElementById('gb-mp-btn')?.addEventListener('click', () => {
   if (urlRoom && !_mpRoom) {
     _mpRoom = urlRoom;
     connectSocket(urlRoom, false);
-    mpShowRoom(urlRoom);
     mpStatus('Joining room ' + urlRoom + '…');
   }
 });
@@ -5783,10 +5904,10 @@ document.getElementById('gb-mp-join')?.addEventListener('click', () => {
   const code = document.getElementById('gb-mp-join-code')?.value.trim().toUpperCase();
   if (!code || code.length < 4) { mpStatus('⚠ Enter a valid room code'); return; }
   _mpRoom = code;
-  connectSocket(code, false);
-  mpShowRoom(code);
+  // Don't show the room UI yet — wait until game_data is received to confirm join
   mpStatus('Joining room ' + code + '…');
-  _enableMpMode();
+  mpConnDot('Connecting…', '#f59e0b');
+  connectSocket(code, false);
 });
 
 document.getElementById('gb-mp-copy-btn')?.addEventListener('click', () => {
@@ -5825,7 +5946,7 @@ document.getElementById('gb-mp-exit-edit')?.addEventListener('click', (e) => {
 // Auto-join room from URL on page load (guest path)
 (function() {
   const urlRoom = new URLSearchParams(location.search).get('room');
-  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom, false); mpShowRoom(urlRoom); _enableMpMode(); }
+  if (urlRoom) { _mpRoom = urlRoom; connectSocket(urlRoom, false); }
 })();
 
 // ── Left panel horizontal resize ────────────────────────────────────────────
