@@ -898,7 +898,11 @@ class Car {
     this.lastProgress = 0;
     this.finishTime = null;
     this.finished  = false;
-    this.aiWpIdx   = 0;
+    this.aiWpIdx      = 0;
+    this.stuckTimer   = 0;   // seconds NPC has been nearly stationary
+    this.stuckX       = 0;
+    this.stuckY       = 0;
+    this.recovering   = 0;   // seconds left in reverse-recovery phase
     this.particles = [];
     this.boostMul  = 1;
     this.boostTimer = 0;
@@ -945,16 +949,50 @@ class Car {
 
     // ── AI steering ───────────────────────────────────────
     if (!this.isPlayer) {
-      throttle = 1;
-      const target = pts[this.aiWpIdx % pts.length];
-      const dx = target.x - this.x, dy = target.y - this.y;
-      const distToWp = Math.hypot(dx, dy);
-      if (distToWp < 30) this.aiWpIdx = (this.aiWpIdx + 1) % pts.length;
-      const desiredAngle = Math.atan2(dy, dx);
-      let aDiff = desiredAngle - this.angle;
-      while (aDiff >  Math.PI) aDiff -= Math.PI * 2;
-      while (aDiff < -Math.PI) aDiff += Math.PI * 2;
-      steer = Math.sign(aDiff) * Math.min(1, Math.abs(aDiff) / 0.5);
+      // ── Stuck detection ──────────────────────────────────
+      // Sample position every 0.5 s; if the car barely moved, declare stuck
+      this.stuckTimer += dt;
+      if (this.stuckTimer >= 0.5) {
+        const moved = Math.hypot(this.x - this.stuckX, this.y - this.stuckY);
+        if (moved < 8 && this.recovering <= 0) {
+          // teleport-free recovery: reverse for 1.2 s then re-aim
+          this.recovering = 1.2;
+          // find the nearest waypoint ahead so the AI recovers toward track
+          let bestDist = Infinity, bestIdx = this.aiWpIdx;
+          for (let i = 0; i < pts.length; i++) {
+            const d = Math.hypot(pts[i].x - this.x, pts[i].y - this.y);
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
+          }
+          this.aiWpIdx = (bestIdx + 2) % pts.length; // aim 2 WPs ahead of nearest
+          this.driftAngle = 0;
+          this.drift      = 0;
+        }
+        this.stuckTimer = 0;
+        this.stuckX = this.x;
+        this.stuckY = this.y;
+      }
+
+      if (this.recovering > 0) {
+        // Reverse + steer hard to get off the wall
+        this.recovering -= dt;
+        throttle = -1;
+        steer = 1; // always turn right while reversing; flips direction quickly
+      } else {
+        throttle = 1;
+        // Snap to nearest waypoint if drastically off-course
+        const curTarget = pts[this.aiWpIdx % pts.length];
+        const dx0 = curTarget.x - this.x, dy0 = curTarget.y - this.y;
+        if (Math.hypot(dx0, dy0) < 30) {
+          this.aiWpIdx = (this.aiWpIdx + 1) % pts.length;
+        }
+        const target = pts[this.aiWpIdx % pts.length];
+        const dx = target.x - this.x, dy = target.y - this.y;
+        const desiredAngle = Math.atan2(dy, dx);
+        let aDiff = desiredAngle - this.angle;
+        while (aDiff >  Math.PI) aDiff -= Math.PI * 2;
+        while (aDiff < -Math.PI) aDiff += Math.PI * 2;
+        steer = Math.sign(aDiff) * Math.min(1, Math.abs(aDiff) / 0.5);
+      }
     }
 
     // ── Nitro boost ────────────────────────────────────────
@@ -1433,6 +1471,8 @@ class RaceManager {
         isPlayer: false
       });
       ai.aiWpIdx = 1;
+      ai.stuckX  = ai.x;
+      ai.stuckY  = ai.y;
       aiCars.push(ai);
     }
 
