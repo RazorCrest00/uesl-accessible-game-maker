@@ -380,7 +380,7 @@ permalink: /gamebuilderv1-2
     <a href="{{site.baseurl}}/rpg/game" target="_blank" rel="noopener noreferrer" style="font-size:0.6em;vertical-align:middle;opacity:0.7;">🕹️</a>
   </div>
   <div style="display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap;">
-    <span style="padding:7px 28px;border-radius:24px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:.85rem;font-weight:700;cursor:default;letter-spacing:.04em;box-shadow:0 0 12px rgba(99,102,241,0.4);">🎮 Game Builder</span>
+    <span style="padding:7px 28px;border-radius:24px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:.85rem;font-weight:700;cursor:default;letter-spacing:.04em;box-shadow:0 0 12px rgba(99,102,241,0.4);">🎮 Open World Builder</span>
     <a href="{{site.baseurl}}/car-racing-builder" style="padding:7px 28px;border-radius:24px;background:#1e293b;border:1px solid #f59e0b;color:#fbbf24;font-size:.85rem;font-weight:700;text-decoration:none;letter-spacing:.04em;transition:background .15s,box-shadow .15s;">🏎️ Racing Builder</a>
   </div>
 </div>
