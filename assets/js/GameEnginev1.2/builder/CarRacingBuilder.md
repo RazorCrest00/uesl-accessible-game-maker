@@ -1905,42 +1905,102 @@ function initViewControls(race) {
 ───────────────────────────────────────────── */
 function initMultiplayer(race) {
   let socket = null;
-  const statusEl = document.getElementById('crb-mp-status');
-  const connect  = () => {
-    if (socket) return socket;
-    socket = io(PYTHON_URI, {transports:['websocket','polling']});
-    socket.on('connect',    () => { statusEl.textContent = 'Connected ✓'; statusEl.style.color = '#22c55e'; });
-    socket.on('disconnect', () => { statusEl.textContent = 'Disconnected'; statusEl.style.color = '#ef4444'; });
+  let _pendingAction = null; // { type: 'host'|'join', room, code }
+  const statusEl  = document.getElementById('crb-mp-status');
+  const roomInput = document.getElementById('crb-room-code');
+
+  function mpStatus(msg, color) {
+    statusEl.textContent = msg;
+    statusEl.style.color = color || '#94a3b8';
+  }
+
+  function doDisconnect() {
+    if (socket) { socket.disconnect(); socket = null; }
+  }
+
+  const connect = () => {
+    if (socket && socket.connected) return socket;
+    doDisconnect();
+    mpStatus('Connecting…', '#f59e0b');
+    socket = io(PYTHON_URI, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+    });
+
+    socket.on('connect', () => {
+      if (_pendingAction) {
+        const { type, room, code } = _pendingAction;
+        if (type === 'host') {
+          roomInput.value = code;
+          socket.emit('crb:host', { room: code, config: race.buildConfig() });
+          mpStatus(`Hosting room: ${code} — share with a friend`, '#22c55e');
+        } else {
+          socket.emit('crb:join', { room, config: race.buildConfig() });
+          mpStatus(`Joining ${room}…`, '#f59e0b');
+        }
+        _pendingAction = null;
+      } else {
+        mpStatus('Connected ✓', '#22c55e');
+      }
+    });
+
+    socket.on('crb:room-joined', ({ room }) => {
+      mpStatus(`In room ${room} — race ready!`, '#22c55e');
+    });
+
+    socket.on('crb:join-error', ({ msg }) => {
+      mpStatus(`⚠ ${msg || 'Could not join — check the room code.'}`, '#ef4444');
+    });
+
     socket.on('crb:player-update', data => {
-      // update remote car position
       const remCar = race.cars.find(c => c.name === data.name && !c.isPlayer);
       if (remCar) { remCar.x = data.x; remCar.y = data.y; remCar.angle = data.angle; }
     });
+
     socket.on('crb:race-start', () => {
-      statusEl.textContent = 'Race started!'; race.startRace();
+      mpStatus('Race started!', '#22c55e');
+      race.startRace();
     });
+
+    socket.on('disconnect', reason => {
+      if (reason === 'transport upgrade') return;
+      mpStatus('Connection lost — reconnecting…', '#f59e0b');
+    });
+
+    socket.on('reconnect', () => {
+      mpStatus('Reconnected ✓', '#22c55e');
+    });
+
+    socket.on('reconnect_failed', () => {
+      mpStatus('⚠ Could not reconnect. Try hosting/joining again.', '#ef4444');
+    });
+
+    socket.on('connect_error', err => {
+      mpStatus('⚠ Could not reach server — check your connection and try again.', '#ef4444');
+    });
+
     return socket;
   };
 
   document.getElementById('crb-host-btn').addEventListener('click', () => {
-    const s = connect();
     const code = Math.random().toString(36).slice(2,8).toUpperCase();
-    document.getElementById('crb-room-code').value = code;
-    s.emit('crb:host', { room: code, config: race.buildConfig() });
-    statusEl.textContent = `Hosting room: ${code}`;
+    _pendingAction = { type: 'host', code, room: code };
+    connect();
   });
 
   document.getElementById('crb-join-btn').addEventListener('click', () => {
-    const s   = connect();
-    const room = document.getElementById('crb-room-code').value.trim();
-    if (!room) { statusEl.textContent = 'Enter a room code'; return; }
-    s.emit('crb:join', { room, config: race.buildConfig() });
-    statusEl.textContent = `Joining ${room}…`;
+    const room = roomInput.value.trim().toUpperCase();
+    if (!room) { mpStatus('Enter a room code first', '#ef4444'); return; }
+    _pendingAction = { type: 'join', room };
+    connect();
   });
 
-  // broadcast player position every 50ms
+  // broadcast player position every 50ms while racing
   setInterval(() => {
-    if (!socket || !race.running || !race.playerCar) return;
+    if (!socket || !socket.connected || !race.running || !race.playerCar) return;
     socket.emit('crb:player-update', {
       name:  race.playerCar.name,
       x:     race.playerCar.x,

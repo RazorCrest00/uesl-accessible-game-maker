@@ -441,9 +441,6 @@ permalink: /gamebuilderv1-2
                         <option value="" selected disabled>Select background…</option>
                         <option value="desert">🏜️ Desert Dunes</option>
                         <option value="alien">👽 Alien Planet</option>
-                        <option value="spline_forest">🌲 Forest</option>
-                        <option value="spline_cave">🌑 Cave</option>
-                        <option value="spline_sky">☁️ Sky</option>
                         <option value="maze">🟩 Maze Classic</option>
                         <option value="maze2">🟣 Maze v2 — Cyber Space</option>
                     </select>
@@ -499,6 +496,10 @@ permalink: /gamebuilderv1-2
                     <input type="range" id="player-x" min="0" max="800" value="100">
                     <label>Y Position</label>
                     <input type="range" id="player-y" min="0" max="600" value="300">
+                    <label style="display:flex;justify-content:space-between;align-items:center;">
+                      Speed <span id="player-speed-val" style="font-size:0.78rem;color:#a5b4fc;font-weight:600;">5</span>
+                    </label>
+                    <input type="range" id="player-speed" min="1" max="10" step="1" value="5">
                     <label>Movement Keys</label>
                     <select id="movement-keys">
                         <option value="" selected disabled>Select keys…</option>
@@ -913,71 +914,6 @@ permalink: /gamebuilderv1-2
 /* builder bootstrapping and asset scanning */
 document.addEventListener('DOMContentLoaded', () => {
     const SITE_BASE = "{{ site.baseurl }}" || "";
-    // Spline preset platform layouts — fractional coords (0–1) relative to canvas size.
-    // Each barrier: { xf, yf, wf, hf } → pixel pos = val * innerWidth/Height at runtime.
-    const SPLINE_PRESETS = {
-        spline_forest: [
-            // Ground floor
-            { xf: 0.00, yf: 0.88, wf: 1.00, hf: 0.12 },
-            // Left tall platform
-            { xf: 0.05, yf: 0.60, wf: 0.18, hf: 0.05 },
-            // Mid-low platform
-            { xf: 0.28, yf: 0.70, wf: 0.16, hf: 0.05 },
-            // Mid platform
-            { xf: 0.45, yf: 0.52, wf: 0.14, hf: 0.05 },
-            // Right-mid platform
-            { xf: 0.64, yf: 0.40, wf: 0.14, hf: 0.05 },
-            // High right platform
-            { xf: 0.80, yf: 0.25, wf: 0.16, hf: 0.05 },
-            // Left wall
-            { xf: 0.00, yf: 0.00, wf: 0.03, hf: 0.88 },
-            // Right wall
-            { xf: 0.97, yf: 0.00, wf: 0.03, hf: 0.88 },
-        ],
-        spline_cave: [
-            // Ground
-            { xf: 0.00, yf: 0.90, wf: 1.00, hf: 0.10 },
-            // Ceiling
-            { xf: 0.00, yf: 0.00, wf: 1.00, hf: 0.08 },
-            // Left wall
-            { xf: 0.00, yf: 0.08, wf: 0.03, hf: 0.82 },
-            // Right wall
-            { xf: 0.97, yf: 0.08, wf: 0.03, hf: 0.82 },
-            // Lower-left ledge
-            { xf: 0.08, yf: 0.72, wf: 0.20, hf: 0.05 },
-            // Stalactite pillar
-            { xf: 0.30, yf: 0.08, wf: 0.05, hf: 0.30 },
-            // Mid floating rock
-            { xf: 0.40, yf: 0.55, wf: 0.20, hf: 0.05 },
-            // Right upper ledge
-            { xf: 0.65, yf: 0.35, wf: 0.20, hf: 0.05 },
-            // Lower-right ledge
-            { xf: 0.72, yf: 0.72, wf: 0.20, hf: 0.05 },
-            // Stalagmite pillar
-            { xf: 0.55, yf: 0.62, wf: 0.04, hf: 0.28 },
-        ],
-        spline_sky: [
-            // No ground — fall = lose
-            // Left wall
-            { xf: 0.00, yf: 0.00, wf: 0.03, hf: 1.00 },
-            // Right wall
-            { xf: 0.97, yf: 0.00, wf: 0.03, hf: 1.00 },
-            // Starting platform (wide, bottom-left)
-            { xf: 0.03, yf: 0.82, wf: 0.25, hf: 0.05 },
-            // Step up
-            { xf: 0.22, yf: 0.68, wf: 0.14, hf: 0.04 },
-            // Narrow jump
-            { xf: 0.38, yf: 0.58, wf: 0.09, hf: 0.04 },
-            // Gap jump
-            { xf: 0.52, yf: 0.45, wf: 0.12, hf: 0.04 },
-            // High left cloud
-            { xf: 0.12, yf: 0.35, wf: 0.16, hf: 0.04 },
-            // High right cloud
-            { xf: 0.68, yf: 0.30, wf: 0.14, hf: 0.04 },
-            // Finish platform (top-right)
-            { xf: 0.72, yf: 0.55, wf: 0.22, hf: 0.05 },
-        ],
-    };
 
     const assets = {
         bg: {
@@ -985,9 +921,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alien: { src: "/images/gamebuilder/bg/alien_planet.jpg", h: 600, w: 1000 },
             maze:  { type: 'maze',  h: 600, w: 900 },
             maze2: { type: 'maze2', h: 600, w: 900 },
-            spline_forest:  { type: 'spline', src: "/images/gamify/forest.png",          h: 600, w: 1024, preset: 'spline_forest' },
-            spline_cave:    { type: 'spline', src: "/images/gamify/nightowl-background.png", h: 600, w: 1024, preset: 'spline_cave' },
-            spline_sky:     { type: 'spline', src: "/images/gamebuilder/bg/clouds.jpg",  h: 720, w: 1280, preset: 'spline_sky' },
         },
         sprites: {
             // Adventure
@@ -3012,31 +2945,6 @@ function _mazeScanBarriersAsync(canvasW = 900, canvasH = 600) {
 function background_generate(bg) {
     if (!bg) return { defs: [], classes: [] };
 
-    // Spline background — image background with pre-defined fractional platform layout
-    if (bg.type === 'spline') {
-        const bgx = bg_extract(bg);
-        const bgCode = bg_code(bgx);
-        const defs = [bgCode.def];
-        const classes = [bgCode.classEntry];
-        const platforms = SPLINE_PRESETS[bg.preset] || [];
-        platforms.forEach((p, i) => {
-            const bData = {
-                varName: `splineBarrier${i + 1}`,
-                id: `spline_barrier_${i + 1}`,
-                x: p.xf,
-                y: p.yf,
-                width:  p.wf,
-                height: p.hf,
-                visible: false,
-                fromOverlay: false,
-            };
-            const bc = barrier_code(bData);
-            defs.push(bc.def);
-            classes.push(bc.classEntry);
-        });
-        return { defs, classes };
-    }
-
     // Maze background — use procedurally generated maze with auto-scanned barriers
     if (bg.type === 'maze' || bg.type === 'maze2') {
         const canvasH = parseInt(bg.h) || 600;
@@ -3609,7 +3517,12 @@ function generateStepCode(currentStep) {
         const step = intFrom(/STEP_FACTOR\s*:\s*(\d+)/i);
         const anim = intFrom(/ANIMATION_RATE\s*:\s*(\d+)/i);
         if (scale !== null && ui.pScale) ui.pScale.value = String(Math.max(1, scale));
-        if (step !== null && ui.pStep) ui.pStep.value = String(Math.max(1, step));
+        if (step !== null && ui.pStep) {
+          ui.pStep.value = String(Math.max(1, step));
+          // Sync speed slider without triggering code regen
+          const _sEl = document.getElementById('player-speed'), _sV = document.getElementById('player-speed-val');
+          if (_sEl && _sV) { const _spd = Math.round(5000 / Math.max(1, step)); _sEl.value = String(Math.max(1, Math.min(10, _spd))); _sV.textContent = _sEl.value; }
+        }
         if (anim !== null && ui.pAnim) ui.pAnim.value = String(Math.max(1, anim));
         let dirCols = colsFor('down');
         dirCols = dirCols ?? colsFor('right');
@@ -3848,15 +3761,6 @@ function generateStepCode(currentStep) {
                 code = code.replace(blockRe, '\n');
             });
 
-            const splineDefs = [];
-            let splm;
-            const splRe = /\bconst\s+(splineBarrier\d+)\s*=\s*\{/g;
-            while ((splm = splRe.exec(scan)) !== null) splineDefs.push(splm[1]);
-            splineDefs.forEach(vn => {
-                const blockRe = new RegExp("\\n\\s*const\\s+" + vn + "\\s*=\\s*\\{[\\s\\S]*?\\};\\s*", 'g');
-                code = code.replace(blockRe, '\n');
-            });
-
             const willInsertBg = /\bconst\s+bgData\s*=\s*\{/.test(scan);
             const willInsertPlayer = /\bconst\s+playerData\s*=\s*\{/.test(scan);
             if (willInsertBg) {
@@ -3988,6 +3892,25 @@ function generateStepCode(currentStep) {
     });
     if (ui.pX) ui.pX.addEventListener('input', updatePlayerPositionInEditor);
     if (ui.pY) ui.pY.addEventListener('input', updatePlayerPositionInEditor);
+    // Speed slider: maps 1-10 → STEP_FACTOR via 5000/speed (speed=5 → default 1000)
+    const speedSlider = document.getElementById('player-speed');
+    const speedVal    = document.getElementById('player-speed-val');
+    if (speedSlider && ui.pStep) {
+      speedSlider.addEventListener('input', () => {
+        const spd = parseInt(speedSlider.value, 10);
+        speedVal.textContent = spd;
+        ui.pStep.value = String(Math.round(5000 / spd));
+        state.lastEdited = 'player';
+        applyPlayerUIToCodeImmediate();
+      });
+      // Keep slider in sync when player-step is edited directly in Advanced
+      ui.pStep.addEventListener('input', () => {
+        const step = parseInt(ui.pStep.value, 10) || 1000;
+        const spd = Math.round(5000 / step);
+        speedSlider.value = String(Math.max(1, Math.min(10, spd)));
+        speedVal.textContent = speedSlider.value;
+      });
+    }
     if (ui.pName) ui.pName.addEventListener('input', () => { state.lastEdited = 'player'; rerunPlayer(); });
     if (mvEl) mvEl.addEventListener('change', () => { state.lastEdited = 'player'; rerunPlayer(); });
     if (ui.pScale) ui.pScale.addEventListener('input', () => { state.lastEdited = 'player'; applyPlayerUIToCodeImmediate(); });
@@ -4863,6 +4786,8 @@ function generateStepCode(currentStep) {
             _set('player-name',           s.pName);
             _set('player-scale',          s.pScale);
             _set('player-step',           s.pStep);
+            // Sync the speed slider to match restored STEP_FACTOR
+            { const stepEl = document.getElementById('player-step'); const spdEl = document.getElementById('player-speed'); const spdVal = document.getElementById('player-speed-val'); if (stepEl && spdEl && spdVal) { const spd = Math.round(5000 / (parseInt(stepEl.value, 10) || 1000)); spdEl.value = String(Math.max(1, Math.min(10, spd))); spdVal.textContent = spdEl.value; } }
             _set('player-anim',           s.pAnim);
             _set('player-rows',           s.pRows);
             _set('player-cols',           s.pCols);
@@ -5666,11 +5591,11 @@ function connectSocket(room, isHost, gameData, gameName) {
   mpConnDot('Connecting…', '#f59e0b');
   mpStatus('Connecting to server…');
   _socket = io(PYTHON_URI, {
-    transports: ['websocket', 'polling'],
+    transports: ['polling', 'websocket'],
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1500,
-    withCredentials: true,
+    timeout: 20000,
   });
   window.__mpSocket = _socket;
   window.__mpRoom = room;
@@ -5794,7 +5719,7 @@ function connectSocket(room, isHost, gameData, gameName) {
 
   _socket.on('connect_error', (err) => {
     mpConnDot('Connection failed', '#ef4444');
-    mpStatus('⚠ Could not reach the server. Check your connection and try again.');
+    mpStatus('⚠ Could not reach the server — close this modal and try again.', '#ef4444');
   });
 }
 
