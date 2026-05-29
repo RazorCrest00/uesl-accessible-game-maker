@@ -600,11 +600,14 @@ GitHub Actions runs `bundle exec jekyll build` and publishes `_site/`.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a branch: `git checkout -b feature/your-feature`
-3. Test locally with `make`
-4. Run `make convert` if you added any notebooks
-5. Submit a Pull Request to `main`
+This project is **retired** by the original team. If you want to build on it, use it as a template rather than forking:
+
+1. Click **Use this template** on GitHub to create your own repo from this codebase
+2. Update `_config.yml` with your site name, URL, and team info
+3. Replace UESL-specific content (images, copy, API keys) with your own
+4. The game engine, accessibility toolkit, and social features are yours to keep, extend, or strip down
+
+If you're continuing UESL specifically, see the [Project Status & Roadmap](#project-status--roadmap) section for what's working and where to start.
 
 ### File naming for blog posts
 
