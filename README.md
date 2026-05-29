@@ -607,7 +607,7 @@ GitHub Actions runs `bundle exec jekyll build` and publishes `_site/`.
 
 ## Contributing
 
-This project is **no longer actively maintained** by the original team and will be handed off to the next group. If you want to build on it, use it as a template rather than forking:
+This project is **no longer actively maintained** by the original team and will be handed off to the next team. If you want to build on it, use it as a template rather than forking:
 
 1. Click **Use this template** on GitHub to create your own repo from this codebase
 2. Update `_config.yml` with your site name, URL, and team info
