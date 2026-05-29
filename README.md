@@ -102,7 +102,7 @@ bundle install
 make          # serves at http://localhost:4500
 ```
 
-The site talks to the backend at `http://localhost:8424` in dev. Make sure the backend is running too, or set `javaURI` / `pythonURI` in `assets/js/api/config.js`.
+The site talks to the backend at `http://localhost:8424` in dev. Make sure the backend is running too, or update `pythonURI` in `assets/js/api/config.js`.
 
 ---
 
