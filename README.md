@@ -51,6 +51,61 @@ Live site: **[uesl.io](https://uesl.io)** · Backend: **[uesl.opencodingsociety.
 
 ---
 
+## Handoff — Read This First
+
+**Live site**: https://ueslhub.opencodingsociety.com  
+**Backend repo**: [MalwareMadness-backend](https://github.com/unified-esports-league/MalwareMadness-backend) — Flask API on port 8424, Socket.IO on port 8501  
+**Backend API base**: `https://uesl.opencodingsociety.com`
+
+### What's Built and Working
+
+| Feature | Status | Where |
+|---|---|---|
+| Game engine (Canvas + ES modules) | ✅ Working | `assets/js/GameEnginev1.2/` |
+| Drag-and-drop Game Maker | ✅ Working | `pages/game-maker.html` |
+| Community game gallery | ✅ Working | `GET /api/game/shared` (no auth) |
+| UESLCoach — AI enemy (Gemini 2.5 Flash) | ✅ Working | `assets/js/GameEnginev1.2/characters/UESLCoach.js` |
+| AI NPCs — conversational (Gemini 2.5 Flash) | ✅ Working | `assets/js/GameEnginev1.2/characters/AiNpc.js` |
+| General AI chat (Groq LLaMA 3.3-70b) | ✅ Working | `POST /api/groq/chat` |
+| Voice command controls (Web Speech API) | ✅ Working | `GameControl.js` |
+| Face tracking controls (MediaDevices) | ✅ Working (drifts — see bugs) | `GameControl.js` |
+| Touch D-pad controls | ✅ Working | `TouchControls.js` |
+| Per-game leaderboard | ✅ Working | `Leaderboard.js` → `GET /api/game/leaderboard/<id>` |
+| Live session scoreboard | ✅ Working | `Scoreboard.js` → Socket.IO port 8501 |
+| 2-player co-op multiplayer | ✅ Working | WebSocket rooms via `POST multiplayer.py` |
+| Auth (OTP + Google OAuth + JWT) | ✅ Working | `POST /api/otp/*`, `POST /api/google/auth` |
+| Friends + DMs + presence | ✅ Working | `POST /api/friends/*`, `GET /api/messages/<uid>` |
+| Character select screen | ✅ Exists | `CharacterSelect.js` — **character change not wired into editor** (bug) |
+| 8 IDD accessibility modes | ✅ Working | Configured per-level in game data |
+
+### Known Bugs to Fix
+
+See the [Existing Bugs](#existing-bugs) section below — 8 open issues, all frontend.  
+**Highest priority**: face tracking drift, character not changeable, Game Builder mobile scroll.
+
+### Where to Take Off From
+
+These are the next logical features in priority order:
+
+1. **Fix character selection in Game Maker** — `CharacterSelect.js` exists and works in-game; it just isn't connected to the editor's save flow. Wire it into `POST /api/game/save` payload.
+2. **Fix face tracking drift** — add a recalibrate button or auto-reset baseline on idle. Look at how the landmark model sets the neutral pose in `GameControl.js`.
+3. **Spanish localization** — replace the Google Translate widget with a proper i18n pass. Wendy Muñoz on the UESL client services team serves many Spanish-speaking families and this is a client ask.
+4. **Eye-tracking input** — WebGazer.js integration as a 5th input mode. Same pattern as face tracking in `GameControl.js`.
+5. **Tournament bracket page** — UESL runs in-person bracket tournaments. A dedicated page with live bracket UI tied to the leaderboard API would close the loop between online and in-person competition.
+6. **Coach dashboard** — an admin view for UESL coaches to track per-participant game scores and session history. Backend already has the data (`/api/game/leaderboard`, `/api/analytics`); it just needs a frontend.
+7. **PWA / offline mode** — service worker so the game builder works at low-connectivity school sites.
+
+### Running Locally
+
+```bash
+bundle install
+make          # serves at http://localhost:4500
+```
+
+The site talks to the backend at `http://localhost:8424` in dev. Make sure the backend is running too, or set `javaURI` / `pythonURI` in `assets/js/api/config.js`.
+
+---
+
 ## What We Built
 
 ### Pages
