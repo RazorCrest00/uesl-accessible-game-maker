@@ -51,7 +51,7 @@ Live site: **[uesl.io](https://uesl.io)** · Backend: **[uesl.opencodingsociety.
 
 ---
 
-## Handoff — Read This First
+## Project Status & Roadmap
 
 **Live site**: https://ueslhub.opencodingsociety.com  
 **Backend repo**: [MalwareMadness-backend](https://github.com/unified-esports-league/MalwareMadness-backend) — Flask API on port 8424, Socket.IO on port 8501  
