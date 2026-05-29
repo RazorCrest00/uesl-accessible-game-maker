@@ -155,35 +155,42 @@ Custom Jekyll layouts built specifically for UESL:
 
 ```
 MalwareMadness/
-├── _config.yml              # Jekyll config (title: UESL, port 4700)
-├── Makefile                 # All dev commands (make, make dev, make stop, etc.)
-├── _layouts/                # Page layouts
-│   ├── uesl.html            # Master UESL layout (3600+ lines, accessibility toolkit built-in)
-│   ├── uesl-app.html        # Full-viewport app shell
-│   ├── ecentricolor.html    # Secondary dark layout
-│   ├── gamebuilder.html     # Game builder page layout
-│   ├── student_toolkit.html # Student tools dashboard
-│   └── ...                  # 30+ other layouts (posts, lessons, etc.)
-├── _includes/               # Reusable HTML components
-│   ├── uesl-accessibility-game.html  # IDD-friendly arena game (canvas)
-│   └── ...                  # 40+ other includes
+├── _config.yml              # Jekyll config (baseurl, port, plugins)
+├── Makefile                 # Dev commands: make, make dev, make stop, make convert
+│
+├── _layouts/
+│   ├── uesl.html            # Main UESL layout — nav, footer, full accessibility toolkit
+│   └── uesl-app.html        # Full-viewport shell for the game builder (no nav/footer)
+│
+├── _includes/               # Shared partials (nav, footer, accessibility panel, infographics)
+│
 ├── pages/                   # UESL site pages
 │   ├── uesl-home.html       # Home (/)
 │   ├── uesl-about.html      # About (/about/)
-│   ├── uesl-contact.html    # Contact (/contact/)
 │   ├── uesl-locations.html  # Locations (/locations/)
-│   └── uesl-play.html       # Play / Game Maker (/play/)
+│   ├── uesl-play.html       # Play page — embeds game builder (/play/)
+│   ├── uesl-contact.html    # Contact (/contact/)
+│   └── game-maker.html      # Standalone game builder app (/game-maker/)
+│
 ├── assets/
 │   └── js/
-│       ├── GameEnginev1/         # Game engine v1 (base platformer)
-│       ├── GameEnginev1.1/       # Game engine v1.1 (+ leaderboard, coins, mini platformer)
-│       ├── GameEnginev1.2/       # Game engine v1.2 (+ attack NPCs, UESL coach, game builder)
-│       ├── user-preferences.js   # Site-wide theme/TTS/language preferences
-│       └── keyboard-shortcuts.js # Alt+Shift keyboard navigation
+│       ├── GameEnginev1/         # v1 — base Canvas platformer (core loop, player, enemies)
+│       ├── GameEnginev1.1/       # v1.1 — adds coins, leaderboard, mini platformer variant
+│       ├── GameEnginev1.2/       # v1.2 (active) — adds UESLCoach AI, AI NPCs, game builder
+│       │   ├── essentials/       # Game.js, GameEnv.js, GameLevel.js, GameObject.js, GameControl.js
+│       │   ├── platformer/       # Player.js, Enemy.js, platform/background sprites
+│       │   ├── characters/       # UESLCoach.js, AiNpc.js, Npc.js, CharacterSelect.js
+│       │   └── builder/          # templates.js — level presets for the game maker
+│       ├── ecentricolor/         # Dark UI system — dashboard, profile, shared components
+│       ├── api/                  # config.js — pythonURI / fetchOptions for backend calls
+│       ├── face-tracker.js       # Camera face tracking → player input
+│       ├── chatbot.js            # UESL Assistant chatbot (Groq via /api/uesl-chat)
+│       └── keyboard-shortcuts.js # Alt+Shift accessibility shortcuts
+│
 ├── _data/
-│   └── toolkit.yml          # Student toolkit links/cards data
-├── images/                  # UESL team and org photos
-└── _notebooks/ / _posts/    # Blog posts and Jupyter notebook lessons
+│   └── uesl_infograph.yml   # Data driving the capstone infographic page
+│
+└── images/                  # UESL org photos, team photos, capstone assets
 ```
 
 ---
