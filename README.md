@@ -4,7 +4,7 @@ This is the public-facing website for the **Unified Esports League (UESL)**, a S
 
 Built with **Jekyll** and hosted on **GitHub Pages**. Designed and developed by students in the Del Norte High School AP CSP program as a community service project.
 
-Live site: **[uesl.io](https://uesl.io)** · Backend: **[uesl.opencodingsociety.com](https://uesl.opencodingsociety.com)**
+Live site: **[ueslhub.opencodingsociety.com](ueslhub.opencodingsociety.com)** · Backend: **[uesl.opencodingsociety.com](https://uesl.opencodingsociety.com)**
 
 ---
 
