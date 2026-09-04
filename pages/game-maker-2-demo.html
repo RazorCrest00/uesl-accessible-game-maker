@@ -1,0 +1,257 @@
+---
+layout: uesl-app
+title: "Accessible Game Maker 2.0 — Concept Demo"
+description: "A branch-only frontend prototype for a guided, accessible UESL game creation flow."
+permalink: /game-maker-2-demo/
+---
+
+<!--
+THESIS: Game creation should feel like a supported playtest, not a wall of editor controls; this demo keeps each choice beside its visible effect.
+OWN-WORLD: The inherited UESL night, cyan, purple, gold, Oswald, and Inter system becomes a focused game workbench with numbered stations and one persistent stage.
+STORY: Name a game, choose its base, tune its world and comfort settings, test it, then review a safe handoff configuration.
+FIRST VIEWPORT: A compact project/status bar and six-station rail sit above a split workbench; the active decision is left and the live miniature level is right.
+FORM: Playtest Workbench, structure six of the grounded operate-mode set; synchronized decision and preview staging, seed 0dcec91c.
+-->
+
+<link rel="stylesheet" href="{{ '/assets/css/game-maker-2-demo.css' | relative_url }}">
+
+<main id="agm2-demo" aria-labelledby="agm2-title">
+  <header class="agm2-project-bar">
+    <div class="agm2-brand-lockup">
+      <span class="agm2-wordmark" aria-hidden="true">UESL</span>
+      <div>
+        <p class="agm2-context">Concept demo · no backend writes</p>
+        <h1 id="agm2-title">Accessible Game Maker <span>2.0</span></h1>
+      </div>
+    </div>
+    <div class="agm2-project-actions">
+      <p id="agm2-draft-status" role="status">Starting a clean local draft</p>
+      <button id="agm2-reset-demo" class="agm2-button agm2-button--quiet" type="button">Reset demo</button>
+    </div>
+  </header>
+
+  <nav class="agm2-stations" aria-label="Game creation steps">
+    <button class="agm2-station is-active" type="button" data-step="0" aria-current="step" aria-controls="agm2-step-start">
+      <span>1</span><strong>Start</strong>
+    </button>
+    <button class="agm2-station" type="button" data-step="1" aria-controls="agm2-step-choose">
+      <span>2</span><strong>Choose</strong>
+    </button>
+    <button class="agm2-station" type="button" data-step="2" aria-controls="agm2-step-theme">
+      <span>3</span><strong>Theme</strong>
+    </button>
+    <button class="agm2-station" type="button" data-step="3" aria-controls="agm2-step-accessibility">
+      <span>4</span><strong>Comfort</strong>
+    </button>
+    <button class="agm2-station" type="button" data-step="4" aria-controls="agm2-step-preview">
+      <span>5</span><strong>Preview</strong>
+    </button>
+    <button class="agm2-station" type="button" data-step="5" aria-controls="agm2-step-review">
+      <span>6</span><strong>Review</strong>
+    </button>
+  </nav>
+
+  <div class="agm2-workbench">
+    <form id="agm2-builder" class="agm2-builder" novalidate>
+      <div class="agm2-panel-heading">
+        <p id="agm2-step-count">Station 1 of 6</p>
+        <span id="agm2-step-owner">Guided start</span>
+      </div>
+
+      <section id="agm2-step-start" class="agm2-step is-active" data-step-panel="0" aria-labelledby="agm2-start-title">
+        <div class="agm2-step-copy">
+          <h2 id="agm2-start-title" tabindex="-1">Give your game a name</h2>
+          <p>Start with one idea. Your choices save to this browser as you move through the demo.</p>
+        </div>
+        <label class="agm2-field" for="agm2-game-name">
+          <span>Game name</span>
+          <input id="agm2-game-name" name="gameName" type="text" minlength="2" maxlength="32" autocomplete="off" placeholder="Example: Skyway Quest" aria-describedby="agm2-name-help agm2-error">
+          <small id="agm2-name-help">Use 2–32 characters. You can change this later.</small>
+        </label>
+        <div class="agm2-note">
+          <strong>Safe draft</strong>
+          <p>This concept stores only your demo choices in your browser. It does not contact the UESL backend.</p>
+        </div>
+      </section>
+
+      <section id="agm2-step-choose" class="agm2-step" data-step-panel="1" aria-labelledby="agm2-choose-title" hidden>
+        <div class="agm2-step-copy">
+          <h2 id="agm2-choose-title" tabindex="-1">Choose a starting game</h2>
+          <p>One proven game style keeps the choices simple so you can focus on your idea.</p>
+        </div>
+        <label class="agm2-choice agm2-choice--template">
+          <input type="radio" name="template" value="platformer" checked>
+          <span class="agm2-template-art" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>
+            <strong>Side-scrolling adventure</strong>
+            <small>Platforms, collectibles, a finish goal, and the inherited GameEnginev1.2 preview.</small>
+          </span>
+        </label>
+        <p class="agm2-scope-line">More templates come after the first path is tested and verified.</p>
+      </section>
+
+      <section id="agm2-step-theme" class="agm2-step" data-step-panel="2" aria-labelledby="agm2-theme-title" hidden>
+        <div class="agm2-step-copy">
+          <h2 id="agm2-theme-title" tabindex="-1">Shape the game world</h2>
+          <p>Pick a readable theme. The same miniature level repaints immediately so the effect stays clear.</p>
+        </div>
+        <fieldset class="agm2-theme-fieldset">
+          <legend>Theme</legend>
+          <div class="agm2-theme-options">
+            <label class="agm2-choice agm2-theme-choice" data-theme-option="coast">
+              <input type="radio" name="theme" value="coast" checked>
+              <span class="agm2-theme-swatch agm2-theme-swatch--coast" aria-hidden="true"></span>
+              <span><strong>Pixel Coast</strong><small>Clear blue sky and bright sea-glass platforms.</small></span>
+            </label>
+            <label class="agm2-choice agm2-theme-choice" data-theme-option="mesa">
+              <input type="radio" name="theme" value="mesa">
+              <span class="agm2-theme-swatch agm2-theme-swatch--mesa" aria-hidden="true"></span>
+              <span><strong>Mesa Sunset</strong><small>Warm terrain with a deep violet horizon.</small></span>
+            </label>
+            <label class="agm2-choice agm2-theme-choice" data-theme-option="orbit">
+              <input type="radio" name="theme" value="orbit">
+              <span class="agm2-theme-swatch agm2-theme-swatch--orbit" aria-hidden="true"></span>
+              <span><strong>Quiet Orbit</strong><small>Low-glare navy with crisp cyan landmarks.</small></span>
+            </label>
+          </div>
+        </fieldset>
+        <label class="agm2-field agm2-color-field" for="agm2-accent-color">
+          <span>Character color</span>
+          <span class="agm2-color-control">
+            <input id="agm2-accent-color" name="accent" type="color" value="#ffd166">
+            <output id="agm2-accent-value" for="agm2-accent-color">#FFD166</output>
+          </span>
+        </label>
+      </section>
+
+      <section id="agm2-step-accessibility" class="agm2-step" data-step-panel="3" aria-labelledby="agm2-accessibility-title" hidden>
+        <div class="agm2-step-copy">
+          <h2 id="agm2-accessibility-title" tabindex="-1">Choose a comfort profile</h2>
+          <p>Start from a useful set of preferences, then change any individual setting without losing the others.</p>
+        </div>
+        <fieldset class="agm2-profile-fieldset">
+          <legend>Starting profile</legend>
+          <div class="agm2-profile-options">
+            <label class="agm2-choice">
+              <input type="radio" name="preset" value="calm" checked>
+              <span><strong>Calm</strong><small>Less motion, larger controls, steady pace.</small></span>
+            </label>
+            <label class="agm2-choice">
+              <input type="radio" name="preset" value="contrast">
+              <span><strong>High contrast</strong><small>Strong edges, reduced motion, steady pace.</small></span>
+            </label>
+            <label class="agm2-choice">
+              <input type="radio" name="preset" value="large">
+              <span><strong>Large controls</strong><small>Extra-large actions with standard motion.</small></span>
+            </label>
+          </div>
+        </fieldset>
+        <details class="agm2-fine-tune">
+          <summary>Fine-tune individual settings</summary>
+          <fieldset class="agm2-overrides">
+            <legend>Optional adjustments</legend>
+            <label><input id="agm2-reduced-motion" type="checkbox" name="reducedMotion"> <span>Reduce movement</span></label>
+            <label><input id="agm2-high-contrast" type="checkbox" name="highContrast"> <span>Increase contrast</span></label>
+            <label><input id="agm2-large-controls" type="checkbox" name="largeControls"> <span>Use larger controls</span></label>
+            <label class="agm2-speed-control" for="agm2-speed">
+              <span>Game pace</span>
+              <select id="agm2-speed" name="speed">
+                <option value="slow">Slow</option>
+                <option value="steady" selected>Steady</option>
+                <option value="quick">Quick</option>
+              </select>
+            </label>
+          </fieldset>
+        </details>
+      </section>
+
+      <section id="agm2-step-preview" class="agm2-step" data-step-panel="4" aria-labelledby="agm2-preview-title" hidden>
+        <div class="agm2-step-copy">
+          <h2 id="agm2-preview-title" tabindex="-1">Test without losing your place</h2>
+          <p>The preview controls change one representative level. Your builder choices stay safe when you pause, reset, or exit.</p>
+        </div>
+        <div class="agm2-preview-controls" role="group" aria-label="Preview controls">
+          <button class="agm2-button agm2-button--primary" type="button" data-preview-action="running">Start preview</button>
+          <button class="agm2-button" type="button" data-preview-action="paused">Pause</button>
+          <button class="agm2-button" type="button" data-preview-action="reset">Reset player</button>
+          <button class="agm2-button agm2-button--quiet" type="button" data-preview-action="ready">Exit preview</button>
+        </div>
+        <div class="agm2-note">
+          <strong>Inherited integration</strong>
+          <p>The production version will apply these choices to the existing UESL game template instead of rebuilding the game engine.</p>
+        </div>
+      </section>
+
+      <section id="agm2-step-review" class="agm2-step" data-step-panel="5" aria-labelledby="agm2-review-title" hidden>
+        <div class="agm2-step-copy">
+          <h2 id="agm2-review-title" tabindex="-1">Review your setup</h2>
+          <p>Check what the builder will pass to the existing editor. This concept lets you download the setup, but it does not publish.</p>
+        </div>
+        <dl class="agm2-review-list">
+          <div><dt>Name</dt><dd id="agm2-review-name">Untitled game</dd><button type="button" data-edit-step="0">Edit</button></div>
+          <div><dt>Starting game</dt><dd id="agm2-review-template">Side-scrolling adventure</dd><button type="button" data-edit-step="1">Edit</button></div>
+          <div><dt>Theme</dt><dd id="agm2-review-theme">Pixel Coast</dd><button type="button" data-edit-step="2">Edit</button></div>
+          <div><dt>Comfort</dt><dd id="agm2-review-accessibility">Calm</dd><button type="button" data-edit-step="3">Edit</button></div>
+        </dl>
+        <details class="agm2-contract">
+          <summary>View technical setup details</summary>
+          <pre id="agm2-config-output" tabindex="0"></pre>
+        </details>
+        <div class="agm2-export-actions">
+          <button id="agm2-copy-config" class="agm2-button" type="button">Copy configuration</button>
+          <button id="agm2-download-config" class="agm2-button agm2-button--primary" type="button">Download JSON</button>
+        </div>
+        <p id="agm2-export-status" class="agm2-export-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <footer class="agm2-builder-footer">
+        <p id="agm2-error" class="agm2-error" role="alert" aria-live="assertive"></p>
+        <div>
+          <button id="agm2-back" class="agm2-button agm2-button--quiet" type="button">Back</button>
+          <button id="agm2-continue" class="agm2-button agm2-button--primary" type="submit">Continue</button>
+        </div>
+      </footer>
+    </form>
+
+    <aside class="agm2-preview" aria-labelledby="agm2-live-title">
+      <header class="agm2-preview-heading">
+        <div>
+          <p>Live concept preview</p>
+          <h2 id="agm2-live-title">Your level</h2>
+        </div>
+        <output id="agm2-preview-status" class="agm2-preview-status" aria-live="polite">Ready</output>
+      </header>
+
+      <div id="agm2-stage" class="agm2-stage" data-theme="coast" data-preview-state="ready" data-speed="steady" role="img" aria-label="A miniature side-scrolling game level showing the selected theme and accessibility settings">
+        <div class="agm2-sun" aria-hidden="true"></div>
+        <div class="agm2-cloud agm2-cloud--one" aria-hidden="true"><i></i><i></i></div>
+        <div class="agm2-cloud agm2-cloud--two" aria-hidden="true"><i></i><i></i></div>
+        <div class="agm2-horizon" aria-hidden="true"></div>
+        <div class="agm2-platform agm2-platform--one" aria-hidden="true"></div>
+        <div class="agm2-platform agm2-platform--two" aria-hidden="true"></div>
+        <div class="agm2-platform agm2-platform--three" aria-hidden="true"></div>
+        <div class="agm2-coin agm2-coin--one" aria-hidden="true"></div>
+        <div class="agm2-coin agm2-coin--two" aria-hidden="true"></div>
+        <div class="agm2-goal" aria-hidden="true"><i></i></div>
+        <div id="agm2-player" class="agm2-player" aria-hidden="true"><i></i><b></b></div>
+        <div class="agm2-stage-caption" aria-hidden="true"><span id="agm2-stage-name">Untitled game</span><span id="agm2-stage-speed">Steady pace</span></div>
+      </div>
+
+      <div class="agm2-preview-readout" aria-label="Current preview settings">
+        <span id="agm2-readout-theme">Pixel Coast</span>
+        <span id="agm2-readout-profile">Calm</span>
+        <span id="agm2-readout-storage">Local draft</span>
+      </div>
+      <p class="agm2-demo-boundary">Representative frontend behavior only. No game is published and no production data changes.</p>
+    </aside>
+  </div>
+
+  <footer class="agm2-page-footer">
+    <p><strong>Inherited, not replaced:</strong> the advanced editor, GameEnginev1.2, accessibility toolkit, and save APIs remain the production foundation.</p>
+    <a href="{{ '/game-maker/' | relative_url }}">Open the inherited Game Maker</a>
+  </footer>
+
+  <div id="agm2-announcer" class="agm2-visually-hidden" aria-live="polite"></div>
+</main>
+
+<script src="{{ '/assets/js/game-maker-2-demo.js' | relative_url }}" defer></script>
