@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-04T19:22:54Z",
+  "title": "Design System: UESL Playtest Workbench",
+  "extensions": {
+    "colorMeta": {
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Night Canvas",
+        "canonical": "#0d1117",
+        "tonalRamp": ["oklch(15% 0.014 258.4)", "oklch(26% 0.014 258.4)", "oklch(38% 0.014 258.4)", "oklch(50% 0.014 258.4)", "oklch(62% 0.014 258.4)", "oklch(74% 0.014 258.4)", "oklch(86% 0.014 258.4)", "oklch(95% 0.014 258.4)"]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Workbench Panel",
+        "canonical": "#161b27",
+        "tonalRamp": ["oklch(15% 0.025 266.9)", "oklch(26% 0.025 266.9)", "oklch(38% 0.025 266.9)", "oklch(50% 0.025 266.9)", "oklch(62% 0.025 266.9)", "oklch(74% 0.025 266.9)", "oklch(86% 0.025 266.9)", "oklch(95% 0.025 266.9)"]
+      },
+      "panel-raised": {
+        "role": "neutral",
+        "displayName": "Raised Panel",
+        "canonical": "#1e2535",
+        "tonalRamp": ["oklch(15% 0.032 266.0)", "oklch(26% 0.032 266.0)", "oklch(38% 0.032 266.0)", "oklch(50% 0.032 266.0)", "oklch(62% 0.032 266.0)", "oklch(74% 0.032 266.0)", "oklch(86% 0.032 266.0)", "oklch(95% 0.032 266.0)"]
+      },
+      "panel-soft": {
+        "role": "neutral",
+        "displayName": "Soft Inset Panel",
+        "canonical": "#111722",
+        "tonalRamp": ["oklch(15% 0.024 262.3)", "oklch(26% 0.024 262.3)", "oklch(38% 0.024 262.3)", "oklch(50% 0.024 262.3)", "oklch(62% 0.024 262.3)", "oklch(74% 0.024 262.3)", "oklch(86% 0.024 262.3)", "oklch(95% 0.024 262.3)"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Primary Text",
+        "canonical": "#e6edf3",
+        "tonalRamp": ["oklch(15% 0.011 243.7)", "oklch(26% 0.011 243.7)", "oklch(38% 0.011 243.7)", "oklch(50% 0.011 243.7)", "oklch(62% 0.011 243.7)", "oklch(74% 0.011 243.7)", "oklch(86% 0.011 243.7)", "oklch(95% 0.011 243.7)"]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#aebdcb",
+        "tonalRamp": ["oklch(15% 0.026 246.3)", "oklch(26% 0.026 246.3)", "oklch(38% 0.026 246.3)", "oklch(50% 0.026 246.3)", "oklch(62% 0.026 246.3)", "oklch(74% 0.026 246.3)", "oklch(86% 0.026 246.3)", "oklch(95% 0.026 246.3)"]
+      },
+      "border-subtle": {
+        "role": "neutral",
+        "displayName": "Subtle Divider",
+        "canonical": "rgba(230, 237, 243, 0.16)",
+        "tonalRamp": ["oklch(15% 0.011 243.7 / 0.16)", "oklch(26% 0.011 243.7 / 0.16)", "oklch(38% 0.011 243.7 / 0.16)", "oklch(50% 0.011 243.7 / 0.16)", "oklch(62% 0.011 243.7 / 0.16)", "oklch(74% 0.011 243.7 / 0.16)", "oklch(86% 0.011 243.7 / 0.16)", "oklch(95% 0.011 243.7 / 0.16)"]
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Strong Divider",
+        "canonical": "rgba(230, 237, 243, 0.3)",
+        "tonalRamp": ["oklch(15% 0.011 243.7 / 0.3)", "oklch(26% 0.011 243.7 / 0.3)", "oklch(38% 0.011 243.7 / 0.3)", "oklch(50% 0.011 243.7 / 0.3)", "oklch(62% 0.011 243.7 / 0.3)", "oklch(74% 0.011 243.7 / 0.3)", "oklch(86% 0.011 243.7 / 0.3)", "oklch(95% 0.011 243.7 / 0.3)"]
+      },
+      "signal-cyan": {
+        "role": "primary",
+        "displayName": "Signal Cyan",
+        "canonical": "#00d4ff",
+        "tonalRamp": ["oklch(15% 0.146 219.5)", "oklch(26% 0.146 219.5)", "oklch(38% 0.146 219.5)", "oklch(50% 0.146 219.5)", "oklch(62% 0.146 219.5)", "oklch(74% 0.146 219.5)", "oklch(86% 0.146 219.5)", "oklch(95% 0.146 219.5)"]
+      },
+      "signal-cyan-hover": {
+        "role": "primary",
+        "displayName": "Signal Cyan Hover",
+        "canonical": "#5ee4ff",
+        "tonalRamp": ["oklch(15% 0.121 213.3)", "oklch(26% 0.121 213.3)", "oklch(38% 0.121 213.3)", "oklch(50% 0.121 213.3)", "oklch(62% 0.121 213.3)", "oklch(74% 0.121 213.3)", "oklch(86% 0.121 213.3)", "oklch(95% 0.121 213.3)"]
+      },
+      "cyan-ink": {
+        "role": "primary",
+        "displayName": "Deep Cyan Ink",
+        "canonical": "#001a20",
+        "tonalRamp": ["oklch(15% 0.035 214.7)", "oklch(26% 0.035 214.7)", "oklch(38% 0.035 214.7)", "oklch(50% 0.035 214.7)", "oklch(62% 0.035 214.7)", "oklch(74% 0.035 214.7)", "oklch(86% 0.035 214.7)", "oklch(95% 0.035 214.7)"]
+      },
+      "marker-purple": {
+        "role": "secondary",
+        "displayName": "Workbench Purple",
+        "canonical": "#9b7cff",
+        "tonalRamp": ["oklch(15% 0.187 291.5)", "oklch(26% 0.187 291.5)", "oklch(38% 0.187 291.5)", "oklch(50% 0.187 291.5)", "oklch(62% 0.187 291.5)", "oklch(74% 0.187 291.5)", "oklch(86% 0.187 291.5)", "oklch(95% 0.187 291.5)"]
+      },
+      "shell-purple-deep": {
+        "role": "secondary",
+        "displayName": "Deep Shell Purple",
+        "canonical": "#7c3aed",
+        "tonalRamp": ["oklch(15% 0.247 293.0)", "oklch(26% 0.247 293.0)", "oklch(38% 0.247 293.0)", "oklch(50% 0.247 293.0)", "oklch(62% 0.247 293.0)", "oklch(74% 0.247 293.0)", "oklch(86% 0.247 293.0)", "oklch(95% 0.247 293.0)"]
+      },
+      "focus-gold": {
+        "role": "tertiary",
+        "displayName": "Focus Gold",
+        "canonical": "#ffd166",
+        "tonalRamp": ["oklch(15% 0.135 86.1)", "oklch(26% 0.135 86.1)", "oklch(38% 0.135 86.1)", "oklch(50% 0.135 86.1)", "oklch(62% 0.135 86.1)", "oklch(74% 0.135 86.1)", "oklch(86% 0.135 86.1)", "oklch(95% 0.135 86.1)"]
+      },
+      "success-mint": {
+        "role": "tertiary",
+        "displayName": "Success Mint",
+        "canonical": "#78e3a0",
+        "tonalRamp": ["oklch(15% 0.138 154.6)", "oklch(26% 0.138 154.6)", "oklch(38% 0.138 154.6)", "oklch(50% 0.138 154.6)", "oklch(62% 0.138 154.6)", "oklch(74% 0.138 154.6)", "oklch(86% 0.138 154.6)", "oklch(95% 0.138 154.6)"]
+      },
+      "danger-coral": {
+        "role": "tertiary",
+        "displayName": "Danger Coral",
+        "canonical": "#ff8b8b",
+        "tonalRamp": ["oklch(15% 0.141 20.9)", "oklch(26% 0.141 20.9)", "oklch(38% 0.141 20.9)", "oklch(50% 0.141 20.9)", "oklch(62% 0.141 20.9)", "oklch(74% 0.141 20.9)", "oklch(86% 0.141 20.9)", "oklch(95% 0.141 20.9)"]
+      },
+      "contrast-canvas": {
+        "role": "neutral",
+        "displayName": "High-Contrast Canvas",
+        "canonical": "#000000",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(38% 0 0)", "oklch(50% 0 0)", "oklch(62% 0 0)", "oklch(74% 0 0)", "oklch(86% 0 0)", "oklch(95% 0 0)"]
+      },
+      "contrast-text": {
+        "role": "neutral",
+        "displayName": "High-Contrast Text",
+        "canonical": "#ffffff",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(38% 0 0)", "oklch(50% 0 0)", "oklch(62% 0 0)", "oklch(74% 0 0)", "oklch(86% 0 0)", "oklch(95% 0 0)"]
+      },
+      "contrast-signal": {
+        "role": "primary",
+        "displayName": "High-Contrast Signal",
+        "canonical": "#ffeb3b",
+        "tonalRamp": ["oklch(15% 0.180 102.5)", "oklch(26% 0.180 102.5)", "oklch(38% 0.180 102.5)", "oklch(50% 0.180 102.5)", "oklch(62% 0.180 102.5)", "oklch(74% 0.180 102.5)", "oklch(86% 0.180 102.5)", "oklch(95% 0.180 102.5)"]
+      },
+      "contrast-secondary": {
+        "role": "secondary",
+        "displayName": "High-Contrast Secondary",
+        "canonical": "#7ee8ff",
+        "tonalRamp": ["oklch(15% 0.103 213.5)", "oklch(26% 0.103 213.5)", "oklch(38% 0.103 213.5)", "oklch(50% 0.103 213.5)", "oklch(62% 0.103 213.5)", "oklch(74% 0.103 213.5)", "oklch(86% 0.103 213.5)", "oklch(95% 0.103 213.5)"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Decision Display",
+        "purpose": "Short active-station headings that orient the participant."
+      },
+      "headline": {
+        "displayName": "Project Headline",
+        "purpose": "Compact product and project titles in status bars."
+      },
+      "title": {
+        "displayName": "Panel Title",
+        "purpose": "Persistent preview and contained panel titles."
+      },
+      "body": {
+        "displayName": "Guidance Body",
+        "purpose": "Instructions, explanations, and plain-language constraints."
+      },
+      "label": {
+        "displayName": "Control Label",
+        "purpose": "Actions, fields, stations, status, and compact metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "structural-workbench",
+        "value": "0 22px 56px rgba(0, 0, 0, 0.28)",
+        "purpose": "Grounds the complete decision-and-preview frame; nested surfaces stay flat."
+      }
+    ],
+    "motion": [
+      {
+        "name": "preview-run",
+        "value": "3.8s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate",
+        "purpose": "Default miniature-player travel during a live preview."
+      },
+      {
+        "name": "preview-run-slow",
+        "value": "5.4s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate",
+        "purpose": "Slow comfort setting for the same representative path."
+      },
+      {
+        "name": "preview-run-quick",
+        "value": "2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate",
+        "purpose": "Quick comfort setting for the same representative path."
+      },
+      {
+        "name": "reduced-motion-settle",
+        "value": "0.01ms",
+        "purpose": "Suppresses animation and settles the player at a meaningful static position."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "preview-first-stack",
+        "value": "980px"
+      },
+      {
+        "name": "compact-phone",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main continue, preview, or export action in the current station.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">Continue</button>",
+      "css": ".ds-button-primary { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; border: 1px solid #00d4ff; border-radius: 8px; padding: 10px 16px; background: #00d4ff; color: #001a20; cursor: pointer; font-family: Inter, sans-serif; font-size: 0.82rem; font-weight: 700; } .ds-button-primary:hover:not(:disabled) { background: #5ee4ff; color: #001318; } .ds-button-primary:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; } .ds-button-primary:disabled { cursor: not-allowed; opacity: 0.45; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A reversible or supporting action that remains visible beside the primary action.",
+      "html": "<button class=\"ds-button-secondary\" type=\"button\">Pause</button>",
+      "css": ".ds-button-secondary { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; border: 1px solid rgba(230, 237, 243, 0.3); border-radius: 8px; padding: 10px 16px; background: #1e2535; color: #e6edf3; cursor: pointer; font-family: Inter, sans-serif; font-size: 0.82rem; font-weight: 700; } .ds-button-secondary:hover:not(:disabled) { border-color: #00d4ff; background: #253044; } .ds-button-secondary:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; } .ds-button-secondary:disabled { cursor: not-allowed; opacity: 0.45; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "A low-emphasis reset, exit, or back action that should not compete with forward progress.",
+      "html": "<button class=\"ds-button-quiet\" type=\"button\">Back</button>",
+      "css": ".ds-button-quiet { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; border: 1px solid rgba(230, 237, 243, 0.3); border-radius: 8px; padding: 10px 16px; background: transparent; color: #e6edf3; cursor: pointer; font-family: Inter, sans-serif; font-size: 0.82rem; font-weight: 700; } .ds-button-quiet:hover:not(:disabled) { border-color: #00d4ff; background: #253044; } .ds-button-quiet:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; } .ds-button-quiet:disabled { cursor: not-allowed; opacity: 0.45; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "A labeled dark field with explicit help text and visible focus and error states.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Game name</span><input class=\"ds-field-input\" type=\"text\" placeholder=\"Example: Skyway Quest\"><small class=\"ds-field-help\">Use 2–32 characters. You can change this later.</small></label>",
+      "css": ".ds-field { display: block; max-width: 520px; color: #e6edf3; font-family: Inter, sans-serif; } .ds-field-label { display: block; margin-bottom: 9px; font-size: 0.79rem; font-weight: 700; } .ds-field-input { width: 100%; min-height: 48px; border: 1px solid rgba(230, 237, 243, 0.3); border-radius: 8px; padding: 11px 14px; background: #111722; color: #e6edf3; font: 1rem Inter, sans-serif; } .ds-field-input::placeholder { color: #8193a4; } .ds-field-input:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; } .ds-field-input[aria-invalid=\"true\"] { border-color: #ff8b8b; } .ds-field-help { display: block; margin-top: 8px; color: #aebdcb; font-size: 0.76rem; line-height: 1.5; }"
+    },
+    {
+      "name": "Station Navigation",
+      "kind": "nav",
+      "refersTo": "station-active",
+      "description": "A continuous numbered rail showing resting, completed, and active creation stations.",
+      "html": "<nav class=\"ds-stations\" aria-label=\"Game creation steps\"><button class=\"ds-station ds-station-complete\" type=\"button\"><span>1</span><strong>Start</strong></button><button class=\"ds-station ds-station-active\" type=\"button\" aria-current=\"step\"><span>2</span><strong>Choose</strong></button><button class=\"ds-station\" type=\"button\"><span>3</span><strong>Theme</strong></button></nav>",
+      "css": ".ds-stations { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); overflow-x: auto; border: 1px solid rgba(230, 237, 243, 0.16); background: #111722; font-family: Inter, sans-serif; } .ds-station { display: flex; min-height: 58px; align-items: center; gap: 10px; border: 0; border-right: 1px solid rgba(230, 237, 243, 0.16); padding: 10px 14px; background: transparent; color: #aebdcb; cursor: pointer; text-align: left; } .ds-station:last-child { border-right: 0; } .ds-station span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border: 1px solid rgba(230, 237, 243, 0.3); border-radius: 50%; font-size: 0.78rem; font-weight: 750; } .ds-station strong { font-size: 0.79rem; font-weight: 650; } .ds-station:hover { background: rgba(230, 237, 243, 0.05); color: #e6edf3; } .ds-station:focus-visible { outline: 3px solid #ffd166; outline-offset: -3px; } .ds-station-active { background: #00d4ff; color: #001a20; } .ds-station-active:hover { background: #00d4ff; color: #001a20; } .ds-station-active span { border-color: #001a20; } .ds-station-complete span { border-color: #78e3a0; color: #78e3a0; }"
+    },
+    {
+      "name": "Choice Card",
+      "kind": "card",
+      "refersTo": "choice-card",
+      "description": "A full-target radio choice for templates, themes, and comfort profiles.",
+      "html": "<label class=\"ds-choice\"><input type=\"radio\" name=\"ds-choice-demo\" checked><span><strong>Calm</strong><small>Less motion, larger controls, steady pace.</small></span></label>",
+      "css": ".ds-choice { position: relative; display: flex; min-height: 72px; align-items: center; gap: 14px; border: 1px solid rgba(230, 237, 243, 0.16); border-radius: 10px; padding: 14px 16px; background: #111722; color: #e6edf3; cursor: pointer; font-family: Inter, sans-serif; } .ds-choice:hover { border-color: rgba(230, 237, 243, 0.3); } .ds-choice:has(input:checked) { border-color: #00d4ff; background: rgba(0, 212, 255, 0.07); } .ds-choice:focus-within { outline: 3px solid #ffd166; outline-offset: 3px; } .ds-choice input { width: 18px; height: 18px; flex: 0 0 18px; accent-color: #00d4ff; } .ds-choice strong { display: block; margin-bottom: 3px; font-size: 0.88rem; } .ds-choice small { display: block; color: #aebdcb; font-size: 0.76rem; line-height: 1.5; }"
+    },
+    {
+      "name": "Preview Status Chip",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "A compact live text status for the persistent preview state.",
+      "html": "<output class=\"ds-status-chip\" aria-live=\"polite\">Ready</output>",
+      "css": ".ds-status-chip { display: inline-flex; min-height: 32px; align-items: center; border: 1px solid rgba(230, 237, 243, 0.3); border-radius: 999px; padding: 5px 11px; background: transparent; color: #78e3a0; font: 750 0.73rem Inter, sans-serif; }"
+    },
+    {
+      "name": "Persistent Preview",
+      "kind": "custom",
+      "refersTo": "preview-stage",
+      "description": "The signature miniature level where theme, comfort, speed, and player choices become visible in place.",
+      "html": "<section class=\"ds-preview\"><header class=\"ds-preview-heading\"><div><p>Live concept preview</p><h2>Your level</h2></div><output class=\"ds-preview-chip\">Playing</output></header><div class=\"ds-stage ds-stage-running\"><div class=\"ds-horizon\"></div><div class=\"ds-platform ds-platform-one\"></div><div class=\"ds-platform ds-platform-two\"></div><div class=\"ds-player\"></div><div class=\"ds-stage-caption\">Skyway Quest</div></div><div class=\"ds-preview-readout\"><span>Pixel Coast</span><span>Calm</span><span>Local draft</span></div></section>",
+      "css": ".ds-preview { overflow: hidden; border: 1px solid rgba(230, 237, 243, 0.16); background: #0f1520; color: #e6edf3; font-family: Inter, sans-serif; } .ds-preview-heading { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid rgba(230, 237, 243, 0.16); padding: 14px 18px; } .ds-preview-heading p { margin: 0; color: #aebdcb; font-size: 0.74rem; font-weight: 650; } .ds-preview-heading h2 { margin: 2px 0 0; font: 650 1.35rem Oswald, sans-serif; letter-spacing: -0.02em; } .ds-preview-chip { display: inline-flex; min-height: 32px; align-items: center; border: 1px solid rgba(230, 237, 243, 0.3); border-radius: 999px; padding: 5px 11px; color: #78e3a0; font-size: 0.73rem; font-weight: 750; } .ds-stage { position: relative; height: 260px; overflow: hidden; background: linear-gradient(to bottom, #0d526e, #1d8695); isolation: isolate; } .ds-horizon { position: absolute; right: -6%; bottom: 21%; left: -6%; height: 36%; background: #56cdbd; clip-path: polygon(0 68%, 12% 42%, 24% 58%, 37% 24%, 49% 50%, 63% 18%, 75% 55%, 88% 33%, 100% 60%, 100% 100%, 0 100%); opacity: 0.82; } .ds-stage::after { position: absolute; right: 0; bottom: 0; left: 0; z-index: -1; height: 22%; background: #183e43; content: ''; } .ds-platform { position: absolute; z-index: 2; height: 16px; border-bottom: 6px solid #0d6871; background: #9bf2df; } .ds-platform-one { bottom: 28%; left: 8%; width: 30%; } .ds-platform-two { bottom: 43%; left: 45%; width: 23%; } .ds-player { position: absolute; bottom: calc(28% + 16px); left: 14%; z-index: 4; width: 34px; height: 46px; border: 3px solid #081119; border-radius: 7px 7px 5px 5px; background: #ffd166; transform-origin: center bottom; } .ds-player::after { position: absolute; right: 2px; bottom: -24px; left: 2px; height: 24px; border: 3px solid #081119; background: #9b7cff; content: ''; } .ds-stage-running .ds-player { animation: ds-run 3.8s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate; } .ds-stage-caption { position: absolute; top: 16px; left: 16px; z-index: 5; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; padding: 6px 9px; background: rgba(5, 13, 22, 0.78); color: #fff; font-size: 0.68rem; font-weight: 700; } .ds-preview-readout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(230, 237, 243, 0.16); } .ds-preview-readout span { border-right: 1px solid rgba(230, 237, 243, 0.16); padding: 13px 8px; color: #aebdcb; font-size: 0.73rem; font-weight: 650; text-align: center; } .ds-preview-readout span:last-child { border-right: 0; } @keyframes ds-run { 0% { left: 14%; transform: translateY(0); } 50% { transform: translateY(-72px) rotate(4deg); } 100% { left: 81%; transform: translateY(-49px); } } @media (prefers-reduced-motion: reduce) { .ds-stage-running .ds-player { left: 48%; animation: none; transform: translateY(-72px); } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Playtest Workbench",
+    "overview": "UESL is expressed as a calm night workbench where the interface stays legible, the live artifact remains visible, and progress feels coached rather than controlled. Density is purposeful: status, decision, and response share one frame, while advanced mechanics recede until the participant asks for them.\n\nThe system is direct, tool-like, and game-aware. It rejects both marketing-page spectacle and the wall of controls associated with professional editors. The workbench chrome stays stable while the miniature game world supplies the color, movement, and delight, so users can always distinguish the tool from the thing they are making.",
+    "keyCharacteristics": [
+      "A four-layer navy surface stack with crisp one-pixel dividers.",
+      "Cyan active states, purple secondary markers, and gold focus cues.",
+      "Condensed Oswald headings paired with highly readable Inter body text.",
+      "One persistent preview that changes in place with every meaningful choice.",
+      "Square outer frames, gently rounded controls, and circular progress markers.",
+      "Accessibility states that visibly change motion, contrast, and control size."
+    ],
+    "rules": [
+      {
+        "name": "The Cyan Means Action Rule",
+        "body": "Cyan is reserved for current progress, selected configuration, primary actions, and navigable links; it should not wash large passive surfaces.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Stays Legible Rule",
+        "body": "Gold belongs to keyboard focus and in-game landmarks, never paragraph copy.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stage Palette Is Contained Rule",
+        "body": "Theme colors repaint the preview only; workbench chrome retains the UESL system colors.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Voice Rule",
+        "body": "Oswald leads page, station, and preview headings; Inter handles every instruction, status, label, and control, while monospace is reserved for literal configuration data.",
+        "section": "typography"
+      },
+      {
+        "name": "The One-Shadow Rule",
+        "body": "Tonal layering and one-pixel dividers do the everyday structural work; reserve the structural shadow for the complete workbench frame.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use cyan to identify the current station, selected option, primary action, and interactive link.",
+      "Do keep the active decision and its visible outcome in the same frame.",
+      "Do preserve the 3px gold focus outline with 3px offset, direct error language, reduced-motion response, and at least 44px control targets.",
+      "Do keep the phone preview compact at 190px and above the active decision while the station rail scrolls inside its own bounds.",
+      "Do use one-pixel dividers and tonal surfaces before introducing a new shadow."
+    ],
+    "donts": [
+      "Don't spread stage-theme colors into builder chrome.",
+      "Don't hide draft, restored, or session-only state behind an icon or tooltip.",
+      "Don't round the entire application into floating cards; the outer workbench remains a square, continuous frame.",
+      "Don't use Oswald for paragraphs, help text, form values, or status messages.",
+      "Don't imply server saving, publishing, or completed integration through color or copy."
+    ]
+  }
+}
